@@ -1,0 +1,4 @@
+name = "HyQMOM"
+uuid = "0cb60d4b-4940-4046-8815-06717d8a5008"
+authors = ["JanHab <jan.habscheid@rwth-aachen.de>"]
+version = "0.1.0"
