@@ -1,7 +1,7 @@
 module HyQMOM
 
 # External dependencies
-using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, OrdinaryDiffEq
+using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, OrdinaryDiffEq, Plots
 
 # Gramian Moments Implementation
 include("gramian_moment_equations.jl")
@@ -25,5 +25,9 @@ export SaveTriangulationCallback
 # Semidiscretization and callbacks
 include("setup1D.jl")
 export setupGramianMomentEquations, callbacksGramianMomentEquations
+
+# analysis tools
+include("analysis.jl")
+export plot_ρ_v_p, plot_λ_max, TVD_space
 
 end # module HyQMOM
