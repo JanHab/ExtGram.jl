@@ -64,22 +64,22 @@ function callbacksGramianMomentEquations(
         plot_creator=Trixi.show_plot
     )
 
-    # save_solution = SaveTriangulationCallback(
-    #     time_interval=tspan[2]/20,
-    #     save_initial_solution=true,
-    #     file_format="tsv",
-    #     append_solution=true,
-    #     solution_variables = cons2cons,
-    #     clear_out_dir=false,
-    #     name=name,
-    #     info="basis = $(Base.typename(typeof(basis)).wrapper)"
-    # )
+    save_solution = SaveTriangulationCallback(
+        time_interval=tspan[2]/20,
+        save_initial_solution=true,
+        file_format="tsv",
+        append_solution=true,
+        solution_variables = cons2cons,
+        clear_out_dir=false,
+        name=name,
+        info="basis = $(Base.typename(typeof(basis)).wrapper)"
+    )
 
     callbacks = CallbackSet(
         alive_callback,
         stepsize_callback,
         plot_callback,
-        # save_solution,
+        save_solution,
     )
 
     return callbacks, summary_callback

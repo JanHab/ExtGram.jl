@@ -11,11 +11,11 @@ Pkg.develop(PackageSpec(path = "<path to module folder>/TrixiTree2Triangulation"
 =#
 
 
-module TrixiTree2Triangulation
+# module TrixiTree2Triangulation
 
 include("methods.jl")
 include("callback.jl")
 
-export SaveTriangulationCallback
+# export SaveTriangulationCallback
 
-end # module TrixiTree2Triangulation
+# end # module TrixiTree2Triangulation
