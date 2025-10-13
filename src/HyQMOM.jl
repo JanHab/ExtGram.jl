@@ -30,4 +30,8 @@ export setupGramianMomentEquations, callbacksGramianMomentEquations
 include("analysis.jl")
 export plot_ρ_v_p, plot_λ_max, TVD_space
 
+# BGK equation
+include("bgk_equation.jl")
+export BGKEquations1D, InitialConditionsBGK, ρ_v_θ_p_BGK, setupBGK1DRiemann, plot_ρ_v_p_bgk
+
 end # module HyQMOM

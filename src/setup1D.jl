@@ -1,5 +1,5 @@
 # Setup ready to create semidiscretizations of the Gramian moment equations in 1D
-function setupGramianMomentEquations(
+function setupGramianMomentEquations1DRiemann(
     M, Kn, extended, 
     f_left, f_right;
     base_tree_level = 8,

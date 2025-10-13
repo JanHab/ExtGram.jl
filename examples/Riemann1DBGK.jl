@@ -5,19 +5,21 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-M = 4    # number of moments
-extended = true # flag for extended gramian closure or "standard" closure
-Kn = 1.0  # Knudsen number
-T_end = 0.3
+N = 50
+c_l = -6.0
+c_u = 6.0
+Kn = 1.0 # Knudsen number
 source = relaxation_source
-x_lower = -2.0; x_upper = 2.0
-domain = (x_lower, x_upper)
 
-# Setting up everything
-basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DRiemann(
-    M, Kn, extended,
+domain = (-5.0, 5.0)
+T_end = 0.5
+
+basis, mesh, equations, initial_condition, solver, boundary_conditions = setupBGK1DRiemann(
+    N, Kn,
+    c_l, c_u, 
     Maxwellian(7.0, 0.0, 1.0), # Density, velocity, temperature
     Maxwellian(1.0, 0.0, 1.0);
+    base_tree_level = 6,
     domain = domain,
 )
 
@@ -36,10 +38,8 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
     cfl = 0.45,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
-    name="Riemann1D/gram_solution",
+    name="Riemann1D/bgk_solution",
 )
-
-
 
 #= solve =#
 sol = solve(
@@ -57,23 +57,16 @@ summary_callback()
 
 
 # Post Processing
-x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
+# Plotting density, velocity, 
+x = LinRange(domain[1], domain[2], length(sol.u[end]) ÷ N)
+ρ, v, θ, p = ρ_v_θ_p_BGK(sol.u[end], equations)
+
+p1 = plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))
 display(p1)
-savefig(p1, "out/Riemann1D/ρ_v_p.pdf")
+savefig(p1, "out/Riemann1D/bgk_ρ_v_p.pdf")
 
 # Store primitive variables in CSV file
 CSV.write(
-    "out/Riemann1D/ρ_v_p.csv",
+    "out/Riemann1D/bgk_ρ_v_p.csv",
     Tables.columntable((x=x, rho=ρ, v=v, p=p))
 )
-
-# Plot maximum eigenvalue (wave-speed) of flux Jacobian over time
-n_plots = 5
-p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
-display(p2)
-savefig(p2, "out/Riemann1D/λ_max.pdf")
-
-# Plot total variation in space over time
-p3, TV_t = TVD_space(sol, M)
-display(p3)
-savefig(p3, "out/Riemann1D/TV_space.pdf")
