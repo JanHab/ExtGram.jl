@@ -7,8 +7,9 @@ function setupGramianMomentEquations1DRiemann(
     volume_flux = flux_central,
     polydeg = 1,        # DG polynomial degree
     domain = (-2.0, 2.0),
+    χ_set = nothing
     )
-    equations = GramianMomentEquations1D(M, Kn, extended)
+    equations = GramianMomentEquations1D(M, Kn, extended; χ_set=χ_set)
     initial_condition = InitialConditionsShockTube(
         f_left, # Density, velocity, temperature
         f_right, # Shock in density, but not velocity, temperature initially

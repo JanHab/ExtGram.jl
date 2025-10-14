@@ -99,3 +99,43 @@ function TVD_space(sol, M::Int)
 
     return p, TV_t
 end
+
+# read solutino from tvd file
+function readsol(filename)
+    f = open(filename)
+    lines = readlines(f)
+    n_vars = length(split(lines[3]))-1 # counts coordinates x as var
+
+    # split into time-level blocks
+    blocks = []
+    i = 1
+    while i < length(lines)
+        l = lines[i]
+        if startswith(l, "# timestep")# && endswith(l, "t=$T_end")
+        j = findfirst("points=", l).stop
+        n_points = parse(Int, l[j+1:j+findfirst(",", l[j:end]).start-2])
+
+        data = zeros(Float64, n_points, n_vars)
+        for k=1:n_points
+            data[k, :] .= parse.(Float64, split(lines[i+k]))
+        end
+        push!(blocks, data)
+        i += n_points
+        else i += 1 end
+    end
+
+    return blocks
+end
+
+function readfile(filename)
+    x = Vector{Float64}
+    u_solutions = Matrix{Float64}  # (vars × npts) matrix per dataset
+
+    data_blocks = readsol(filename)              # Vector of matrices (npts × (1 + n_vars))
+    final_block = data_blocks[end]               # last time level
+    x = final_block[:, 1]                   # x coordinates (npts)
+    y = final_block[:, 2:end]                    # moments (npts × n_vars)
+    u_solutions = permutedims(y)            # shape: (n_vars × npts)
+
+    return x, u_solutions
+end

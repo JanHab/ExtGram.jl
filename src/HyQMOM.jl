@@ -24,14 +24,14 @@ export SaveTriangulationCallback
 
 # Semidiscretization and callbacks
 include("setup1D.jl")
-export setupGramianMomentEquations, callbacksGramianMomentEquations
+export setupGramianMomentEquations1DRiemann, callbacksGramianMomentEquations
 
 # analysis tools
 include("analysis.jl")
-export plot_ρ_v_p, plot_λ_max, TVD_space
+export plot_ρ_v_p, plot_λ_max, TVD_space, readsol, readfile
 
 # BGK equation
 include("bgk_equation.jl")
-export BGKEquations1D, InitialConditionsBGK, ρ_v_θ_p_BGK, setupBGK1DRiemann, plot_ρ_v_p_bgk
+export setupBGK1DRiemann, InitialConditionsBGK, ρ_v_θ_p_BGK, setupBGK1DRiemann, plot_ρ_v_p_bgk
 
 end # module HyQMOM
