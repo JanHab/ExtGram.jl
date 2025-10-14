@@ -5,21 +5,24 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-N = 50
+N = 250
 c_l = -6.0
 c_u = 6.0
 Kn = 1.0 # Knudsen number
 source = relaxation_source
 
 domain = (-5.0, 5.0)
-T_end = 0.5
+T_end = 0.3
+
+ρ_L = 7.0; v_L = 0.0; θ_L = 1.0
+ρ_R = 1.0; v_R = 0.0; θ_R = 1.0
 
 basis, mesh, equations, initial_condition, solver, boundary_conditions = setupBGK1DRiemann(
     N, Kn,
     c_l, c_u, 
-    Maxwellian(7.0, 0.0, 1.0), # Density, velocity, temperature
-    Maxwellian(1.0, 0.0, 1.0);
-    base_tree_level = 6,
+    Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
+    Maxwellian(ρ_R, v_R, θ_R);
+    base_tree_level = 8,
     domain = domain,
 )
 
@@ -38,7 +41,7 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
     cfl = 0.45,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
-    name="Riemann1D/bgk_solution",
+    name="Riemann1D/bgk_solution_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)", # name of output files
 )
 
 #= solve =#
@@ -63,10 +66,10 @@ x = LinRange(domain[1], domain[2], length(sol.u[end]) ÷ N)
 
 p1 = plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))
 display(p1)
-savefig(p1, "out/Riemann1D/bgk_ρ_v_p.pdf")
+savefig(p1, "out/Riemann1D/bgk_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.pdf")
 
 # Store primitive variables in CSV file
 CSV.write(
-    "out/Riemann1D/bgk_ρ_v_p.csv",
+    "out/Riemann1D/bgk_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.csv",
     Tables.columntable((x=x, rho=ρ, v=v, p=p))
 )

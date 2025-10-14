@@ -6,9 +6,10 @@ function plot_ρ_v_p(sol, M, x_lower, x_upper)
     Fmat = reshape(u_final, M+1, Nloc)
 
     ρ = Fmat[1, :]
-    v = Fmat[2, :]
-    ρΘ = Fmat[3, :]
-    p = ρΘ
+    v = Fmat[2, :] ./ ρ
+    ρΘplusρv2 = Fmat[3, :]
+    ρθ = ρΘplusρv2 - ρ .* v .^ 2
+    p = ρθ
 
     x = range(x_lower, x_upper, length=Nloc)
 

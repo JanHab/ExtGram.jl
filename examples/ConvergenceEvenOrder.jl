@@ -124,9 +124,9 @@ for M in M_vector
 end
 for i in 1:plot_moments
     display(conservative_plots[i])
-    savefig(conservative_plots[i], "out/Convergence/ConvergenceEvenOrder/conservative$(i)_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+    savefig(conservative_plots[i], "out/Convergence/ConvergenceEvenOrder/conservative$(i)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
     display(primitive_plots[i])
-    savefig(primitive_plots[i], "out/Convergence/ConvergenceEvenOrder/primitive$(i)_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+    savefig(primitive_plots[i], "out/Convergence/ConvergenceEvenOrder/primitive$(i)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
 end
 
 # relative L2-error
