@@ -86,7 +86,8 @@ function vlasov_poisson_callback(integrator)
     ELECTRIC_FIELD.E = copy(E)
     # Add energy vector
     # Energy = ||E(t,⋅)||_L2 = (∫ |E(t,x)|² dx)^(1/2)  (approximated via trapezoidal rule)
-    Energy = (sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells)^(1/2)
+    # Energy = (sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells)^(1/2)
+    Energy = 1/2 * sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells
     push!(ELECTRIC_FIELD.Energy, Energy)  # todo: remove this later
     # todo: remove below, just for debuggin purposes
     ELECTRIC_FIELD.ρ = ρ
@@ -114,22 +115,22 @@ end
 
 struct InitialConditionsCosine{N}
     ρ0::Float64
-    α::Float64
+    ϵ::Float64
     v0::Float64
     θ0::Float64
     k::Float64
     # convective_moments::SVector{N}
 
-    function InitialConditionsCosine(ρ0::Float64, α::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
-        # ρx = ρ0 * (1 + α * cos(k * x_left))
+    function InitialConditionsCosine(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+        # ρx = ρ0 * (1 + ϵ * cos(k * x_left))
         # f = Maxwellian(ρx, v0, θ0)
         # return new{Mp1}(convective_moments(f, Val(Mp1)))
-        return new{Mp1}(ρ0, α, v0, θ0, k)
+        return new{Mp1}(ρ0, ϵ, v0, θ0, k)
     end
 end
 
 function (ic::InitialConditionsCosine)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    ρx = ic.ρ0 * (1 + ic.α * cos(ic.k * coords[1]))
+    ρx = ic.ρ0 * (1 + ic.ϵ * cos(ic.k * coords[1]))
     f = Maxwellian(ρx, ic.v0, ic.θ0)
     return convective_moments(f, Val(Mp1))
 end

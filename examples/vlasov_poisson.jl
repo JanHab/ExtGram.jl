@@ -5,10 +5,10 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-M = 4    # number of moments
+M = 8    # number of moments
 extended = true # flag for extended gramian closure or "standard" closure
 Kn = 1.0  # Knudsen number
-T_end = 25.0
+T_end = 5.0
 source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 2.0*π
 domain = (x_lower, x_upper)
@@ -18,7 +18,7 @@ base_tree_level = 7
 equations = GramianMomentEquations1D(M, Kn, extended)
 initial_condition = InitialConditionsCosine(
     1.0, # ρ0
-    0.001, # α
+    0.001, # ϵ
     0.0, # v0
     1.0, # θ0
     0.5, # k
@@ -92,10 +92,17 @@ energy_history = HyQMOM.ELECTRIC_FIELD.Energy
 # You can then plot it or analyze it
 # todo: fix to cfl (not fixed time-step)
 time = LinRange(0, T_end, length(energy_history))
+γ = -0.1533 # theoretical decay rate for k=1/2
+γt = exp.(γ .* time)
 plot(
-    time, 
-    energy_history ./ energy_history[1], 
+    time[1:10000], 
+    energy_history[1:10000] ./ energy_history[1], 
     xlabel="Time", ylabel="Normalized Electric Field Energy", 
-    label="Energy",
+    # label="Energy",
     yaxis=:log
+)
+plot!(
+    time[1:10000], γt[1:10000],
+    # label="Theoretical Decay exp($γ t)", 
+    linestyle=:dash
 )
