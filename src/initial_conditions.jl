@@ -50,7 +50,7 @@ struct InitialConditionsShockTube{N}
         left = convective_moments(f_left, Val(Mp1))
         right = convective_moments(f_right, Val(Mp1))
         # ToDo: verbose=false
-        @assert check_realizability(left, verbose=true) && check_realizability(right, verbose=true)
+        @assert check_realizability(left, verbose=false) && check_realizability(right, verbose=false)
         return new{Mp1}(left, right)
     end
 end
