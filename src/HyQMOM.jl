@@ -1,7 +1,7 @@
 module HyQMOM
 
 # External dependencies
-using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, OrdinaryDiffEq, Plots
+using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, OrdinaryDiffEq, Plots, Interpolations
 
 # Gramian Moments Implementation
 include("gramian_moment_equations.jl")
@@ -12,13 +12,23 @@ export GramianMomentEquations1D, gramian, closure, moment_prim2cons, moment_cons
 export InitialConditionsShockTube, Maxwellian, convective_moments, primitive_moments
 export test_closure, check_realizability
 
+# Vlasov-Poisson implementation
+# implemented via a callback
+# The Electric fields’ contribution is added in the source term. The electric field is calculated after each time step in a Discrete Callback with a Jacobi iteration.
+# ϕ^i = 1/2 (ρ^i (Δx)^2 + ϕ^{i-1} + ϕ^{i+1})
+# The boundary conditions are periodic.
+# This means we get: ϕ^0 = ϕ^N and ϕ^{N+1} = ϕ^1
+# In our case: ϕ^0 = ϕ^{N+1} = 0
+# The electric field is then calculated via E = -∂ϕ/∂x ≈ -(ϕ^{i+1} - ϕ^{i-1})/(2Δx)
+# needed dependencies: StaticArrays, Interpolations
+include("vlasov_poisson.jl")
+export vlasov_poisson_callback, vlasov_poisson_source
+
 # TrixiTree2Triangulation
 # This module implements the triangulation of a 2D TreeMesh with subsequent
 # writing of the mesh and solution into a basic file readable by external visualization programs.
 # The intended use is as callback and is therefore simple to use.
-
 # Required packages: Trixi, OrdinaryDiffEq, HDF5, WriteVTK, (LinearAlgebra, Printf)
-
 include("TrixiTree2Triangulation/TrixiTree2Triangulation.jl")
 export SaveTriangulationCallback
 
