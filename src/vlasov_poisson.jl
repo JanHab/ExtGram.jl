@@ -1,7 +1,3 @@
-# using StaticArrays           # For MVector and SVector
-# using Interpolations
-# using DiffEqCallbacks        # For DiscreteCallback
-
 # Global storage for the electric field
 # This will be updated during each RHS evaluation
 mutable struct ElectricFieldStorage
@@ -13,11 +9,12 @@ mutable struct ElectricFieldStorage
     counter::Int    # todo: remove this later
     ρ::Vector{Float64} # todo: remove this later
     MP1::Int
+    Energy::Vector{Float64}  # todo: remove this later
 end
 
 # Global instance
 # todo: make the domain dynamic
-const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], Float64[], (-0.0, 0.0), 0, false, 0, Float64[], 0)
+const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], Float64[], (-0.0, 0.0), 0, false, 0, Float64[], 0, Float64[])
 
 # Enhanced Poisson solver with proper boundary conditions
 function solve_poisson_global(ρ, domain)
@@ -81,6 +78,7 @@ function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}
     end
 
     # return positive value of source, as it is on the lhs but with a minus -> positive source term
+    # todo: Add possibility to combine with other source terms
     return source #!.+ relaxation_source(u, x, t, equations)
 end
 
@@ -103,6 +101,10 @@ function vlasov_poisson_callback(integrator)
 
     # Store the electric field
     ELECTRIC_FIELD.E = copy(E)
+    # Add energy vector
+    # Energy = ||E(t,⋅)||_L2 = (∫ |E(t,x)|² dx)^(1/2)  (approximated via trapezoidal rule)
+    Energy = (sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells)^(1/2)
+    push!(ELECTRIC_FIELD.Energy, Energy)  # todo: remove this later
     # todo: remove below, just for debuggin purposes
     ELECTRIC_FIELD.ρ = ρ
     ELECTRIC_FIELD.x_coords = range(ELECTRIC_FIELD.domain[1], ELECTRIC_FIELD.domain[2], length=n_cells)
@@ -126,21 +128,3 @@ function vlasov_poisson_callback(;M, domain)
         initialize = (c, u, t, integrator) -> vlasov_poisson_callback(integrator)  # Call at initialization
     )
 end
-
-# # Alternative: PresetTimeCallback for even more frequent calls
-# function create_vlasov_poisson_callback_frequent()
-#     return PresetTimeCallback(
-#         (t) -> true,  # At every time point
-#         vlasov_poisson_callback,
-#         save_positions=(false, false)
-#     )
-# end
-
-# # Alternative: Use PeriodicCallback for very frequent updates
-# function create_vlasov_poisson_callback_periodic(dt=1e-10)
-#     return PeriodicCallback(
-#         vlasov_poisson_callback,
-#         dt,  # Very small time interval
-#         save_positions=(false, false)
-#     )
-# end

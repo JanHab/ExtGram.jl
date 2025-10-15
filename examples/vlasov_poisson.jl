@@ -8,7 +8,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 M = 4    # number of moments
 extended = true # flag for extended gramian closure or "standard" closure
 Kn = 1.0  # Knudsen number
-T_end = 0.1#!0.5
+T_end = 1.0#!2.5
 source = vlasov_poisson_source
 x_lower = -2.0; x_upper = 2.0
 domain = (x_lower, x_upper)
@@ -16,7 +16,7 @@ domain = (x_lower, x_upper)
 # Setting up everything
 basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DRiemann(
     M, Kn, extended,
-    Maxwellian(2.0, 0.0, 1.0), # Density, velocity, temperature
+    Maxwellian(1.0, 0.0, 1.0), # Density, velocity, temperature
     Maxwellian(1.0, 0.0, 1.0);
     domain = domain,
     base_tree_level=8
@@ -54,3 +54,17 @@ sol = solve(
 );
 
 summary_callback()
+
+# Access the energy history
+energy_history = HyQMOM.ELECTRIC_FIELD.Energy
+
+# You can then plot it or analyze it
+# todo: fix to cfl (not fixed time-step)
+time = LinRange(0, T_end, length(energy_history))
+plot(
+    time, 
+    energy_history ./ energy_history[1], 
+    xlabel="Time", ylabel="Normalized Electric Field Energy", 
+    label="Energy",
+    # yaxis=:log
+)
