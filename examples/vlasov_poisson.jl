@@ -8,19 +8,50 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 M = 4    # number of moments
 extended = true # flag for extended gramian closure or "standard" closure
 Kn = 1.0  # Knudsen number
-T_end = 1.0#!2.5
+T_end = 25.0
 source = vlasov_poisson_source
-x_lower = -2.0; x_upper = 2.0
+x_lower = 0.0; x_upper = 2.0*π
 domain = (x_lower, x_upper)
 
-# Setting up everything
-basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DRiemann(
-    M, Kn, extended,
-    Maxwellian(1.0, 0.0, 1.0), # Density, velocity, temperature
-    Maxwellian(1.0, 0.0, 1.0);
-    domain = domain,
-    base_tree_level=8
+base_tree_level = 7
+
+equations = GramianMomentEquations1D(M, Kn, extended)
+initial_condition = InitialConditionsCosine(
+    1.0, # ρ0
+    0.001, # α
+    0.0, # v0
+    1.0, # θ0
+    0.5, # k
+    equations
 )
+
+#= set up semidiscretization =#
+polydeg = 1
+basis = LobattoLegendreBasis(polydeg)
+
+# shock capturing
+# #= crashes for p > 1, i.e. this does not help at all
+indicator_sc = IndicatorHennemannGassner(
+    equations, basis,
+    alpha_max = 1.0,
+    alpha_min = 0.01,
+    alpha_smooth = true,
+    variable = (u, eqns)->u[1]*u[3]
+)
+
+surface_flux = flux_lax_friedrichs
+volume_flux = flux_central
+volume_integral = VolumeIntegralShockCapturingHG(
+    indicator_sc;
+    volume_flux_dg = volume_flux,
+    volume_flux_fv = surface_flux
+)
+
+solver = DGSEM(basis, surface_flux, volume_integral)
+
+mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=true) # ! periodic
+
+boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
 
 semi = SemidiscretizationHyperbolic(
     mesh, equations, 
@@ -35,7 +66,7 @@ ode = semidiscretize(semi, tspan)
 
 callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
-    cfl = 0.45,          # Maximum cfl number
+    cfl = 0.99,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
     name="gram_solution",
 )
@@ -66,5 +97,5 @@ plot(
     energy_history ./ energy_history[1], 
     xlabel="Time", ylabel="Normalized Electric Field Energy", 
     label="Energy",
-    # yaxis=:log
+    yaxis=:log
 )
