@@ -6,23 +6,26 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 8    # number of moments
+M = 8 #! 8    # number of moments
 extended = true # flag for extended gramian closure or "standard" closure
 Kn = 1.0  # Knudsen number
-T_end = 25.0
+T_end = 15.0#!25.0
 source = vlasov_poisson_source
-x_lower = 0.0; x_upper = 2.0*π
+x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
-base_tree_level = 7
+base_tree_level = 5#!6#!8
 
 equations = GramianMomentEquations1D(M, Kn, extended)
+ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
+ϵ = 0.001
+k = 0.5
 initial_condition = InitialConditionsCosine(
-    1.0, # ρ0
-    0.001, # ϵ
-    0.0, # v0
-    1.0, # θ0
-    0.5, # k
+    ρ0,
+    ϵ,
+    v0,
+    θ0,
+    k,
     equations
 )
 
