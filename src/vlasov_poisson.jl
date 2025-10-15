@@ -9,7 +9,7 @@ mutable struct ElectricFieldStorage
     counter::Int    # todo: remove this later
     ρ::Vector{Float64} # todo: remove this later
     MP1::Int
-    Energy::Vector{Float64}  # todo: remove this later
+    E_L2::Vector{Float64}  # todo: remove this later
 end
 
 # Global instance
@@ -31,7 +31,9 @@ function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real}, domain::Tuple{Fl
     Ek[1] = 0 # k = 0 mode
     for j in 2:n
         if kx[j] != 0.0
-            Ek[j] = ρk[j] / (im * kx[j])
+            # todo: Is this correct? Both seem to be "amost" the same, but not exactly the same
+            Ek[j] = ρk[j] / (-im * kx[j])
+            # ? Ek[j] = ρk[j] / (kx[j]^2)
         else
             Ek[j] = 0
         end
@@ -86,9 +88,10 @@ function vlasov_poisson_callback(integrator)
     ELECTRIC_FIELD.E = copy(E)
     # Add energy vector
     # Energy = ||E(t,⋅)||_L2 = (∫ |E(t,x)|² dx)^(1/2)  (approximated via trapezoidal rule)
-    # Energy = (sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells)^(1/2)
-    Energy = 1/2 * sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells
-    push!(ELECTRIC_FIELD.Energy, Energy)  # todo: remove this later
+    # L2-norm of electric field
+    E_L2 = (sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells)^(1/2)
+    # Energy = 1/2 * sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells
+    push!(ELECTRIC_FIELD.E_L2, E_L2)  # todo: remove this later
     # todo: remove below, just for debuggin purposes
     ELECTRIC_FIELD.ρ = ρ
     ELECTRIC_FIELD.x_coords = range(ELECTRIC_FIELD.domain[1], ELECTRIC_FIELD.domain[2], length=n_cells)
