@@ -6,7 +6,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 8    # number of moments
+M = 21    # number of moments
 extended = true # flag for extended gramian closure or "standard" closure
 Kn = 1.0  # Knudsen number
 T_end = 25.0
