@@ -6,7 +6,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 4    # number of moments
+M = 8    # number of moments
 extended = true # flag for extended gramian closure or "standard" closure
 Kn = 1.0  # Knudsen number
 T_end = 25.0
@@ -115,36 +115,10 @@ plot!(
 savefig("out/VlasovPoisson/energy_from_callback.pdf")
 # store to csv file
 CSV.write(
-    "out/VlasovPoisson/energy_from_callback.csv", Tables.table(
-        (
-            time=time_callback, E_L2=E_L2_history, 
-            E_L2_normalized=E_L2_history ./ E_L2_history[1], 
-            theoretical_decay=γt
-        )
-    )
+    "out/VlasovPoisson/energy_moments_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).csv",
+    Tables.columntable((
+        time=time_callback, E_L2=E_L2_history, 
+        E_L2_normalized=E_L2_history ./ E_L2_history[1], 
+        theoretical_decay=γt
+    ))
 )
-
-
-# L2_history = []
-# u_final = sol.u[end]
-# L = length(u_final)
-# n_cells = L ÷ (M+1)
-# for j in 1:length(sol.u)
-#     Fmat = reshape(sol.u[j], M+1, n_cells)
-#     ρ = Fmat[1, :]
-#     E = HyQMOM.solve_poisson_periodic_fft(ρ, domain)
-#     E_L2 = (sum(E.^2) * (domain[2] - domain[1]) / n_cells)^(1/2)
-#     push!(L2_history, E_L2)
-# end
-
-# plot(
-#     sol.t, L2_history / L2_history[1], 
-#     xlabel="Time", ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
-#     yaxis=:log, 
-#     label="L2-Norm from Postprocessing"
-# )
-# plot!(sol.t, exp.(γ .* sol.t), 
-#     linestyle=:dash, 
-#     label="Theoretical Decay exp($γ t)"
-# )
-# savefig("out/VlasovPoisson/energy_from_postprocessing.pdf")

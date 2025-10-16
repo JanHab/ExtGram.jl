@@ -104,9 +104,18 @@ end
 
 # Create the callback - triggers after each iteration
 function vlasov_poisson_callback(;M, domain)
-    # Option 1: DiscreteCallback that triggers at every accepted step
+    # Reset the global storage to clear old data from previous runs
+    empty!(ELECTRIC_FIELD.E)
+    empty!(ELECTRIC_FIELD.E_L2)
+    empty!(ELECTRIC_FIELD.times)
+    empty!(ELECTRIC_FIELD.ρ)
+    ELECTRIC_FIELD.n = 0
+    ELECTRIC_FIELD.initialized = false
+    
+    # Set parameters for this run
     ELECTRIC_FIELD.MP1 = M+1
     ELECTRIC_FIELD.domain = domain
+    
     return DiscreteCallback(
         (u, t, integrator) -> true,  # Always trigger at every step
         vlasov_poisson_callback,
