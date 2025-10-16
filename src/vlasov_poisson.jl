@@ -8,15 +8,16 @@ mutable struct ElectricFieldStorage
     ρ::Vector{Float64} # todo: remove this later
     MP1::Int
     E_L2::Vector{Float64}
+    times::Vector{Float64}  # Track actual times when E_L2 is recorded
 end
 
 # Global instance
-const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], (-0.0, 0.0), 0, false, Float64[], 0, Float64[])
+const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], (-0.0, 0.0), 0, false, Float64[], 0, Float64[], Float64[])
 
 function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real}, domain::Tuple{Float64,Float64})
     n = length(ρ)
     Lx = domain[2] - domain[1]
-    ρ̃ = ρ .- mean(ρ)  # neutralizing background
+    ρ̃ = ρ .- 1#! mean(ρ)  # neutralizing background
     ρk = fft(ρ̃)
 
     # build wavenumbers k consistent with FFT ordering
@@ -94,6 +95,7 @@ function vlasov_poisson_callback(integrator)
     E_L2 = (sum(E.^2) * Δx)^(1/2)
     # E_L2 = 1/2 * sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells
     push!(ELECTRIC_FIELD.E_L2, E_L2)
+    push!(ELECTRIC_FIELD.times, t)  # Store the actual time
 
     ELECTRIC_FIELD.initialized = true
     

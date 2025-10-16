@@ -6,15 +6,15 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 8 #! 8    # number of moments
+M = 4    # number of moments
 extended = true # flag for extended gramian closure or "standard" closure
 Kn = 1.0  # Knudsen number
-T_end = 15.0#!25.0
+T_end = 25.0
 source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
-base_tree_level = 5#!6#!8
+base_tree_level = 6 #!5 # ! 8
 
 equations = GramianMomentEquations1D(M, Kn, extended)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
@@ -72,7 +72,9 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
     cfl = 0.99,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
-    name="VlasovPoisson_moments",
+    time_interval = 500, # save at 500 time intervals
+    # * name="VlasovPoisson/VlasovPoisson_moments_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)", # name used for output
+    name="VlasovPoisson/gram_moments", # name used for output
 )
 # Add Vlasov-Poisson callback
 callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, domain))
@@ -93,47 +95,56 @@ summary_callback()
 
 # Access the energy history
 E_L2_history = HyQMOM.ELECTRIC_FIELD.E_L2
+time_callback = HyQMOM.ELECTRIC_FIELD.times  # Use actual times from callback
 
 # You can then plot it or analyze it
-# todo: fix to cfl (not fixed time-step)
-time = LinRange(0, T_end, length(E_L2_history))
 γ = -0.1533 # theoretical decay rate for k=1/2
-γt = exp.(γ .* time)
+γt = exp.(γ .* time_callback)
 plot(
-    time, E_L2_history ./ E_L2_history[1],
+    time_callback, E_L2_history ./ E_L2_history[1],
     xlabel="Time", 
-    label="HyQMOM M=$M",
+    label="HyQMOM M=$M (from callback)",
     ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
     yaxis=:log
 )
 plot!(
-    time, γt,
+    time_callback, γt,
     label="Theoretical Decay exp($γ t)", 
     linestyle=:dash
 )
 savefig("out/VlasovPoisson/energy_from_callback.pdf")
-
-
-L2_history = []
-u_final = sol.u[end]
-L = length(u_final)
-n_cells = L ÷ (M+1)
-for j in 1:length(sol.u)
-    Fmat = reshape(sol.u[j], M+1, n_cells)
-    ρ = Fmat[1, :]
-    E = HyQMOM.solve_poisson_periodic_fft(ρ, domain)
-    E_L2 = (sum(E.^2) * (domain[2] - domain[1]) / n_cells)^(1/2)
-    push!(L2_history, E_L2)
-end
-
-plot(
-    sol.t, L2_history / L2_history[1], 
-    xlabel="Time", ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
-    yaxis=:log, 
-    label="L2-Norm from Postprocessing"
+# store to csv file
+CSV.write(
+    "out/VlasovPoisson/energy_from_callback.csv", Tables.table(
+        (
+            time=time_callback, E_L2=E_L2_history, 
+            E_L2_normalized=E_L2_history ./ E_L2_history[1], 
+            theoretical_decay=γt
+        )
+    )
 )
-plot!(sol.t, exp.(γ .* sol.t), 
-    linestyle=:dash, 
-    label="Theoretical Decay exp($γ t)"
-)
-savefig("out/VlasovPoisson/energy_from_postprocessing.pdf")
+
+
+# L2_history = []
+# u_final = sol.u[end]
+# L = length(u_final)
+# n_cells = L ÷ (M+1)
+# for j in 1:length(sol.u)
+#     Fmat = reshape(sol.u[j], M+1, n_cells)
+#     ρ = Fmat[1, :]
+#     E = HyQMOM.solve_poisson_periodic_fft(ρ, domain)
+#     E_L2 = (sum(E.^2) * (domain[2] - domain[1]) / n_cells)^(1/2)
+#     push!(L2_history, E_L2)
+# end
+
+# plot(
+#     sol.t, L2_history / L2_history[1], 
+#     xlabel="Time", ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
+#     yaxis=:log, 
+#     label="L2-Norm from Postprocessing"
+# )
+# plot!(sol.t, exp.(γ .* sol.t), 
+#     linestyle=:dash, 
+#     label="Theoretical Decay exp($γ t)"
+# )
+# savefig("out/VlasovPoisson/energy_from_postprocessing.pdf")
