@@ -7,7 +7,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 # Parameter
 M_vector = [4, 6, 8, 10, 12]    # number of moments
 extended = true # flag for extended gramian closure or "standard" closure
-Kn = 1.0  # Knudsen number
+Kn = 0.01 #!1.0  # Knudsen number
 T_end = 0.3
 source = relaxation_source
 x_lower = -2.0; x_upper = 2.0
