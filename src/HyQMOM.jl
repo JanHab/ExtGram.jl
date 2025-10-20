@@ -1,7 +1,7 @@
 module HyQMOM
 
 # External dependencies
-using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, OrdinaryDiffEq, Plots, Interpolations
+using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, OrdinaryDiffEq, Plots, Interpolations, Statistics
 
 # Gramian Moments Implementation
 include("gramian_moment_equations.jl")
@@ -21,8 +21,9 @@ export test_closure, check_realizability
 # In our case: ϕ^0 = ϕ^{N+1} = 0
 # The electric field is then calculated via E = -∂ϕ/∂x ≈ -(ϕ^{i+1} - ϕ^{i-1})/(2Δx)
 # needed dependencies: StaticArrays, Interpolations
+using FFTW
 include("vlasov_poisson.jl")
-export vlasov_poisson_callback, vlasov_poisson_source
+export vlasov_poisson_callback, vlasov_poisson_source, InitialConditionsCosine
 
 # TrixiTree2Triangulation
 # This module implements the triangulation of a 2D TreeMesh with subsequent

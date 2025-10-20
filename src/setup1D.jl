@@ -51,6 +51,7 @@ function callbacksGramianMomentEquations(
     semi, tspan, basis;
     cfl = 0.45,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
+    time_interval = 20, # save at 20 time intervals
     name="gram_solution",
 )
     alive_callback = AliveCallback(analysis_interval=100)
@@ -66,7 +67,7 @@ function callbacksGramianMomentEquations(
     )
 
     save_solution = SaveTriangulationCallback(
-        time_interval=tspan[2]/20,
+        time_interval=tspan[2]/time_interval,
         save_initial_solution=true,
         file_format="tsv",
         append_solution=true,

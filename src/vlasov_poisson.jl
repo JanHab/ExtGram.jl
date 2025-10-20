@@ -2,69 +2,55 @@
 # This will be updated during each RHS evaluation
 mutable struct ElectricFieldStorage
     E::Vector{Float64}
-    x_coords::Vector{Float64}
     domain::Tuple{Float64, Float64}
     n::Int
     initialized::Bool
-    counter::Int    # todo: remove this later
     ρ::Vector{Float64} # todo: remove this later
     MP1::Int
-    Energy::Vector{Float64}  # todo: remove this later
+    E_L2::Vector{Float64}
+    times::Vector{Float64}  # Track actual times when E_L2 is recorded
 end
 
 # Global instance
-# todo: make the domain dynamic
-const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], Float64[], (-0.0, 0.0), 0, false, 0, Float64[], 0, Float64[])
+const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], (-0.0, 0.0), 0, false, Float64[], 0, Float64[], Float64[])
 
-# Enhanced Poisson solver with proper boundary conditions
-function solve_poisson_global(ρ, domain)
+function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real}, domain::Tuple{Float64,Float64})
     n = length(ρ)
-    x_min, x_max = domain
-    Δx = (x_max - x_min) / (n - 1)
-    
-    # Solve ∂E/∂x = ρ by integration
-    E = zeros(n)
-    
-    # Apply boundary condition: E = 0 at left boundary
-    # E[1] = 0.0
-    
-    # # Integrate using trapezoidal rule
-    # for i in 2:n
-    #     E[i] = E[i-1] + 0.5 * (ρ[i] + ρ[i-1]) * Δx
-    # end
+    Lx = domain[2] - domain[1]
+    ρ̃ = ρ .- 1#! mean(ρ)  # neutralizing background
+    ρk = fft(ρ̃)
 
-    # Alternatively, solve ∂²ϕ/∂x² = -ρ with ϕ=0 at left boundary and ∂ϕ/∂x=0 at right boundary
-    # Method is: Jacobi iteration
-    ϕ = zeros(n)
-    n_iter = 10000
-    for iter in 1:n_iter
-        for i in 2:n-1
-            ϕ[i] = 0.5 * (ϕ[i-1] + ϕ[i+1] + ρ[i] * Δx^2)
+    # build wavenumbers k consistent with FFT ordering
+    # k = 0, 1, ..., floor(n/2), -ceil((n-1)/2), ..., -1
+    k_int = [0:div(n,2); -div(n-1,2):-1]
+    kx = (2π / Lx) .* k_int
+
+    Ek = similar(ρk)
+    Ek[1] = 0 # k = 0 mode
+    for j in 2:n
+        if kx[j] != 0.0
+            # Directly solves for E in Fourier space
+            Ek[j] = ρk[j] / (im * kx[j]) # ? Which sign is correct???
+            # Alternative: solves for potential and then differentiate
+            # ! Expression E is wrong here!!!
+            # ? Ek[j] = ρk[j] / (kx[j]^2)
+        else
+            Ek[j] = 0
         end
-        # Boundary conditions for potential
-        ϕ[1] = 0.0          # Dirichlet at left boundary
-        ϕ[n] = 0.0 #!       # Dirichlet at right boundary ϕ[n-1]       # Neumann at right boundary (∂ϕ/∂x = 0)
     end
 
-    # Compute electric field E = -∂ϕ/∂x central differences
-    for i in 2:n-1
-        E[i] = -(ϕ[i+1] - ϕ[i-1]) / (2 * Δx)
-    end
-    # Forward difference at left boundary
-    E[1] = -(ϕ[2] - ϕ[1]) / Δx
-    # Backward difference at right boundary
-    E[n] = -(ϕ[n] - ϕ[n-1]) / Δx
-
+    E = real(ifft(Ek))
     return E
 end
 
 # Source term that solves Poisson globally and applies local source
 function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    
     # todo: hard-coded for the moment
     x_min, x_max = ELECTRIC_FIELD.domain
     x_range = range(x_min, x_max, length=ELECTRIC_FIELD.n)
     E_field = interpolate((x_range,), ELECTRIC_FIELD.E, Gridded(Linear()))
+    
+    # Evaluate electric field at position x
     E_local = E_field(x[1])    
 
     # Apply source terms
@@ -90,27 +76,27 @@ function vlasov_poisson_callback(integrator)
     # Extract density from the full solution vector
     MP1 = ELECTRIC_FIELD.MP1
     n_cells = length(u) ÷ MP1
+    ELECTRIC_FIELD.n = n_cells
     
     # Reshape to extract density
     U_matrix = reshape(u, MP1, n_cells)
     ρ = U_matrix[1, :]  # First row is density
+    ELECTRIC_FIELD.ρ = ρ
 
     # Solve Poisson equation globally
-    # E = solve_poisson_global(ρ .- 1, ELECTRIC_FIELD.domain) # todo: change back
-    E = solve_poisson_global(ρ, ELECTRIC_FIELD.domain) # todo: change back
-
+    E = solve_poisson_periodic_fft(ρ, ELECTRIC_FIELD.domain)
     # Store the electric field
     ELECTRIC_FIELD.E = copy(E)
+
     # Add energy vector
     # Energy = ||E(t,⋅)||_L2 = (∫ |E(t,x)|² dx)^(1/2)  (approximated via trapezoidal rule)
-    Energy = (sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells)^(1/2)
-    push!(ELECTRIC_FIELD.Energy, Energy)  # todo: remove this later
-    # todo: remove below, just for debuggin purposes
-    ELECTRIC_FIELD.ρ = ρ
-    ELECTRIC_FIELD.x_coords = range(ELECTRIC_FIELD.domain[1], ELECTRIC_FIELD.domain[2], length=n_cells)
-    ELECTRIC_FIELD.counter += 1    # todo: remove this later
+    # L2-norm of electric field
+    Δx = (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells
+    E_L2 = (sum(E.^2) * Δx)^(1/2)
+    # E_L2 = 1/2 * sum(E.^2) * (ELECTRIC_FIELD.domain[2] - ELECTRIC_FIELD.domain[1]) / n_cells
+    push!(ELECTRIC_FIELD.E_L2, E_L2)
+    push!(ELECTRIC_FIELD.times, t)  # Store the actual time
 
-    ELECTRIC_FIELD.n = n_cells
     ELECTRIC_FIELD.initialized = true
     
     return nothing
@@ -118,13 +104,40 @@ end
 
 # Create the callback - triggers after each iteration
 function vlasov_poisson_callback(;M, domain)
-    # Option 1: DiscreteCallback that triggers at every accepted step
+    # Reset the global storage to clear old data from previous runs
+    empty!(ELECTRIC_FIELD.E)
+    empty!(ELECTRIC_FIELD.E_L2)
+    empty!(ELECTRIC_FIELD.times)
+    empty!(ELECTRIC_FIELD.ρ)
+    ELECTRIC_FIELD.n = 0
+    ELECTRIC_FIELD.initialized = false
+    
+    # Set parameters for this run
     ELECTRIC_FIELD.MP1 = M+1
     ELECTRIC_FIELD.domain = domain
+    
     return DiscreteCallback(
         (u, t, integrator) -> true,  # Always trigger at every step
         vlasov_poisson_callback,
-        save_positions=(false, false),
+        save_positions=(true, true), # ?(false, false),
         initialize = (c, u, t, integrator) -> vlasov_poisson_callback(integrator)  # Call at initialization
     )
+end
+
+struct InitialConditionsCosine{N}
+    ρ0::Float64
+    ϵ::Float64
+    v0::Float64
+    θ0::Float64
+    k::Float64
+
+    function InitialConditionsCosine(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+        return new{Mp1}(ρ0, ϵ, v0, θ0, k)
+    end
+end
+
+function (ic::InitialConditionsCosine)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
+    ρx = ic.ρ0 * (1 + ic.ϵ * cos(ic.k * coords[1]))
+    f = Maxwellian(ρx, ic.v0, ic.θ0)
+    return convective_moments(f, Val(Mp1))
 end
