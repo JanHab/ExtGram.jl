@@ -17,12 +17,19 @@ domain = (x_lower, x_upper)
 ρ_R = 1.0; v_R = 0.0; θ_R = 1.0
 
 # χ value -> Gauge for χ = (n+1)/n with n = M/2
-χ_vector = [-1.0, 0.0, 1.0]
+# ! χ_vector = [-1.0, 0.0, 1.0, "optimal", 2.0, 3.0]
+χ_vector = [1.5]
 # copy the convergence routine for each χ value and adapt the χ in the equations
 for χ in χ_vector
     println("Running simulations with χ = $χ")
     for M in M_vector
         println("Running simulation with M = $M moments")
+
+        if χ == "optimal"
+            name = "ChiGauge/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)"
+        else
+            name = "Chi$(χ)/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)"
+        end
         # Setting up everything
         basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DRiemann(
             M, Kn, extended,
@@ -47,7 +54,7 @@ for χ in χ_vector
             semi, tspan, basis; 
             cfl = 0.45,          # Maximum cfl number
             plot_interval = 20,  # plot every 20 steps
-            name="Convergence/ChiValues/Chi$(Int(χ))/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)", # name of output files
+            name="Convergence/ChiValues/$(name)", # name of output files
         )
 
         #= solve =#
@@ -67,11 +74,11 @@ for χ in χ_vector
         # Post Processing
         x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
         display(p1)
-        savefig(p1, "out/Convergence/ChiValues/Chi$(Int(χ))/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.pdf")
+        savefig(p1, "out/Convergence/ChiValues/$(name)_ρ_v_p.pdf")
 
         # Store primitive variables in CSV file
         CSV.write(
-            "out/Convergence/ChiValues/Chi$(Int(χ))/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.csv",
+            "out/Convergence/ChiValues/$(name)_ρ_v_p.csv",
             Tables.columntable((x=x, rho=ρ, v=v, p=p))
         )
 
@@ -79,12 +86,12 @@ for χ in χ_vector
         n_plots = 5
         p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
         display(p2)
-        savefig(p2, "out/Convergence/ChiValues/Chi$(Int(χ))/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_λ_max.pdf")
+        savefig(p2, "out/Convergence/ChiValues/$(name)_λ_max.pdf")
 
         # Plot total variation in space over time
         p3, TV_t = TVD_space(sol, M)
         display(p3)
-        savefig(p3, "out/Convergence/ChiValues/Chi$(Int(χ))/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_TV_space.pdf")
+        savefig(p3, "out/Convergence/ChiValues/$(name)_TV_space.pdf")
     end
 
     # Load the solutions and plot convergence
@@ -97,7 +104,13 @@ for χ in χ_vector
         push!(primitive_plots, plot())
     end
     for M in M_vector
-        solution_file = "out/Convergence/ChiValues/Chi$(Int(χ))/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).tsv"
+        if χ == "optimal"
+            name = "ChiGauge/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)"
+        else
+            name = "Chi$(χ)/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)"
+        end
+
+        solution_file = "out/Convergence/ChiValues/$(name).tsv"
 
         x, conservative_moments = readfile(solution_file)
         primitive_moments = similar(conservative_moments)
@@ -128,11 +141,16 @@ for χ in χ_vector
             )
         end
     end
+    if χ == "optimal"
+        name = "ChiGauge/gram_solution_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)"
+    else
+        name = "Chi$(χ)/gram_solution_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)"
+    end
     for i in 1:plot_moments
         display(conservative_plots[i])
-        savefig(conservative_plots[i], "out/Convergence/ChiValues/Chi$(Int(χ))/conservative$(i)_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+        savefig(conservative_plots[i], "out/Convergence/ChiValues/$(name)_conservative$(i).pdf")
         display(primitive_plots[i])
-        savefig(primitive_plots[i], "out/Convergence/ChiValues/Chi$(Int(χ))/primitive$(i)_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+        savefig(primitive_plots[i], "out/Convergence/ChiValues/$(name)_primitive$(i).pdf")
     end
 
     # relative L2-error
@@ -164,8 +182,8 @@ for χ in χ_vector
         )
     end
     display(l2_plot_conservative)
-    savefig(l2_plot_conservative, "out/Convergence/ChiValues/Chi$(Int(χ))/L2_error_conservative__Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+    savefig(l2_plot_conservative, "out/Convergence/ChiValues/$(name)_L2_error_conservative.pdf")
     display(l2_plot_primitive)
-    savefig(l2_plot_primitive, "out/Convergence/ChiValues/Chi$(Int(χ))/L2_error_primitive__Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+    savefig(l2_plot_primitive, "out/Convergence/ChiValues/$(name)_L2_error_primitive.pdf")
 
 end

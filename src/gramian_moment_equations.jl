@@ -33,7 +33,7 @@ struct GramianMomentEquations1D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquation
     n::Int
     extended::Bool
 
-    function GramianMomentEquations1D(M::Integer, Knudsen::Real, extended=true::Bool; χ_set=nothing)
+    function GramianMomentEquations1D(M::Integer, Knudsen::Real, extended=true::Bool; χ_set="optimal")
         @assert M > 1 # todo: remove this later
         if iseven(M)
             n = Int(M/2)
@@ -43,7 +43,7 @@ struct GramianMomentEquations1D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquation
             χ = (n+1)/(2n)
         end
         # overwrite if χ_set is given explicitly
-        if χ_set !== nothing
+        if χ_set !== "optimal"
             χ = χ_set
         end
         new{M+1, n, typeof(Knudsen)}(inv(Knudsen), χ, n, extended)
