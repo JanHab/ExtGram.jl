@@ -6,15 +6,15 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 21    # number of moments
+M = 4    # number of moments
 extended = true # flag for extended gramian closure or "standard" closure
-Kn = 1.0  # Knudsen number
-T_end = 25.0
+Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
+T_end = 15.0
 source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
-base_tree_level = 6 #!5 # ! 8
+base_tree_level = 5#!8 #!5 # ! 8
 
 equations = GramianMomentEquations1D(M, Kn, extended)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
@@ -30,7 +30,7 @@ initial_condition = InitialConditionsCosine(
 )
 
 #= set up semidiscretization =#
-polydeg = 1
+polydeg = 2 #!1
 basis = LobattoLegendreBasis(polydeg)
 
 # shock capturing
@@ -55,12 +55,12 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 
 mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=true) # ! periodic
 
-boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
+# boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
 
 semi = SemidiscretizationHyperbolic(
     mesh, equations, 
     initial_condition, solver, 
-    boundary_conditions=boundary_conditions, 
+    # boundary_conditions=boundary_conditions, 
     source_terms=source
 )
 
@@ -77,7 +77,7 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     name="VlasovPoisson/gram_moments", # name used for output
 )
 # Add Vlasov-Poisson callback
-callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, domain))
+callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, mesh, domain))
 
 #= solve =#
 sol = solve(
@@ -112,6 +112,7 @@ plot!(
     label="Theoretical Decay exp($γ t)", 
     linestyle=:dash
 )
+plot!(legend=:bottomleft)
 savefig("out/VlasovPoisson/energy_from_callback.pdf")
 # store to csv file
 CSV.write(
