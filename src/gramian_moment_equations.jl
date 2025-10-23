@@ -82,7 +82,136 @@ isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
 
     Decides which closure implementation is used based on the number of Moments (even vs. odd)
 """
-closure(u, equations::GramianMomentEquations1D; verbose_::Bool=false) = closure(u, equations, Val(iseven(length(u)-1)); verbose_)
+closure(u, equations::GramianMomentEquations1D; verbose_::Bool=false) = grad_closure_convective(u, equations)
+
+
+# -------------------------
+# Build Atmp via Gauss-Hermite quadrature (no sympy)
+# -------------------------
+"""
+    build_Atmp(Mmax; gh_n=2*(Mmax+2))
+
+Build the (Mmax+2) x (Mmax+2) matrix Atmp with entries
+    Atmp[i,j] = ∫_{-∞}^{∞} (1/√(2π)) e^{-ξ^2/2} ξ^{(i+j-2)} dξ
+computed by Gauss-Hermite quadrature.
+
+We use the substitution ξ = sqrt(2) ζ so that
+    ∫ e^{-ξ^2/2} g(ξ) dξ = sqrt(2) ∫ e^{-ζ^2} g(√2 ζ) dζ
+and FastGaussQuadrature.gausshermite returns nodes ζ_k and weights w_k for ∫ e^{-ζ^2} h(ζ) dζ ≈ Σ w_k h(ζ_k).
+"""
+function build_Atmp(Mmax)
+    # nodes ξ and weights w approximate ∫_{-∞}^{∞} e^{-ξ^2} h(ξ) dξ
+    # ξ, w = gausshermite(Mmax+1) # +1 for good measure, should not be necessary
+    # sizeA = Mmax + 2
+    # Atmp = zeros(Float64, sizeA, sizeA)
+
+    # # # p = i+j-2 is the exponent for ξ^p
+    # # # A_{ij} = (1/√(2π)) * 2^{(p+1)/2} * ∫ e^{-ξ^2} ξ^p dξ
+    # # for i in 1:sizeA
+    # #     for j in 1:sizeA
+    # #         p = i + j - 2
+    # #         # approximate integral
+    # #         S = sum(w .* (ξ .^ p))
+    # #         Atmp[i, j] = 1 / sqrt(2π) * 2^((p+1)/2) * S
+    # #     end
+    # # end
+    # # vectorized version
+    # fg = 1 / sqrt(2π) * exp.(- ξ.^2 / 2) .* [sum(w .* (ξ .^ k)) for k in 0:(Mmax+1)] # !0:(2*sizeA-2)] # factor outside integral
+    # for i in 1:sizeA
+    #     for j in 1:sizeA
+    #         p = i + j - 2
+    #         Atmp[i, j] = fg[p+1] * 2^((p+1)/2)
+    #     end
+    # end
+    # return Atmp
+
+    # nodes and weights for ∫ e^{-x^2} f(x) dx  (physicists' normalization)
+    ξ, w = gausshermite(2*Mmax + 4)  # extra accuracy
+
+    # we need ∫ e^{-ξ²/2} ξ^p ξ^q dξ
+    # but gausshermite() integrates e^{-ξ²} f(ξ), so change variable:
+    # ∫ e^{-ξ²/2} f(ξ) dξ = ∫ e^{-ξ²} f(ξ) * e^{ξ²/2} dξ
+    # weightfix = exp.(ξ.^2 ./ 2) ./ sqrt(2π)
+    weightfix = exp.(ξ.^2 ./ 2) ./ sqrt(2π) # ? Which sign do we need here?
+
+    # Build A matrix: A[i,j] = ∫ ξ^(i-1) * ξ^(j-1) * e^{-ξ²/2}/√(2π) dξ
+    # = expectation of ξ^(i+j-2)
+    A = zeros(Float64, Mmax + 2, Mmax + 2)
+    for i in 1:Mmax+2, j in 1:Mmax+2
+        A[i,j] = sum(w .* weightfix .* (ξ .^ (i + j - 2)))
+    end
+
+    return A
+end
+
+# -------------------------
+# Compute NextGrad via linear algebra
+# -------------------------
+"""
+    compute_NextGrad(Mmax; gh_n=...)
+
+Return a Dict mapping M -> NextGrad vector for M = 4..Mmax.
+Each NextGrad[M] is a 1×(M+1) row vector (as Vector{Float64}) such that
+  u_{M+1} = NextGrad[M] * u_{0:M}
+in the dimensionless central coordinate system used by Grad.
+"""
+function compute_NextGrad(Mmax)
+    Atmp = build_Atmp(Mmax)
+    NextGrad = Dict{Int, Vector{Float64}}()
+    for M in 4:Mmax
+        A11 = Atmp[1:(M+1), 1:(M+1)]
+        A21 = Atmp[M+2, 1:(M+1)]          # row vector
+        # small sizes: computing inv is fine; optionally do \ for stability
+        coeffs = A21' * inv(A11) # ? Do we take the inverse? Is mathematica using rows first and julia columns first or other way around?
+        NextGrad[M] = vec(coeffs)
+    end
+    return NextGrad
+end
+
+# -------------------------
+# Grad closure function
+# -------------------------
+"""
+    grad_closure_convective(m::AbstractVector, NextGrad::Dict)
+
+Given convective moments m[1..N] (N = M+1), compute the closure m_{N+1}
+using Grad's closure built into NextGrad.
+
+Procedure:
+    - compute central moments via m2rho
+    - set central first moment to zero (centering)
+    - nondimensionalize central moments: u_k = rho_k / (rho0 * Theta^{k/2})
+    - apply NextGrad[M] to u_0..u_M to get u_{M+1}
+    - dimensionalize rho_{M+1} = rho0 * Theta^{(M+1)/2} * u_{M+1}
+    - restore a and convert central->convective using rho2m and return last entry
+"""
+function grad_closure_convective(u::AbstractVector, equations::GramianMomentEquations1D) #!NextGrad::Dict) # compute NextGrad up to M=length(u)-1
+    N = length(u)                 # this is M+1 typically
+    M = N - 1
+    NextGrad = compute_NextGrad(N)
+    @assert haskey(NextGrad, M) "NextGrad for M=$M not present"
+
+    # convective -> central
+    w = moment_cons2prim(u)
+    ρ = w[1]; θ=w[3]/ρ
+
+    # # nondimensionalize: u_k = rho_k / (rho0 * Θ^{k/2}), k=0..M
+    scale = ρ .* [θ^(k/2) for k in 0:(M)]
+    w_scaled = w ./ scale
+
+    # compute next dimensionless central moment
+    w_next = dot(NextGrad[M], w_scaled)   # scalar
+
+    # dimensionalize: rho_{M+1} = rho0 * Θ^{(M+1)/2} * u_next
+    # append to convective moments
+    w_extended = vcat(w, ρ * θ^(N/2) * w_next)
+
+    # convective moments back
+    u_extended = moment_prim2cons(w_extended)
+
+    return u_extended[end]   # the closure u_{M+1}
+end
+
 
 # Even case
 """
