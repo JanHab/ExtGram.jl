@@ -6,7 +6,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
 M = 4    # number of moments
-extended = true # flag for extended gramian closure or "standard" closure
+extended = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
 T_end = 0.3
 source = relaxation_source

@@ -7,7 +7,7 @@ using LaTeXStrings
 
 # Parameter
 M = 4    # number of moments
-extended = true # flag for extended gramian closure or "standard" closure
+extended = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 15.0
 source = vlasov_poisson_source
@@ -30,7 +30,7 @@ initial_condition = InitialConditionsCosine(
 )
 
 #= set up semidiscretization =#
-polydeg = 2 #!1
+polydeg = 1 #!1
 basis = LobattoLegendreBasis(polydeg)
 
 # shock capturing
