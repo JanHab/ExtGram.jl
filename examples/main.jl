@@ -16,10 +16,10 @@ domain = (x_lower, x_upper)
 # Setting up everything
 basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DRiemann(
     M, Kn, extended,
-    Maxwellian(1.1, 0.0, 1.0), # Density, velocity, temperature
+    Maxwellian(7.0, 0.0, 1.0), # Density, velocity, temperature
     Maxwellian(1.0, 0.0, 1.0);
     domain = domain,
-    base_tree_level=6
+    base_tree_level=8
 )
 
 semi = SemidiscretizationHyperbolic(

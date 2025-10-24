@@ -85,87 +85,103 @@ isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
 closure(u, equations::GramianMomentEquations1D; verbose_::Bool=false) = grad_closure_convective(u, equations)
 
 
-# -------------------------
-# Build Atmp via Gauss-Hermite quadrature (no sympy)
-# -------------------------
-"""
-    build_Atmp(Mmax; gh_n=2*(Mmax+2))
+# # -------------------------
+# # Build Atmp via Gauss-Hermite quadrature (no sympy)
+# # -------------------------
+# """
+#     build_Atmp(Mmax; gh_n=2*(Mmax+2))
 
-Build the (Mmax+2) x (Mmax+2) matrix Atmp with entries
-    Atmp[i,j] = ∫_{-∞}^{∞} (1/√(2π)) e^{-ξ^2/2} ξ^{(i+j-2)} dξ
-computed by Gauss-Hermite quadrature.
+# Build the (Mmax+2) x (Mmax+2) matrix Atmp with entries
+#     Atmp[i,j] = ∫_{-∞}^{∞} (1/√(2π)) e^{-ξ^2/2} ξ^{(i+j-2)} dξ
+# computed by Gauss-Hermite quadrature.
 
-We use the substitution ξ = sqrt(2) ζ so that
-    ∫ e^{-ξ^2/2} g(ξ) dξ = sqrt(2) ∫ e^{-ζ^2} g(√2 ζ) dζ
-and FastGaussQuadrature.gausshermite returns nodes ζ_k and weights w_k for ∫ e^{-ζ^2} h(ζ) dζ ≈ Σ w_k h(ζ_k).
-"""
-function build_Atmp(Mmax)
-    # nodes ξ and weights w approximate ∫_{-∞}^{∞} e^{-ξ^2} h(ξ) dξ
-    # ξ, w = gausshermite(Mmax+1) # +1 for good measure, should not be necessary
-    # sizeA = Mmax + 2
-    # Atmp = zeros(Float64, sizeA, sizeA)
+# We use the substitution ξ = sqrt(2) ζ so that
+#     ∫ e^{-ξ^2/2} g(ξ) dξ = sqrt(2) ∫ e^{-ζ^2} g(√2 ζ) dζ
+# and FastGaussQuadrature.gausshermite returns nodes ζ_k and weights w_k for ∫ e^{-ζ^2} h(ζ) dζ ≈ Σ w_k h(ζ_k).
+# """
+# function build_Atmp(Mmax)
+#     # nodes ξ and weights w approximate ∫_{-∞}^{∞} e^{-ξ^2} h(ξ) dξ
+#     # ξ, w = gausshermite(Mmax+1) # +1 for good measure, should not be necessary
+#     # sizeA = Mmax + 2
+#     # Atmp = zeros(Float64, sizeA, sizeA)
 
-    # # # p = i+j-2 is the exponent for ξ^p
-    # # # A_{ij} = (1/√(2π)) * 2^{(p+1)/2} * ∫ e^{-ξ^2} ξ^p dξ
-    # # for i in 1:sizeA
-    # #     for j in 1:sizeA
-    # #         p = i + j - 2
-    # #         # approximate integral
-    # #         S = sum(w .* (ξ .^ p))
-    # #         Atmp[i, j] = 1 / sqrt(2π) * 2^((p+1)/2) * S
-    # #     end
-    # # end
-    # # vectorized version
-    # fg = 1 / sqrt(2π) * exp.(- ξ.^2 / 2) .* [sum(w .* (ξ .^ k)) for k in 0:(Mmax+1)] # !0:(2*sizeA-2)] # factor outside integral
-    # for i in 1:sizeA
-    #     for j in 1:sizeA
-    #         p = i + j - 2
-    #         Atmp[i, j] = fg[p+1] * 2^((p+1)/2)
-    #     end
-    # end
-    # return Atmp
+#     # # # p = i+j-2 is the exponent for ξ^p
+#     # # # A_{ij} = (1/√(2π)) * 2^{(p+1)/2} * ∫ e^{-ξ^2} ξ^p dξ
+#     # # for i in 1:sizeA
+#     # #     for j in 1:sizeA
+#     # #         p = i + j - 2
+#     # #         # approximate integral
+#     # #         S = sum(w .* (ξ .^ p))
+#     # #         Atmp[i, j] = 1 / sqrt(2π) * 2^((p+1)/2) * S
+#     # #     end
+#     # # end
+#     # # vectorized version
+#     # fg = 1 / sqrt(2π) * exp.(- ξ.^2 / 2) .* [sum(w .* (ξ .^ k)) for k in 0:(Mmax+1)] # !0:(2*sizeA-2)] # factor outside integral
+#     # for i in 1:sizeA
+#     #     for j in 1:sizeA
+#     #         p = i + j - 2
+#     #         Atmp[i, j] = fg[p+1] * 2^((p+1)/2)
+#     #     end
+#     # end
+#     # return Atmp
 
-    # nodes and weights for ∫ e^{-x^2} f(x) dx  (physicists' normalization)
-    ξ, w = gausshermite(2*Mmax + 4)  # extra accuracy
+#     # nodes and weights for ∫ e^{-x^2} f(x) dx  (physicists' normalization)
+#     ξ, w = gausshermite(2*Mmax + 4)  # extra accuracy
 
-    # we need ∫ e^{-ξ²/2} ξ^p ξ^q dξ
-    # but gausshermite() integrates e^{-ξ²} f(ξ), so change variable:
-    # ∫ e^{-ξ²/2} f(ξ) dξ = ∫ e^{-ξ²} f(ξ) * e^{ξ²/2} dξ
-    # weightfix = exp.(ξ.^2 ./ 2) ./ sqrt(2π)
-    weightfix = exp.(ξ.^2 ./ 2) ./ sqrt(2π) # ? Which sign do we need here?
+#     # we need ∫ e^{-ξ²/2} ξ^p ξ^q dξ
+#     # but gausshermite() integrates e^{-ξ²} f(ξ), so change variable:
+#     # ∫ e^{-ξ²/2} f(ξ) dξ = ∫ e^{-ξ²} f(ξ) * e^{ξ²/2} dξ
+#     # weightfix = exp.(ξ.^2 ./ 2) ./ sqrt(2π)
+#     weightfix = exp.(ξ.^2 ./ 2) ./ sqrt(2π) # ? Which sign do we need here?
 
-    # Build A matrix: A[i,j] = ∫ ξ^(i-1) * ξ^(j-1) * e^{-ξ²/2}/√(2π) dξ
-    # = expectation of ξ^(i+j-2)
-    A = zeros(Float64, Mmax + 2, Mmax + 2)
-    for i in 1:Mmax+2, j in 1:Mmax+2
-        A[i,j] = sum(w .* weightfix .* (ξ .^ (i + j - 2)))
-    end
+#     # Build A matrix: A[i,j] = ∫ ξ^(i-1) * ξ^(j-1) * e^{-ξ²/2}/√(2π) dξ
+#     # = expectation of ξ^(i+j-2)
+#     A = zeros(Float64, Mmax + 2, Mmax + 2)
+#     for i in 1:Mmax+2, j in 1:Mmax+2
+#         A[i,j] = sum(w .* weightfix .* (ξ .^ (i + j - 2)))
+#     end
 
-    return A
-end
+#     return A
+# end
 
-# -------------------------
-# Compute NextGrad via linear algebra
-# -------------------------
-"""
-    compute_NextGrad(Mmax; gh_n=...)
+# # -------------------------
+# # Compute NextGrad via linear algebra
+# # -------------------------
+# """
+#     compute_NextGrad(Mmax; gh_n=...)
 
-Return a Dict mapping M -> NextGrad vector for M = 4..Mmax.
-Each NextGrad[M] is a 1×(M+1) row vector (as Vector{Float64}) such that
-  u_{M+1} = NextGrad[M] * u_{0:M}
-in the dimensionless central coordinate system used by Grad.
-"""
-function compute_NextGrad(Mmax)
-    Atmp = build_Atmp(Mmax)
-    NextGrad = Dict{Int, Vector{Float64}}()
-    for M in 4:Mmax
-        A11 = Atmp[1:(M+1), 1:(M+1)]
-        A21 = Atmp[M+2, 1:(M+1)]          # row vector
-        # small sizes: computing inv is fine; optionally do \ for stability
-        coeffs = A21' * inv(A11) # ? Do we take the inverse? Is mathematica using rows first and julia columns first or other way around?
-        NextGrad[M] = vec(coeffs)
-    end
-    return NextGrad
+# Return a Dict mapping M -> NextGrad vector for M = 4..Mmax.
+# Each NextGrad[M] is a 1×(M+1) row vector (as Vector{Float64}) such that
+#   u_{M+1} = NextGrad[M] * u_{0:M}
+# in the dimensionless central coordinate system used by Grad.
+# """
+# function compute_NextGrad(Mmax)
+#     Atmp = build_Atmp(Mmax)
+#     NextGrad = Dict{Int, Vector{Float64}}()
+#     for M in 4:Mmax
+#         A11 = Atmp[1:(M+1), 1:(M+1)]
+#         A21 = Atmp[M+2, 1:(M+1)]          # row vector
+#         # small sizes: computing inv is fine; optionally do \ for stability
+#         coeffs = A21' * inv(A11) # ? Do we take the inverse? Is mathematica using rows first and julia columns first or other way around?
+#         NextGrad[M] = vec(coeffs)
+#     end
+#     return NextGrad
+# end
+
+function compute_NextGrad(N::Int)
+    # Moment function for standard normal
+    μ(n) = isodd(n) ? 0.0 : factorial(big(2*(n ÷ 2))) / (2.0^(n ÷ 2) * factorial(big(n ÷ 2)))
+
+    # Precompute all needed moments up to 2N+1
+    μvals = [Float64(μ(k)) for k in 0:(2N+1)]
+
+    # Build moment matrix A and vector b
+    A = [μvals[i+j+1] for i in 0:N, j in 0:N]  # Julia is 1-indexed
+    b = [μvals[N+1+j+1] for j in 0:N]
+
+    # Solve for NextGrad
+    NextGrad = b' * inv(A)
+    return vec(NextGrad)
 end
 
 # -------------------------
@@ -189,7 +205,7 @@ function grad_closure_convective(u::AbstractVector, equations::GramianMomentEqua
     N = length(u)                 # this is M+1 typically
     M = N - 1
     NextGrad = compute_NextGrad(N)
-    @assert haskey(NextGrad, M) "NextGrad for M=$M not present"
+    # @assert haskey(NextGrad, M) "NextGrad for M=$M not present"
 
     # convective -> central
     w = moment_cons2prim(u)
@@ -200,7 +216,13 @@ function grad_closure_convective(u::AbstractVector, equations::GramianMomentEqua
     w_scaled = w ./ scale
 
     # compute next dimensionless central moment
-    w_next = dot(NextGrad[M], w_scaled)   # scalar
+    # println("Using Grad closure for M=$M")
+    # println("NextGrad = ", NextGrad, "\n")
+    # println("Size of input moments: ", length(u), "\n")
+    # println("Input moments: ", u, "\n")
+    # println("Scaled moments = ", w_scaled, "\n")
+    # ? w_next = dot(NextGrad[M], w_scaled)   # scalar
+    w_next = dot(NextGrad[1:M+1], w_scaled)   # scalar
 
     # dimensionalize: rho_{M+1} = rho0 * Θ^{(M+1)/2} * u_next
     # append to convective moments
