@@ -168,70 +168,218 @@ closure(u, equations::GramianMomentEquations1D; verbose_::Bool=false) = grad_clo
 #     return NextGrad
 # end
 
-function compute_NextGrad(N::Int)
-    # Moment function for standard normal
-    μ(n) = isodd(n) ? 0.0 : factorial(big(2*(n ÷ 2))) / (2.0^(n ÷ 2) * factorial(big(n ÷ 2)))
+# function compute_NextGrad(N::Int)
+#     # Moment function for standard normal
+#     μ(n) = isodd(n) ? 0.0 : factorial(big(2*(n ÷ 2))) / (2.0^(n ÷ 2) * factorial(big(n ÷ 2)))
 
-    # Precompute all needed moments up to 2N+1
-    μvals = [Float64(μ(k)) for k in 0:(2N+1)]
+#     # Precompute all needed moments up to 2N+1
+#     μvals = [Float64(μ(k)) for k in 0:(2N+1)]
 
-    # Build moment matrix A and vector b
-    A = [μvals[i+j+1] for i in 0:N, j in 0:N]  # Julia is 1-indexed
-    b = [μvals[N+1+j+1] for j in 0:N]
+#     # Build moment matrix A and vector b
+#     A = [μvals[i+j+1] for i in 0:N, j in 0:N]  # Julia is 1-indexed
+#     b = [μvals[N+1+j+1] for j in 0:N]
 
-    # Solve for NextGrad
-    NextGrad = b' * inv(A)
-    return vec(NextGrad)
+#     # Solve for NextGrad
+#     NextGrad = b' * inv(A)
+#     return vec(NextGrad)
+# end
+
+# # -------------------------
+# # Grad closure function
+# # -------------------------
+# """
+#     grad_closure_convective(m::AbstractVector, NextGrad::Dict)
+
+# Given convective moments m[1..N] (N = M+1), compute the closure m_{N+1}
+# using Grad's closure built into NextGrad.
+
+# Procedure:
+#     - compute central moments via m2rho
+#     - set central first moment to zero (centering)
+#     - nondimensionalize central moments: u_k = rho_k / (rho0 * Theta^{k/2})
+#     - apply NextGrad[M] to u_0..u_M to get u_{M+1}
+#     - dimensionalize rho_{M+1} = rho0 * Theta^{(M+1)/2} * u_{M+1}
+#     - restore a and convert central->convective using rho2m and return last entry
+# """
+# function grad_closure_convective(u::AbstractVector, equations::GramianMomentEquations1D) #!NextGrad::Dict) # compute NextGrad up to M=length(u)-1
+#     N = length(u)                 # this is M+1 typically
+#     M = N - 1
+#     NextGrad = compute_NextGrad(N)
+#     # @assert haskey(NextGrad, M) "NextGrad for M=$M not present"
+
+#     # convective -> central
+#     w = moment_cons2prim(u)
+#     ρ = w[1]; θ=w[3]/ρ
+
+#     # # nondimensionalize: u_k = rho_k / (rho0 * Θ^{k/2}), k=0..M
+#     scale = ρ .* [θ^(k/2) for k in 0:(M)]
+#     w_scaled = w ./ scale
+
+#     # compute next dimensionless central moment
+#     # println("Using Grad closure for M=$M")
+#     # println("NextGrad = ", NextGrad, "\n")
+#     # println("Size of input moments: ", length(u), "\n")
+#     # println("Input moments: ", u, "\n")
+#     # println("Scaled moments = ", w_scaled, "\n")
+#     # ? w_next = dot(NextGrad[M], w_scaled)   # scalar
+#     w_next = dot(NextGrad[1:M+1], w_scaled)   # scalar
+
+#     # dimensionalize: rho_{M+1} = rho0 * Θ^{(M+1)/2} * u_next
+#     # append to convective moments
+#     w_extended = vcat(w, ρ * θ^(N/2) * w_next)
+
+#     # convective moments back
+#     u_extended = moment_prim2cons(w_extended)
+
+#     return u_extended[end]   # the closure u_{M+1}
+# end
+
+# """
+#     maxwellian_convective_moments(ρ, v, θ, K; nquad=…)
+
+# Compute m_k = ∫ f_M(c; ρ,v,θ) c^k dc for k=0..K using Gauss–Hermite.
+# Returns a Vector{T} with length K+1, where T is a common type of inputs.
+# """
+# function maxwellian_convective_moments(ρ, v, θ, K; nquad::Int=0)
+#     T = promote_type(typeof(ρ), typeof(v), typeof(θ))
+#     nquad = nquad == 0 ? max(2*(K+1), 50) : nquad
+#     xF, wF = gausshermite(nquad)             # Float64 nodes/weights
+#     x = T.(xF); w = T.(wF)
+#     s = sqrt(T(2) * θ)
+#     c = v .+ s .* x                          # Vector{T}
+#     pref = ρ / sqrt(T(pi))                   # prefactor ρ/√π
+
+#     # build powers up to K
+#     Cpow = ones(T, length(c), K+1)
+#     @inbounds for p in 1:K
+#         Cpow[:, p+1] .= Cpow[:, p] .* c
+#     end
+
+#     m = zeros(T, K+1)
+#     @inbounds for i in 0:K
+#         m[i+1] = pref * sum(w .* Cpow[:, i+1])
+#     end
+#     return m
+# end
+
+# function solve_alpha(u::AbstractVector, rho, v, theta; nquad::Int = 0, λ = 0)
+#     # Element type to support ForwardDiff.Dual
+#     T = promote_type(eltype(u), typeof(rho), typeof(v), typeof(theta))
+#     M = length(u) - 1
+#     nquad = nquad == 0 ? max(2*(M+1), 50) : nquad
+
+#     # Maxwellian moments up to 2M
+#     m = maxwellian_convective_moments(rho, v, theta, 2M; nquad=nquad)
+
+#     # Build b and A with element type T
+#     b = zeros(T, M+1)
+#     @inbounds for i in 0:M
+#         b[i+1] = m[i+1]
+#     end
+
+#     A = zeros(T, M+1, M+1)
+#     @inbounds for i in 0:M
+#         for k in 0:M
+#             A[i+1, k+1] = m[i+k+1]
+#         end
+#     end
+
+#     # Right-hand side r = u - b (no Float64 conversion; keep Duals if present)
+#     r = u .- b
+
+#     # Regularization (Tikhonov): (A^T A + λ I) α = A^T r
+#     if λ == zero(T)
+#         α = A \ r
+#     else
+#         ATA = A' * A
+#         rhs = A' * r
+#         α = (ATA + (λ * I)) \ rhs
+#     end
+
+#     return α
+# end
+
+function solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
+    # Promote to a common numeric type (supports ForwardDiff.Dual)
+    T = promote_type(eltype(u), typeof(ρ), typeof(v), typeof(θ))
+    M = length(u)-1
+    nquad = 2*(M+1)
+    # Gauss-Hermite nodes/weights for ∫ e^{-x^2} g(x) dx
+    xF, wF = gausshermite(nquad)
+    x = T.(xF); w = T.(wF)
+    # Construct c_j = v + sqrt(2θ)*x_j
+    c = T(v) .+ sqrt(T(2.0) * T(θ)) .* x
+    # Using transform with GH weights: ∫ f_M(c) c^k dc = (ρ/√π) ∑ w_j (c_j^k)
+    pref = T(ρ) / sqrt(2.0 * T(pi) * T(θ))
+
+    # Precompute powers of c up to degree 2M (needed for c^{i+k})
+    maxpow = 2*M
+    Cpow = ones(T, length(c), maxpow+1)
+    @inbounds for p in 1:maxpow
+        Cpow[:, p+1] .= Cpow[:, p] .* c
+    end
+
+    # b_i = pref * sum_j w_j * c_j^i
+    b = zeros(T, M+1)
+    @inbounds for i in 0:M
+        b[i+1] = pref * sum(w .* Cpow[:, i+1])
+    end
+
+    # A_{ik} = pref * sum_j w_j * c_j^{i+k}
+    A = zeros(T, M+1, M+1)
+    @inbounds for i in 0:M
+        for k in 0:M
+            A[i+1, k+1] = pref * sum(w .* Cpow[:, i+k+1])
+        end
+    end
+
+    # Right-hand side r = u - b (keep type T / Duals if present)
+    r = u .- b
+
+    # Regularization (Tikhonov): (A^T A + λ I) α = A^T r
+    λT = T(λ)
+    if λT == zero(T)
+        α = A \ r
+    else
+        ATA = A' * A
+        rhs = A' * r
+        α = (ATA + λT * I) \ rhs
+    end
+
+    return α
 end
 
-# -------------------------
-# Grad closure function
-# -------------------------
-"""
-    grad_closure_convective(m::AbstractVector, NextGrad::Dict)
-
-Given convective moments m[1..N] (N = M+1), compute the closure m_{N+1}
-using Grad's closure built into NextGrad.
-
-Procedure:
-    - compute central moments via m2rho
-    - set central first moment to zero (centering)
-    - nondimensionalize central moments: u_k = rho_k / (rho0 * Theta^{k/2})
-    - apply NextGrad[M] to u_0..u_M to get u_{M+1}
-    - dimensionalize rho_{M+1} = rho0 * Theta^{(M+1)/2} * u_{M+1}
-    - restore a and convert central->convective using rho2m and return last entry
-"""
 function grad_closure_convective(u::AbstractVector, equations::GramianMomentEquations1D) #!NextGrad::Dict) # compute NextGrad up to M=length(u)-1
-    N = length(u)                 # this is M+1 typically
-    M = N - 1
-    NextGrad = compute_NextGrad(N)
-    # @assert haskey(NextGrad, M) "NextGrad for M=$M not present"
+    M = length(u)-1                 # this is M+1 typically
+    
+    ρ = u[1]
+    v = u[2] / ρ
+    Θ = (u[3] / ρ) - v^2 # ? Check this
 
-    # convective -> central
-    w = moment_cons2prim(u)
-    ρ = w[1]; θ=w[3]/ρ
+    # Solve for Grad coefficients α (supports Dual types)
+    α = solve_alpha(u, ρ, v, Θ)
 
-    # # nondimensionalize: u_k = rho_k / (rho0 * Θ^{k/2}), k=0..M
-    scale = ρ .* [θ^(k/2) for k in 0:(M)]
-    w_scaled = w ./ scale
+    # Compute closure: u_{M+1}^G = ∫ f_G c^{M+1} dc
+    # with f_G = f_M (1 + Σ_{k=0..M} α_k c^k)
+    T = promote_type(eltype(u), typeof(ρ), typeof(v), typeof(Θ))
+    nquad = 2*(M+2)
+    xF, wF = gausshermite(nquad)
+    x = T.(xF); w = T.(wF)
+    s = sqrt(T(2) * T(Θ))
+    c = T(v) .+ s .* x
+    pref = T(ρ) / sqrt(2 * T(pi) * T(Θ))
 
-    # compute next dimensionless central moment
-    # println("Using Grad closure for M=$M")
-    # println("NextGrad = ", NextGrad, "\n")
-    # println("Size of input moments: ", length(u), "\n")
-    # println("Input moments: ", u, "\n")
-    # println("Scaled moments = ", w_scaled, "\n")
-    # ? w_next = dot(NextGrad[M], w_scaled)   # scalar
-    w_next = dot(NextGrad[1:M+1], w_scaled)   # scalar
+    return @views(
+        pref * sum(w .* (c .^ (M+1)) .* (1 .+ sum(α[k+1] .* (c .^ k) for k in 0:M)))
+    )
 
-    # dimensionalize: rho_{M+1} = rho0 * Θ^{(M+1)/2} * u_next
-    # append to convective moments
-    w_extended = vcat(w, ρ * θ^(N/2) * w_next)
+    # # Build polynomial factor (1 + Σ α_k c^k)
+    # poly = ones(T, length(c))
+    # @inbounds for k in 0:M
+    #     poly .+= α[k+1] .* (c .^ k)
+    # end
 
-    # convective moments back
-    u_extended = moment_prim2cons(w_extended)
-
-    return u_extended[end]   # the closure u_{M+1}
+    # return pref * sum(w .* (c .^ (M+1)) .* poly)
 end
 
 
@@ -486,7 +634,8 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D) = u
 function dCdu(u, equations::GramianMomentEquations1D)
     # automatic differentiation
     closure_wrapped(x) = closure(x, equations)
-    return ForwardDiff.gradient(closure_wrapped, u)
+    grad = ForwardDiff.gradient(closure_wrapped, u)
+    return ForwardDiff.value(grad)
 end
 
 

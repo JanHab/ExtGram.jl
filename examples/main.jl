@@ -19,7 +19,7 @@ basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGr
     Maxwellian(7.0, 0.0, 1.0), # Density, velocity, temperature
     Maxwellian(1.0, 0.0, 1.0);
     domain = domain,
-    base_tree_level=8
+    base_tree_level=6
 )
 
 semi = SemidiscretizationHyperbolic(
