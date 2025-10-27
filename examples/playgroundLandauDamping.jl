@@ -7,14 +7,14 @@ using LaTeXStrings
 
 # Parameter
 M = 4    # number of moments
-closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
+closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 15.0
 source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
-base_tree_level = 5#!8 #!5 # ! 8
+base_tree_level = 8 #!5 # ! 8
 
 equations = GramianMomentEquations1D(M, Kn, closure)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
@@ -30,7 +30,7 @@ initial_condition = InitialConditionsCosine(
 )
 
 #= set up semidiscretization =#
-polydeg = 2 #!1 #!1
+polydeg = 3 #!1 #!1
 basis = LobattoLegendreBasis(polydeg)
 
 # shock capturing
@@ -79,6 +79,7 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
 # Add Vlasov-Poisson callback
 callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, mesh, domain))
 
+
 #= solve =#
 sol = solve(
     ode, 
@@ -92,6 +93,29 @@ sol = solve(
 );
 
 summary_callback()
+
+
+plot(HyQMOM.ELECTRIC_FIELD.x_range[2:end-1], HyQMOM.ELECTRIC_FIELD.E[2:end-1];
+    xlabel="x", ylabel="E(x)", label="Electric Field at t=$T_end", lw=2,
+)
+plot(HyQMOM.ELECTRIC_FIELD.x_range[2:end-1], HyQMOM.ELECTRIC_FIELD.ρ[2:end-1];
+    label="ρ", lw=2, linestyle=:dash    
+)
+
+u = sol.u[end]
+MP1 = HyQMOM.ELECTRIC_FIELD.MP1
+n_cells = length(u) ÷ MP1
+
+# Reshape to extract density
+U_matrix = reshape(u, MP1, n_cells)
+ρ = U_matrix[1, :]  # First row is density
+
+plot(ρ;
+    label="ρ (from solution)", lw=2, linestyle=:dot, marker=:x
+)
+plot!(
+    HyQMOM.ELECTRIC_FIELD.variables[2:end-1,1], marker=:o
+)
 
 # Access the energy history
 E_L2_history = HyQMOM.ELECTRIC_FIELD.E_L2
@@ -113,13 +137,60 @@ plot!(
     linestyle=:dash
 )
 plot!(legend=:bottomleft)
-savefig("out/VlasovPoisson/energy_from_callback.pdf")
-# store to csv file
-CSV.write(
-    "out/VlasovPoisson/energy_moments_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).csv",
-    Tables.columntable((
-        time=time_callback, E_L2=E_L2_history, 
-        E_L2_normalized=E_L2_history ./ E_L2_history[1], 
-        theoretical_decay=γt
-    ))
-)
+
+# nodes = basis.nodes
+# weights = basis.weights
+
+# n_elements = length(mesh.tree)
+# x = Matrix{Float64}(undef, length(nodes), n_elements)
+# coordinates_min = domain[1]
+# coordinates_max = domain[2]
+# dx = (coordinates_max - coordinates_min) / n_elements
+# for element in 1:n_elements
+#     x_l = coordinates_min + (element - 1) * dx + dx / 2
+#     for i in eachindex(nodes)
+#         ξ = nodes[i] # nodes in [-1, 1]
+#         x[i, element] = x_l + dx / 2 * ξ
+#     end
+# end
+
+# println(size(E))
+# println(size(x))
+# x_ = vec(x)
+# # unique_x = vec(unique(x_))
+# unique_x = vec(unique(x_ -> round(x_, digits=4), x))
+# println(size(unique_x))
+# s = Int(size(ode.u0, 1)/(M+1))
+# sol_end = sol.u[end]
+# U_matrix_end = reshape(sol_end, M+1, length(sol_end) ÷ (M+1))
+# ρ_end = U_matrix_end[1, :]  # First row is density
+
+# x_vector = []
+# if size(x, 1) == 1
+#     for i in 1:size(x, 1)
+#         push!(x_vector, x[i, 1])
+#     end
+# else
+#     for i in 1:size(x, 2)
+#         if i == 1
+#             for j in 1:size(x, 1)
+#                 push!(x_vector, x[j, i])
+#             end
+#         # elseif i == size(x, 2)
+#         #     for j in 1:size(x, 1)
+#         #         push!(x_vector, x[j, i])
+#         #     end
+#         else
+#             for j in 2:size(x, 1)
+#                 push!(x_vector, x[j, i])
+#             end
+#         end
+#     end
+# end
+# x_vector
+
+# U_matrix = reshape(ode.u0, M+1, length(ode.u0) ÷ (M+1))
+# ρ = U_matrix[1, :]  # First row is density
+
+# plot(vec(x), x -> 3 * x^2, label = "f'", lw = 2)
+# scatter!(vec(x), x -> 3 * x^2, label = "f'", lw = 2)

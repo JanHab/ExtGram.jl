@@ -2,7 +2,7 @@
 # This will be updated during each RHS evaluation
 mutable struct ElectricFieldStorage
     E::Vector{Float64}
-    # domain::Tuple{Float64, Float64}
+    domain::Tuple{Float64, Float64}
     x_range::Vector{Float64}
     n::Int
     initialized::Bool
@@ -10,16 +10,19 @@ mutable struct ElectricFieldStorage
     MP1::Int
     E_L2::Vector{Float64}
     times::Vector{Float64}  # Track actual times when E_L2 is recorded
+    variables#::Matrix{Float64} # todo: remove this later
 end
 
 # Global instance
-const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], Float64[], 0, false, Float64[], 0, Float64[], Float64[])
+const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], (0.0, 0.0), Float64[], 0, false, Float64[], 0, Float64[], Float64[],
+    [Float64[]], # todo: remove this later
+)
 
 # Source term that solves Poisson globally and applies local source
 function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
     # todo: hard-coded for the moment
     x_range = ELECTRIC_FIELD.x_range
-    E_field = interpolate((x_range,), ELECTRIC_FIELD.E, Gridded(Linear()))
+    E_field = linear_interpolation(x_range, ELECTRIC_FIELD.E, extrapolation_bc = Interpolations.Line())
     
     # Evaluate electric field at position x
     E_local = E_field(x[1])
@@ -41,8 +44,8 @@ end
 
 function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real})
     n = length(ρ)
-    Lx = ELECTRIC_FIELD.x_range[end] - ELECTRIC_FIELD.x_range[1]
-    ρ̃ = ρ .- 1#! mean(ρ)  # neutralizing background
+    Lx = ELECTRIC_FIELD.domain[end] - ELECTRIC_FIELD.domain[1]
+    ρ̃  = ρ .- 1#! mean(ρ)  # neutralizing background
     ρk = fft(ρ̃)
 
     # build wavenumbers k consistent with FFT ordering
@@ -72,16 +75,56 @@ end
 function vlasov_poisson_callback(integrator)
     u = integrator.u
     t = integrator.t
-    
-    # Extract density from the full solution vector
-    MP1 = ELECTRIC_FIELD.MP1
-    n_cells = length(u) ÷ MP1
-    ELECTRIC_FIELD.n = n_cells
-    
-    # Reshape to extract density
-    U_matrix = reshape(u, MP1, n_cells)
-    ρ = U_matrix[1, :]  # First row is density
-    ELECTRIC_FIELD.ρ = ρ
+    # todo: Use collect1dTreeArrays from converter_1d.jl
+    semi = integrator.p
+    u_ode = integrator.u
+
+    mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
+    tree = mesh.tree
+
+    n_active_cells = Trixi.count_leaf_cells(tree)
+    active_cell_ids = Trixi.leaf_cells(tree)
+
+    basis_nodes = solver.basis.nodes
+    n_vertices_per_cell = length(basis_nodes) # Trixi.nnodes(solver)
+    # total vertices amount (overlapping vertices combined) = #cell_inner_vertices + #cell_outer_vertices(=n_cells+1)
+    n_vertices = (n_vertices_per_cell-1)*n_active_cells+1
+
+    n_vars = Trixi.nvariables(equations)
+    u = Trixi.wrap_array_native(u_ode, mesh, equations, solver, cache)
+
+    # i_active_cell -> vertex ids
+    # in 1D a simple relation suffices: active_cells_to_vertices(i_cell) = i_cell*(n_vertices_per_cell-1)-3 .+ collect(1:n_vertices_per_cell)
+    # use a matrix anyway for ease of use and compatibility (no need to pass along n_active_cells for iteration over cells)
+    active_cells_to_vertices = zeros(Int, n_active_cells, n_vertices_per_cell)
+
+    # auxiliary arrays for the solution output
+    coordinates = zeros(n_vertices)
+    variables = zeros(n_vertices, n_vars)
+
+
+    # go through all active cells from left to right and compute the nodal coordinates
+    for i_cell=1:n_active_cells
+        i_cell_global = active_cell_ids[i_cell]
+        vertices = (i_cell-1)*(n_vertices_per_cell-1) .+ collect(1:n_vertices_per_cell)
+        active_cells_to_vertices[i_cell, :] = vertices
+        coordinates[vertices] = basis_nodes*0.5*Trixi.length_at_cell(tree, i_cell_global) .+ Trixi.cell_coordinates(tree, i_cell_global)[1]
+    end
+
+    # collect all nodal variable values
+    for i_var=1:n_vars
+        data = vec(u[i_var, .., :])
+        for i_cell=1:n_active_cells
+            index = 1 + (i_cell-1)*n_vertices_per_cell # DG -> use a non-overlapping vertex enumeration | alternatively increment indices
+            nodal_values = data[index:index+n_vertices_per_cell-1]
+            nodal_values[[1,end]] *= 0.5 # average the cell boundary values
+            variables[active_cells_to_vertices[i_cell, :], i_var] += nodal_values
+        end
+    end
+    ρ = variables[2:end-1, 1]  # First column is density # todo: why 2:end-1? What's wrong here? The first and last entry seem to be off, though.
+    ELECTRIC_FIELD.variables = variables # todo: remove this later
+    ELECTRIC_FIELD.ρ = vec(ρ)
+    ELECTRIC_FIELD.x_range = vec(coordinates[2:end-1])
 
     # Solve Poisson equation globally
     E = solve_poisson_periodic_fft(ρ)
@@ -110,15 +153,16 @@ function vlasov_poisson_callback(;M, mesh, domain)
     empty!(ELECTRIC_FIELD.ρ)
     ELECTRIC_FIELD.n = 0
     ELECTRIC_FIELD.initialized = false
+    ELECTRIC_FIELD.domain = domain
     
     # Set parameters for this run
     ELECTRIC_FIELD.MP1 = M+1
-    x_range = sort(mesh.tree.coordinates[1,1:mesh.tree.length])
-    x_range = (x_range[1:end-1] + x_range[2:end]) / 2  # cell centers
-    pushfirst!(x_range, domain[1])
-    push!(x_range, domain[2])
-    # x_range = [0, (x_coordinates[2:end] + x_coordinates[1:end-1])/2, 4.0*π]  # cell centers including boundaries
-    ELECTRIC_FIELD.x_range = x_range
+    # x_range = sort(mesh.tree.coordinates[1,1:mesh.tree.length])
+    # x_range = (x_range[1:end-1] + x_range[2:end]) / 2  # cell centers
+    # pushfirst!(x_range, domain[1])
+    # push!(x_range, domain[2])
+    # # x_range = [0, (x_coordinates[2:end] + x_coordinates[1:end-1])/2, 4.0*π]  # cell centers including boundaries
+    # ELECTRIC_FIELD.x_range = x_range
     
     return DiscreteCallback(
         (u, t, integrator) -> true,  # Always trigger at every step
