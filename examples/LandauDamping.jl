@@ -6,7 +6,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 4    # number of moments
+M = 5    # number of moments
 closures = ["Gram", "ExtGram", "Grad"] # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 15.0
@@ -14,7 +14,8 @@ source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
-base_tree_level = 8 # 5 # ! 8
+base_tree_level = 6 # 5 # ! 8
+polydeg = 3
 
 for closure in closures
     equations = GramianMomentEquations1D(M, Kn, closure)
@@ -31,7 +32,6 @@ for closure in closures
     )
 
     #= set up semidiscretization =#
-    polydeg = 1 #!1
     basis = LobattoLegendreBasis(polydeg)
 
     # shock capturing
