@@ -7,7 +7,7 @@ using LaTeXStrings
 
 # Parameter
 M = 4    # number of moments
-extended = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
+closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 15.0
 source = vlasov_poisson_source
@@ -16,7 +16,7 @@ domain = (x_lower, x_upper)
 
 base_tree_level = 5#!8 #!5 # ! 8
 
-equations = GramianMomentEquations1D(M, Kn, extended)
+equations = GramianMomentEquations1D(M, Kn, closure)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
 ϵ = 0.001
 k = 0.5

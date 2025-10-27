@@ -6,7 +6,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
 M = 4    # number of moments
-extended = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
+closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
 T_end = 0.3
 source = relaxation_source
@@ -15,7 +15,7 @@ domain = (x_lower, x_upper)
 
 # Setting up everything
 basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DRiemann(
-    M, Kn, extended,
+    M, Kn, closure,
     Maxwellian(7.0, 0.0, 1.0), # Density, velocity, temperature
     Maxwellian(1.0, 0.0, 1.0);
     domain = domain,
