@@ -3,13 +3,13 @@
 
 # * Basic struct for equations
 """
-GramianMomentEquations1D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquations{1, Mp1}
+struct GramianMomentEquations1D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquations{1, Mp1}
 
 A struct representing one-dimensional Gramian moment equations for kinetic theory.
 
-# Fields
+    closure::Symbol
 - `inv_Kn::RealT`: The inverse of the Knudsen number, used in the relaxation source term
-- `χ::RealT`: A scaling parameter calculated based on the number of moments
+    function GramianMomentEquations1D(M::Integer, Knudsen::Real, closure::Union{Symbol,String}=:ExtGram; χ_set="optimal")
 - `n::Int`: Internal parameter derived from the number of moments
 - `extended::Bool`: Flag indicating whether to use extended formulation
 
@@ -21,8 +21,7 @@ Constructs a `GramianMomentEquations1D` system with `M` moments and specified Kn
 # Arguments
 - `M::Integer`: Number of moments (must be greater than 1)
 - `Knudsen::Real`: Knudsen number for the system
-- `extended::Bool=true`: Whether to use the extended formulation
-
+- `closure::Union{Symbol,String}`: Closure type, can be "Gram", "ExtGram", or "Grad"
 # Notes
 - The system has `M+1` variables in total
 - The parameter `χ` is calculated differently depending on whether `M` is even or odd
@@ -31,10 +30,10 @@ struct GramianMomentEquations1D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquation
     inv_Kn::RealT # 1/Kn (Kn = Knudsen number) | used by the relaxation source term
     χ::RealT
     n::Int
-    extended::Bool
+    closure::Symbol
 
-    function GramianMomentEquations1D(M::Integer, Knudsen::Real, extended=true::Bool; χ_set="optimal")
-        @assert M > 1 # todo: remove this later
+    function GramianMomentEquations1D(M::Integer, Knudsen::Real, closure::String="ExtGram"; χ_set="optimal")
+        @assert M > 1
         if iseven(M)
             n = Int(M/2)
             χ = (n+1)/n
@@ -42,11 +41,23 @@ struct GramianMomentEquations1D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquation
             n = Int((M+1)/2)
             χ = (n+1)/(2n)
         end
-        # overwrite if χ_set is given explicitly
+        # overwrite if χ_set is given explicitly, only relevant for extended Gramian closure
         if χ_set !== "optimal"
             χ = χ_set
         end
-        new{M+1, n, typeof(Knudsen)}(inv(Knudsen), χ, n, extended)
+        closure_value = :ExtGram # default option
+        if closure == "Gram"
+            closure_value = iseven(M) ? :GramEven : :GramOdd
+        elseif closure == "ExtGram"
+            closure_value = iseven(M) ? :ExtGramEven : :ExtGramOdd
+        elseif closure == "Grad"
+            closure_value = :Grad
+        elseif closure == "MaxEnt"
+            closure_value = :MaxEnt
+        else
+            error("Unknown closure type: $closure. Supported types are \"Gram\", \"ExtGram\", \"Grad\" and \"MaxEnt (work in progress)\n.")
+        end
+        new{M+1, n, typeof(Knudsen)}(inv(Knudsen), χ, n, closure_value)
     end
 end
 
@@ -69,174 +80,389 @@ function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D
     # ∂_t u^k + \partial_x u^{k+1} = ... (0)
     # Last u from closure
     # return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations))
-    return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations; verbose_=true))
+    return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations, Val(equations.closure)))
 end
 isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
 
 
 ########################## Closure ##########################
 
-# Overloading to determine even/odd case
+# Overloading to determine Gram/ExtGram/Grad and even/odd case
 """
-    closure(u, equations::GramianMomentEquations1D; verbose_::Bool=false)
+    closure(u, equations::GramianMomentEquations1D)
 
-    Decides which closure implementation is used based on the number of Moments (even vs. odd)
+    Decides which closure implementation is used based on the equations.closure value
 """
-closure(u, equations::GramianMomentEquations1D; verbose_::Bool=false) = closure(u, equations, Val(iseven(length(u)-1)); verbose_)
+closure(u, equations::GramianMomentEquations1D) = closure(u, equations, Val(equations.closure))
 
-# Even case
+# -------------------------
+# Gramian closure 
+# -------------------------
+# Decides which closure implementation is used based on the number of Moments (even vs. odd)
+# closure(u, equations::GramianMomentEquations1D, ::Val{:Gram}) = closure(u, equations, Val(iseven(length(u)-1) ? :GramEven : :GramOdd))
+# # -------------------------
+# closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGram}) = closure(u, equations, Val(iseven(length(u)-1) ? :ExtGramEven : :ExtGramOdd))
+
+# Even case (classical and extended)
 """
     closure(u, equations::GramianMomentEquations1D, ::Val{true}; verbose_=false)
 
     Closure for the even case
 """
-function closure(u, equations::GramianMomentEquations1D, ::Val{true}; verbose_=false)
+function closure(u, equations::GramianMomentEquations1D, ::Val{:GramEven})
     M = length(u)-1 # u[0, ..., M]
     @assert iseven(M)
     n = equations.n 
     invG_nm1 = inv(gramian(u, n-1))
-    if equations.extended==true
-        invG_nm2 = inv(gramian(u, n-2))
-        return @views (
-            u[n+2:2n+1]'*invG_nm1*u[n+1:2n]
-        ) + equations.χ * (
-            u[2n+1] - u[n+1:2n]'*invG_nm1*u[n+1:2n]
-        ) / (
-            u[2n-1] - u[n:2n-2]'*invG_nm2*u[n:2n-2]
-        ) * (
-            u[2n] - u[n+1:2n-1]'*invG_nm2*u[n:2n-2]
-        )
-    else
-        return @views(
-            u[n+2:2n+1]'*invG_nm1*u[n+1:2n]
-        )
-    end
+    return @views(
+        u[n+2:2n+1]'*invG_nm1*u[n+1:2n]
+    )
 end
 
-# Odd case
+function closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGramEven})
+    M = length(u)-1 # u[0, ..., M]
+    @assert iseven(M)
+    n = equations.n 
+    invG_nm1 = inv(gramian(u, n-1))
+    invG_nm2 = inv(gramian(u, n-2))
+    return @views (
+        u[n+2:2n+1]'*invG_nm1*u[n+1:2n]
+    ) + equations.χ * (
+        u[2n+1] - u[n+1:2n]'*invG_nm1*u[n+1:2n]
+    ) / (
+        u[2n-1] - u[n:2n-2]'*invG_nm2*u[n:2n-2]
+    ) * (
+        u[2n] - u[n+1:2n-1]'*invG_nm2*u[n:2n-2]
+    )
+end
+
+# Odd case (classical and extended)
 """
-    closure(u, equations::GramianMomentEquations1D, ::Val{false}; verbose_=false)
+    closure(u, equations::GramianMomentEquations1D, ::Val{false})
 
     Closure for the odd case
 """
-function closure(u, equations::GramianMomentEquations1D, ::Val{false}; verbose_=false)
+function closure(u, equations::GramianMomentEquations1D, ::Val{:GramOdd})
     M = length(u)-1 # u[0, ..., M]
     @assert isodd(M)
     n = equations.n
-    if equations.extended==true
-        # invG_nm2 = inv(gramian(u, n-2))
-        # # A = u[n+2:2n]'*invG_nm2*u[n:2n-2]
-        # # B = u[2n] - u[n+1:2n-1]'*invG_nm2*u[n:2n-2]
-        # # D = u[2n-1] - u[n:2n-2]'*invG_nm2*u[n:2n-2]
-        # # closure = A + equations.χ * B^2 / D
-        # invG_nm1 = inv(gramian(u, n-1))
-        
-        # some ad-hoc odd-order closures from Morin paper
-        if n==2 # M=3
-            invG_1 = inv(gramian(u, 1))
-            invG_0 = 1 / u[1]#!inv(gramian(u, 0))
-            # invG_2 = inv(gramian(u, 2))
-            # Index mapping from SymPy (0-based): u0→u[1], u1→u[2], u2→u[3], u3→u[4], u4→u[5], u5→u[6]
-            closure = @views (
-                u[3:4]'*invG_1*u[3:4]
-            ) + (
+    invG_nm1 = inv(gramian(u, n-1))
+    return @views (
+        u[n+1:2n]'*invG_nm1*u[n+1:2n]
+    )
+end
+
+function closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGramOdd})
+    M = length(u)-1 # u[0, ..., M]
+    @assert isodd(M)
+    n = equations.n
+    if n==2 # M=3
+        invG_1 = inv(gramian(u, 1))
+        invG_0 = 1 / u[1]
+        # invG_2 = inv(gramian(u, 2))
+        # Index mapping from SymPy (0-based): u0→u[1], u1→u[2], u2→u[3], u3→u[4], u4→u[5], u5→u[6]
+        closure = @views (
+            u[3:4]'*invG_1*u[3:4]
+        ) + (
+            u[3] - u[2]*invG_0*u[2]
+        ) * (
+            2 + (
+                u[4] - u[3]*invG_0*u[2]
+            )^2 / (
                 u[3] - u[2]*invG_0*u[2]
-            ) * (
-                2 + (
-                    u[4] - u[3]*invG_0*u[2]
-                )^2 / (
-                    u[3] - u[2]*invG_0*u[2]
-                )^2
-            )
-        elseif n==3 # M=5
-            # New closure from SymPy (u6 computation with proper index shift)
-            # SymPy: A = 1 + (u4 - [u2,u3]'*invG_1*[u2,u3])/(u2-u1*invG_0*u1) + 0.5*((...)^2 + (...)^2)
-            # Julia: A = 1 + (u5 - [u3,u4]'*invG_1*[u3,u4])/(u3-u2*invG_0*u2) + 0.5*((...)^2 + (...)^2)
-            invG_1 = inv(gramian(u, 1))
-            invG_0 = 1 / u[1]#!inv(gramian(u, 0))
-            invG_2 = inv(gramian(u, 2))
-            A = @views (
-                1 + (
-                    u[5] - u[3:4]'*invG_1*u[3:4]
-                ) / (
-                    u[3] - u[2] * invG_0 * u[2]
-                ) + 0.5 * (
+            )^2
+        )
+    elseif n==3 # M=5
+        invG_1 = inv(gramian(u, 1))
+        invG_0 = 1 / u[1]
+        invG_2 = inv(gramian(u, 2))
+        A = @views (
+            1 + (
+                u[5] - u[3:4]'*invG_1*u[3:4]
+            ) / (
+                u[3] - u[2] * invG_0 * u[2]
+            ) + 0.5 * (
+                (
                     (
-                        (
-                            u[6] - u[4:5]'*invG_1*u[3:4]
-                        ) / (
-                            u[5] - u[3:4]'*invG_1*u[3:4]
-                        ) - (
+                        u[6] - u[4:5]'*invG_1*u[3:4]
+                    ) / (
+                        u[5] - u[3:4]'*invG_1*u[3:4]
+                    ) - (
+                        u[4] - u[3] * invG_0 * u[2]
+                    ) / (
+                        u[3] - u[2] * invG_0 * u[2]
+                    )
+                )^2 + (
+                    (
+                        u[6] - u[4:5]'*invG_1*u[3:4]
+                    ) / (
+                        u[5] - u[3:4]'*invG_1*u[3:4]
+                    ) - (
+                        2 * (
                             u[4] - u[3] * invG_0 * u[2]
                         ) / (
                             u[3] - u[2] * invG_0 * u[2]
                         )
-                    )^2 + (
-                        (
-                            u[6] - u[4:5]'*invG_1*u[3:4]
-                        ) / (
-                            u[5] - u[3:4]'*invG_1*u[3:4]
-                        ) - (
-                            2 * (
-                                u[4] - u[3] * invG_0 * u[2]
-                            ) / (
-                                u[3] - u[2] * invG_0 * u[2]
-                            )
-                        )
-                    )^2
-                )
+                    )
+                )^2
             )
-            
-            # SymPy: u6 = [u3,u4,u5]'*invG_2*[u3,u4,u5] + (u4-[u2,u3]'*invG_1*[u2,u3])*A
-            # Julia: u6 = [u4,u5,u6]'*invG_2*[u4,u5,u6] + (u5-[u3,u4]'*invG_1*[u3,u4])*A
-            closure = @views (
-                u[4:6]'*invG_2*u[4:6]
-            ) + (
-                u[5] - u[3:4]'*invG_1*u[3:4]
-            ) * A
-        else
-            sigma_nn(u, n) = u[2n+1] - u[n+1:2n]'*inv(gramian(u, n-1))*u[n+1:2n]
-            sigma_nmnm(u, n) = u[2n-1] - u[n:2n-2]'*inv(gramian(u, n-2))*u[n:2n-2]
-            sigma_nnp(u, n) = u[2n+2] - u[n+2:2n+1]'*inv(gramian(u, n-1))*u[n+1:2n]
-            sigma_nmn(u, n) = u[2n] - u[n+1:2n-1]'*inv(gramian(u, n-2))*u[n:2n-2]
-
-            an(u, n) = sigma_nnp(u, n) / sigma_nn(u, n) - sigma_nmn(u, n) / sigma_nmnm(u, n)
-            bn(u, n) = sigma_nn(u, n) / sigma_nmnm(u, n)
-
-
-            bk_sum = 1.0
-            anm = an(u, n-1)
-            ak_sum = (
-                anm
-            )^2 + (
-                anm - (
-                    u[4] - u[3] / u[1] * u[2]
-                ) / (
-                    u[3] - u[2] / u[1] * u[2]
-                )
-            )^2# (anm - a0)^2 + (anm - a1)^2
-            for k=2:n-1
-                bk_sum += bn(u, k)
-                ak_sum += (anm - an(u, k))^2
-            end
-            closure = @views(
-                u[n+1:2n]' * inv(gramian(u, n-1)) * u[n+1:2n]
-            ) + (
-                u[2n-1] - u[n:2n-2]'*inv(gramian(u, n-2))*u[n:2n-2]
-            ) * (
-                4 / (2*(n-1)) * bk_sum + 2 / (2*(n-1)) * ak_sum
-            )
-        end
-
-        return closure
+        )
+        
+        closure = @views (
+            u[4:6]'*invG_2*u[4:6]
+        ) + (
+            u[5] - u[3:4]'*invG_1*u[3:4]
+        ) * A
     else
-        invG_nm1 = inv(gramian(u, n-1))
-        return @views (
-            u[n+1:2n]'*invG_nm1*u[n+1:2n]
+        sigma_nn(u, n) = u[2n+1] - u[n+1:2n]'*inv(gramian(u, n-1))*u[n+1:2n]
+        sigma_nmnm(u, n) = u[2n-1] - u[n:2n-2]'*inv(gramian(u, n-2))*u[n:2n-2]
+        sigma_nnp(u, n) = u[2n+2] - u[n+2:2n+1]'*inv(gramian(u, n-1))*u[n+1:2n]
+        sigma_nmn(u, n) = u[2n] - u[n+1:2n-1]'*inv(gramian(u, n-2))*u[n:2n-2]
+
+        an(u, n) = sigma_nnp(u, n) / sigma_nn(u, n) - sigma_nmn(u, n) / sigma_nmnm(u, n)
+        bn(u, n) = sigma_nn(u, n) / sigma_nmnm(u, n)
+
+
+        bk_sum = 1.0
+        anm = an(u, n-1)
+        ak_sum = (
+            anm
+        )^2 + (
+            anm - (
+                u[4] - u[3] / u[1] * u[2]
+            ) / (
+                u[3] - u[2] / u[1] * u[2]
+            )
+        )^2# (anm - a0)^2 + (anm - a1)^2
+        for k=2:n-1
+            bk_sum += bn(u, k)
+            ak_sum += (anm - an(u, k))^2
+        end
+        closure = @views(
+            u[n+1:2n]' * inv(gramian(u, n-1)) * u[n+1:2n]
+        ) + (
+            u[2n-1] - u[n:2n-2]'*inv(gramian(u, n-2))*u[n:2n-2]
+        ) * (
+            4 / (2*(n-1)) * bk_sum + 2 / (2*(n-1)) * ak_sum
         )
     end
+
+    return closure
 end
 
+
+# -------------------------
+# Grad closure 
+# -------------------------
+"""
+    closure(u::AbstractVector, equations::GramianMomentEquations1D)
+
+Given convective moments u[1..N] (N = M+1), compute the closure u_{N+1}
+using Grad's closure.
+
+Procedure:
+    - Construct Grad's distribution function with unknowns α_k:
+        f_G(c) = f_M(c; ρ,v,θ) * (1 + Σ_{k=0..M} α_k c^k)
+    - Compute α by solving the linear system arising from moment matching:
+        ∫ f_G(c) c^i dc = u_i, i=0..M
+    - Compute closure moment:
+        u_{M+1}^G = ∫ f_G(c) c^{M+1} dc
+"""
+function closure(u::AbstractVector, equations::GramianMomentEquations1D, ::Val{:Grad})
+    M = length(u)-1                 # this is M+1 typically
+    
+    ρ = u[1]
+    v = u[2] / ρ
+    Θ = (u[3] / ρ) - v^2 # ? Check this
+
+    # Solve for Grad coefficients α (supports Dual types)
+    α = solve_alpha(u, ρ, v, Θ)
+
+    # Compute closure: u_{M+1}^G = ∫ f_G c^{M+1} dc
+    # with f_G = f_M (1 + Σ_{k=0..M} α_k c^k)
+    T = promote_type(eltype(u), typeof(ρ), typeof(v), typeof(Θ))
+    nquad = 2*(M+2)
+    xF, wF = gausshermite(nquad)
+    x = T.(xF); w = T.(wF)
+    s = sqrt(T(2) * T(Θ))
+    c = T(v) .+ s .* x
+    pref = T(ρ) / sqrt(2 * T(pi) * T(Θ))
+
+    return @views(
+        pref * sum(w .* (c .^ (M+1)) .* (1 .+ sum(α[k+1] .* (c .^ k) for k in 0:M)))
+    )
+end
+
+"""
+    solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
+
+    Given convective moments u[1..N], compute the Grad coefficients α_k by solving the linear system arising from moment matching:
+        ∫ f_G(c) c^i dc = u_i, i=0..M
+    where f_G(c) = f_M(c; ρ,v,θ) * (1 + Σ_{k=0..M} α_k c^k)
+"""
+function solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
+    # Promote to a common numeric type (supports ForwardDiff.Dual)
+    T = promote_type(eltype(u), typeof(ρ), typeof(v), typeof(θ))
+    M = length(u)-1
+    nquad = 2*(M+1)
+    # Gauss-Hermite nodes/weights for ∫ e^{-x^2} g(x) dx
+    xF, wF = gausshermite(nquad)
+    x = T.(xF); w = T.(wF)
+    # Construct c_j = v + sqrt(2θ)*x_j
+    c = T(v) .+ sqrt(T(2.0) * T(θ)) .* x
+    # Using transform with GH weights: ∫ f_M(c) c^k dc = (ρ/√π) ∑ w_j (c_j^k)
+    pref = T(ρ) / sqrt(2.0 * T(pi) * T(θ))
+
+    # Precompute powers of c up to degree 2M (needed for c^{i+k})
+    maxpow = 2*M
+    Cpow = ones(T, length(c), maxpow+1)
+    @inbounds for p in 1:maxpow
+        Cpow[:, p+1] .= Cpow[:, p] .* c
+    end
+
+    # b_i = pref * sum_j w_j * c_j^i
+    b = zeros(T, M+1)
+    @inbounds for i in 0:M
+        b[i+1] = pref * sum(w .* Cpow[:, i+1])
+    end
+
+    # A_{ik} = pref * sum_j w_j * c_j^{i+k}
+    A = zeros(T, M+1, M+1)
+    @inbounds for i in 0:M
+        for k in 0:M
+            A[i+1, k+1] = pref * sum(w .* Cpow[:, i+k+1])
+        end
+    end
+
+    # Right-hand side r = u - b (keep type T / Duals if present)
+    r = u .- b
+
+    # Regularization (Tikhonov): (A^T A + λ I) α = A^T r
+    λT = T(λ)
+    if λT == zero(T)
+        α = A \ r
+    else
+        ATA = A' * A
+        rhs = A' * r
+        α = (ATA + λT * I) \ rhs
+    end
+
+    return α
+end
+
+# -------------------------
+# Maximum entropy closure (discrete, uniform grid, exponential family)
+# -------------------------
+
+"""
+    closure(u::AbstractVector, equations::GramianMomentEquations1D, ::Val{:MaxEnt})
+
+Compute u_{M+1} by reconstructing a discrete MaxEnt distribution on a velocity grid
+that matches the given convective moments u[1..M+1]. We solve for Lagrange multipliers α
+in the exponential family f_i = exp(α_0 + α_1 c_i + ... + α_M c_i^M), subject to
+moment constraints A f = u, then compute the next moment via the same quadrature.
+
+Notes:
+- Grid: c ∈ [v - L√Θ, v + L√Θ], uniform with n cells; defaults L=6, n=200.
+- Type-generic and AD-safe (works with ForwardDiff.Dual).
+"""
+function closure(u::AbstractVector, equations::GramianMomentEquations1D, ::Val{:MaxEnt})
+    M = length(u) - 1
+    T = eltype(u)
+    ρ = u[1]
+    v = u[2] / ρ
+    Θ = (u[3] / ρ) - v^2
+    Θ = Θ > zero(T) ? Θ : T(eps(Float64))
+
+    # Default grid parameters
+    L = T(6)        # width in std devs
+    n = 200         # number of cells
+    cmin = v - L * sqrt(Θ)
+    cmax = v + L * sqrt(Θ)
+
+    # Solve for multipliers α matching moments 0..M
+    α = _maxent_solve_multipliers(u, M, cmin, cmax, n)
+
+    # Compute closure u_{M+1}
+    dc = (cmax - cmin) / T(n)
+    # Use nodes i=0..n (n+1 points) as in the Mathematica snippet
+    c = [cmin + dc * T(i) for i in 0:n]
+    # f_i from α
+    # build polynomial α_0 + Σ α_k c^k
+    poly(i) = begin
+        ci = c[i]
+        acc = α[1]            # α_0
+        @inbounds for k in 1:M
+            acc += α[k+1] * (ci^k)
+        end
+        acc
+    end
+    f = similar(c)
+    @inbounds for i in eachindex(c)
+        f[i] = exp(poly(i))
+    end
+    # next moment via rectangular rule with Dc weights
+    # u_{M+1} ≈ Σ dc c_i^{M+1} f_i
+    next_moment = zero(T)
+    @inbounds for i in eachindex(c)
+        next_moment += dc * (c[i]^(M+1)) * f[i]
+    end
+    return next_moment
+end
+
+# Solve for α ∈ R^{M+1} such that A(α) f(α) = u, where
+# f_i(α) = exp(α_0 + α_1 c_i + ... + α_M c_i^M),
+# A_{j,i} = dc * (c_i^j) with the convention c^0 ≡ 1.
+function _maxent_solve_multipliers(u::AbstractVector, M::Integer, cmin, cmax, n::Integer)
+    T = eltype(u)
+    dc = (cmax - cmin) / T(n)
+    c = [cmin + dc * T(i) for i in 0:n]   # n+1 points
+
+    # Build A operator as a closure to avoid materializing a large matrix
+    function Af(α)
+        # compute f_i = exp(α⋅φ(c_i)) and moments m_j = Σ dc c_i^j f_i
+        m = zeros(T, M+1)
+        @inbounds for i in eachindex(c)
+            # φ(c_i) polynomial
+            ci = c[i]
+            s = α[1]
+            for k in 1:M
+                s += α[k+1] * (ci^k)
+            end
+            fi = exp(s)
+            # accumulate moments
+            pow = one(T)            # ci^0
+            for j in 0:M
+                m[j+1] += dc * pow * fi
+                pow *= ci
+            end
+        end
+        return m
+    end
+
+    # Residual R(α) = Af(α) - u[1:M+1]
+    u_vec = @views u[1:M+1]
+    R(α) = Af(α) .- u_vec
+
+    # Newton iteration
+    α = zeros(T, M+1)
+    maxit = 40
+    rtol = T(1e-10)
+    atol = T(1e-12)
+    for it in 1:maxit
+        r = R(α)
+        rnorm = sqrt(sum(abs2, r))
+        if rnorm <= rtol * max(T(1), sqrt(sum(abs2, u_vec))) + atol
+            return α
+        end
+        # Jacobian via ForwardDiff
+        J = ForwardDiff.jacobian(R, α)
+        Δ = - (J \ r)
+        α .= α .+ Δ
+    end
+    # If not converged, return the best effort α
+    return α
+end
 
 
 # compute Gramian matrix G_n
@@ -335,7 +561,8 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D) = u
 function dCdu(u, equations::GramianMomentEquations1D)
     # automatic differentiation
     closure_wrapped(x) = closure(x, equations)
-    return ForwardDiff.gradient(closure_wrapped, u)
+    grad = ForwardDiff.gradient(closure_wrapped, u)
+    return ForwardDiff.value(grad)
 end
 
 

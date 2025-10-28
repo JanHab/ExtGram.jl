@@ -1,6 +1,6 @@
 # Setup ready to create semidiscretizations of the Gramian moment equations in 1D
 function setupGramianMomentEquations1DRiemann(
-    M, Kn, extended, 
+    M, Kn, closure, 
     f_left, f_right;
     base_tree_level = 8,
     surface_flux = flux_lax_friedrichs,
@@ -9,7 +9,7 @@ function setupGramianMomentEquations1DRiemann(
     domain = (-2.0, 2.0),
     χ_set = "optimal"
     )
-    equations = GramianMomentEquations1D(M, Kn, extended; χ_set=χ_set)
+    equations = GramianMomentEquations1D(M, Kn, closure; χ_set=χ_set)
     initial_condition = InitialConditionsShockTube(
         f_left, # Density, velocity, temperature
         f_right, # Shock in density, but not velocity, temperature initially
