@@ -58,3 +58,22 @@ end
 function (ic::InitialConditionsShockTube)(coords, t, equations::GramianMomentEquations1D)
     if coords[1] < 0.0; return ic.left; else; return ic.right; end
 end
+
+
+
+struct InitialConditionsTwoShocks{N}
+    outer::SVector{N}
+    inner::SVector{N}
+
+    function InitialConditionsTwoShocks(f_outer, f_inner, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+        outer = convective_moments(f_outer, Val(Mp1))
+        inner = convective_moments(f_inner, Val(Mp1))
+        # ToDo: verbose=false
+        @assert check_realizability(outer, verbose=false) && check_realizability(inner, verbose=false)
+        return new{Mp1}(outer, inner)
+    end
+end
+
+function (ic::InitialConditionsTwoShocks)(coords, t, equations::GramianMomentEquations1D)
+    if -1.0 < coords[1] && coords[1] < 1.0; return ic.inner; else; return ic.outer; end
+end

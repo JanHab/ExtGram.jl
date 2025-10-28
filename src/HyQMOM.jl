@@ -9,7 +9,7 @@ include("testing.jl")
 include("initial_conditions.jl")
 
 export GramianMomentEquations1D, gramian, closure, moment_prim2cons, moment_cons2prim, dCdu, flux_jacobian, relaxation_source, zero_source, numerical_flux
-export InitialConditionsShockTube, Maxwellian, convective_moments, primitive_moments
+export InitialConditionsShockTube, Maxwellian, convective_moments, primitive_moments, InitialConditionsTwoShocks
 export test_closure, check_realizability
 
 # Vlasov-Poisson implementation
