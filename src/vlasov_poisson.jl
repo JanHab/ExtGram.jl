@@ -38,8 +38,7 @@ function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}
     end
 
     # return positive value of source, as it is on the lhs but with a minus -> positive source term
-    # todo: Add possibility to combine with other source terms
-    return source #!.+ relaxation_source(u, x, t, equations)
+    return source
 end
 
 function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real})
@@ -75,52 +74,9 @@ end
 function vlasov_poisson_callback(integrator)
     u = integrator.u
     t = integrator.t
-    # todo: Use collect1dTreeArrays from converter_1d.jl
-    semi = integrator.p
-    u_ode = integrator.u
 
-    mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
-    tree = mesh.tree
+    connectivity, coordinates, variables = collect1dTreeArrays(integrator, cons2cons) # cons2cons only relevant for connectivity -> not relevant here
 
-    n_active_cells = Trixi.count_leaf_cells(tree)
-    active_cell_ids = Trixi.leaf_cells(tree)
-
-    basis_nodes = solver.basis.nodes
-    n_vertices_per_cell = length(basis_nodes) # Trixi.nnodes(solver)
-    # total vertices amount (overlapping vertices combined) = #cell_inner_vertices + #cell_outer_vertices(=n_cells+1)
-    n_vertices = (n_vertices_per_cell-1)*n_active_cells+1
-
-    n_vars = Trixi.nvariables(equations)
-    u = Trixi.wrap_array_native(u_ode, mesh, equations, solver, cache)
-
-    # i_active_cell -> vertex ids
-    # in 1D a simple relation suffices: active_cells_to_vertices(i_cell) = i_cell*(n_vertices_per_cell-1)-3 .+ collect(1:n_vertices_per_cell)
-    # use a matrix anyway for ease of use and compatibility (no need to pass along n_active_cells for iteration over cells)
-    active_cells_to_vertices = zeros(Int, n_active_cells, n_vertices_per_cell)
-
-    # auxiliary arrays for the solution output
-    coordinates = zeros(n_vertices)
-    variables = zeros(n_vertices, n_vars)
-
-
-    # go through all active cells from left to right and compute the nodal coordinates
-    for i_cell=1:n_active_cells
-        i_cell_global = active_cell_ids[i_cell]
-        vertices = (i_cell-1)*(n_vertices_per_cell-1) .+ collect(1:n_vertices_per_cell)
-        active_cells_to_vertices[i_cell, :] = vertices
-        coordinates[vertices] = basis_nodes*0.5*Trixi.length_at_cell(tree, i_cell_global) .+ Trixi.cell_coordinates(tree, i_cell_global)[1]
-    end
-
-    # collect all nodal variable values
-    for i_var=1:n_vars
-        data = vec(u[i_var, .., :])
-        for i_cell=1:n_active_cells
-            index = 1 + (i_cell-1)*n_vertices_per_cell # DG -> use a non-overlapping vertex enumeration | alternatively increment indices
-            nodal_values = data[index:index+n_vertices_per_cell-1]
-            nodal_values[[1,end]] *= 0.5 # average the cell boundary values
-            variables[active_cells_to_vertices[i_cell, :], i_var] += nodal_values
-        end
-    end
     ρ = variables[2:end-1, 1]  # First column is density # todo: why 2:end-1? What's wrong here? The first and last entry seem to be off, though.
     ELECTRIC_FIELD.variables = variables # todo: remove this later
     ELECTRIC_FIELD.ρ = vec(ρ)
