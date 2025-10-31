@@ -168,3 +168,81 @@ plot!(
 )
 plot!(plt, yaxis=:log)
 display(plt)
+
+
+
+# ========================================================================================== #
+# Error-Analysis over the time-steps with corrected Maxwellian
+L2_error_ρ = []; L2_error_v = []; L2_error_p = [];
+for i in 1:size(sol.u, 1)
+# i = size(sol.u, 1)-1
+    ρ, v, θ, p = ρ_v_θ_p_BGK(sol.u[i], equations)
+
+    f_Maxwellian = [Maxwellian(ρ, v, θ).(equations.c_vec) for (ρ, v, θ) in zip(ρ, v, θ)]
+
+    Id = I(N) # identity matrix
+
+    # Assemble weight matrix A
+    A = zeros(3, N)
+    A[1, :] .= HyQMOM.dc(equations) # ρ = Σ w_i f_i -> A[1, :] = w_i = dc
+    A[2, :] .= HyQMOM.dc(equations) .* equations.c_vec # ρ v = Σ w_i c_i f_i -> A[2, :] = w_i * c_i
+    A[3, :] .= HyQMOM.dc(equations) .* equations.c_vec.^2 # ρ e = Σ w_i c_i^2 f_i -> A[3, :] = w_i * c_i^2
+
+    # Assemble left-hand side of Lagrange-multiplier system
+    Ã = zeros(N+3, N+3)
+    Ã[1:N, 1:N] .= Id
+    Ã[N+1:N+3, 1:N] .= A
+    Ã[1:N, N+1:N+3] .= A'
+    # Ã[N+1:N+3, N+1:N+3] .= # zeros
+
+    # Assemble right hand side vector b
+    for i in 1:size(f_Maxwellian, 1)
+        b = zeros(N+3)
+        # b[1:N] = 0
+        r = SVector{3}(ρ[i], ρ[i] .* v[i], ρ[i] .* θ[i])
+        Δr = r - A * f_Maxwellian[i]
+        b[N+1:N+3] .= Δr - A * f_Maxwellian[i]
+
+        # Solve for Δf
+        # println("Solving BGK Lagrange-multiplier system...")
+        Δf_full = Ã \ b
+        # println("...done.")
+        Δf = similar(f_Maxwellian[i])
+        Δf .= Δf_full[1:N] # updates for distribution function
+        # println("Δf = ", Δf)
+        λ = Δf_full[N+1:N+3] # Lagrange multipliers
+        # println("λ = ", λ)
+
+        # f̃ = f_Maxwellian + Δf
+        f_Maxwellian[i] += Δf
+    end
+
+    ρ_Maxwellian = [HyQMOM.dc(equations) * sum(f_Maxwellian[i,:][1]) for i in 1:size(f_Maxwellian, 1)] # density
+    v_Maxwellian = [HyQMOM.dc(equations) * sum(f_Maxwellian[i,:][1] .* equations.c_vec) / ρ_Maxwellian[i] for i in 1:size(f_Maxwellian, 1)] # velocity
+    θ_Maxwellian = [HyQMOM.dc(equations) * sum(f_Maxwellian[i,:][1] .* (equations.c_vec .- v_Maxwellian[i]).^ 2) / ρ_Maxwellian[i] for i in 1:size(f_Maxwellian, 1)] # temperature
+    p_Maxwellian = ρ_Maxwellian .* θ_Maxwellian # pressure
+
+    push!(L2_error_ρ, norm(ρ .- ρ_Maxwellian, 2) / norm(ρ_Maxwellian, 2))
+    push!(L2_error_v, norm(v .- v_Maxwellian, 2) / norm(v_Maxwellian, 2))
+    push!(L2_error_p, norm(p .- p_Maxwellian, 2) / norm(p_Maxwellian, 2))
+end
+
+plt = plot(
+    sol.t[3:end], L2_error_ρ[3:end];
+    xlabel = "t",
+    label = "ρ",
+    color = :blue,
+    legend = :topleft,
+)
+plot!(
+    plt, sol.t[3:end], L2_error_v[3:end];
+    label = "v",
+    color = :red,
+)
+plot!(
+    plt, sol.t[3:end], L2_error_p[3:end];
+    label = "p",
+    color = :green,
+)
+plot!(plt, yaxis=:log)
+display(plt)

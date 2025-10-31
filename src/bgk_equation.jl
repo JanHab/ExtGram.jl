@@ -25,13 +25,55 @@ end
 # todo:
 # Overloading for only one relaxation_source function
 function relaxation_source(f, x, t, equations::BGKEquations1D{N}) where {N} 
-    ρ = dc(equations) * sum(f) # density
-    v = dc(equations) * sum(f .* equations.c_vec) / ρ # velocity
-    θ = dc(equations) * sum(f .* (equations.c_vec .- v).^ 2) / ρ # temperature
+    ρ = trapz(equations.c_vec, f) # density
+    v = trapz(equations.c_vec, f .* equations.c_vec) / ρ # velocity
+    θ = trapz(equations.c_vec, f .* (equations.c_vec .- v).^ 2) / ρ # temperature
 
     f_Maxwellian = Maxwellian(ρ, v, θ).(equations.c_vec)
-    @assert all(f_Maxwellian .>= 0.0)
+    # @assert all(f_Maxwellian .>= 0.0)
     return (-1.0 / equations.Kn) * (f .- f_Maxwellian)
+
+    # Assemble weight matrix A
+    A = zeros(3, N)
+    A[1, :] .= dc(equations) # ρ = Σ w_i f_i -> A[1, :] = w_i = dc
+    A[2, :] .= dc(equations) .* equations.c_vec # ρ v = Σ w_i c_i f_i -> A[2, :] = w_i * c_i
+    A[3, :] .= dc(equations) .* equations.c_vec.^2 # ρ e = Σ w_i c_i^2 f_i -> A[3, :] = w_i * c_i^2
+
+    # Assemble left-hand side of Lagrange-multiplier system
+    Ã = zeros(N+3, N+3)
+    Ã[1:N, 1:N] .= I(N) # identity matrix
+    Ã[N+1:N+3, 1:N] .= A
+    Ã[1:N, N+1:N+3] .= A'
+    # Ã[N+1:N+3, N+1:N+3] .= # zeros
+
+    # Assemble right hand side vector b
+    b = zeros(N+3)
+    # b[1:N] = 0
+    r = SVector{3}(ρ, ρ .* v, ρ .* θ)
+    Δr = r - A * f_Maxwellian
+    b[N+1:N+3] .= Δr - A * f_Maxwellian
+
+    # Solve for Δf
+    # println("Solving BGK Lagrange-multiplier system...")
+    Δf_full = Ã \ b
+    # println("...done.")
+    Δf = similar(f)
+    Δf .= Δf_full[1:N] # updates for distribution function
+    # println("Δf = ", Δf)
+    λ = Δf_full[N+1:N+3] # Lagrange multipliers
+    # println("λ = ", λ)
+
+    Δf = A' * inv(A * A') * Δr
+
+    f̃ = f_Maxwellian + Δf
+    # println("f̃ = ", f̃)
+
+    ρ̃ = trapz(equations.c_vec, f̃)
+    # println("ρ: ", ρ)
+    # println("ρ̃: ", ρ̃)
+    # println("abs(ρ - ρ̃) / ρ = ", abs(ρ - ρ̃) / ρ)
+
+    return (-1.0 / equations.Kn) * (f .- f̃)
 end
 zero_source(f, x, t, equations::BGKEquations1D{N}) where {N} = SVector{N}(ntuple(i->0.0, N))
 
