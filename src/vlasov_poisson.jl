@@ -113,12 +113,6 @@ function vlasov_poisson_callback(;M, mesh, domain)
     
     # Set parameters for this run
     ELECTRIC_FIELD.MP1 = M+1
-    # x_range = sort(mesh.tree.coordinates[1,1:mesh.tree.length])
-    # x_range = (x_range[1:end-1] + x_range[2:end]) / 2  # cell centers
-    # pushfirst!(x_range, domain[1])
-    # push!(x_range, domain[2])
-    # # x_range = [0, (x_coordinates[2:end] + x_coordinates[1:end-1])/2, 4.0*π]  # cell centers including boundaries
-    # ELECTRIC_FIELD.x_range = x_range
     
     return DiscreteCallback(
         (u, t, integrator) -> true,  # Always trigger at every step
