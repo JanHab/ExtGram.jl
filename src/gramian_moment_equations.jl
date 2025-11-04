@@ -156,96 +156,53 @@ function closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGramOdd})
     M = length(u)-1 # u[0, ..., M]
     @assert isodd(M)
     n = equations.n
-    if n==2 # M=3
-        invG_1 = inv(gramian(u, 1))
-        invG_0 = 1 / u[1]
-        # invG_2 = inv(gramian(u, 2))
-        # Index mapping from SymPy (0-based): u0→u[1], u1→u[2], u2→u[3], u3→u[4], u4→u[5], u5→u[6]
-        closure = @views (
-            u[3:4]'*invG_1*u[3:4]
-        ) + (
-            u[3] - u[2]*invG_0*u[2]
-        ) * (
-            2 + (
-                u[4] - u[3]*invG_0*u[2]
-            )^2 / (
-                u[3] - u[2]*invG_0*u[2]
-            )^2
-        )
-    elseif n==3 # M=5
-        invG_1 = inv(gramian(u, 1))
-        invG_0 = 1 / u[1]
-        invG_2 = inv(gramian(u, 2))
-        A = @views (
-            1 + (
-                u[5] - u[3:4]'*invG_1*u[3:4]
-            ) / (
-                u[3] - u[2] * invG_0 * u[2]
-            ) + 0.5 * (
-                (
-                    (
-                        u[6] - u[4:5]'*invG_1*u[3:4]
-                    ) / (
-                        u[5] - u[3:4]'*invG_1*u[3:4]
-                    ) - (
-                        u[4] - u[3] * invG_0 * u[2]
-                    ) / (
-                        u[3] - u[2] * invG_0 * u[2]
-                    )
-                )^2 + (
-                    (
-                        u[6] - u[4:5]'*invG_1*u[3:4]
-                    ) / (
-                        u[5] - u[3:4]'*invG_1*u[3:4]
-                    ) - (
-                        2 * (
-                            u[4] - u[3] * invG_0 * u[2]
-                        ) / (
-                            u[3] - u[2] * invG_0 * u[2]
-                        )
-                    )
-                )^2
-            )
-        )
-        
-        closure = @views (
-            u[4:6]'*invG_2*u[4:6]
-        ) + (
-            u[5] - u[3:4]'*invG_1*u[3:4]
-        ) * A
-    else
-        sigma_nn(u, n) = u[2n+1] - u[n+1:2n]'*inv(gramian(u, n-1))*u[n+1:2n]
-        sigma_nmnm(u, n) = u[2n-1] - u[n:2n-2]'*inv(gramian(u, n-2))*u[n:2n-2]
-        sigma_nnp(u, n) = u[2n+2] - u[n+2:2n+1]'*inv(gramian(u, n-1))*u[n+1:2n]
-        sigma_nmn(u, n) = u[2n] - u[n+1:2n-1]'*inv(gramian(u, n-2))*u[n:2n-2]
+    s = 1 # shift for index as julia is 1-based
 
-        an(u, n) = sigma_nnp(u, n) / sigma_nn(u, n) - sigma_nmn(u, n) / sigma_nmnm(u, n)
-        bn(u, n) = sigma_nn(u, n) / sigma_nmnm(u, n)
+    sigma_nn(u, n) = u[2n+s] - u[n+s:2n-1+s]'*inv(gramian(u, n-1))*u[n+s:2n-1+s]
+    sigma_nmnm(u, n) = u[2n-2+s] - u[n-1+s:2n-3+s]'*inv(gramian(u, n-2))*u[n-1+s:2n-3+s]
+    sigma_nnp(u, n) = u[2n+1+s] - u[n+1+s:2n+s]'*inv(gramian(u, n-1))*u[n+s:2n-1+s]
+    sigma_nmn(u, n) = u[2n-1+s] - u[n+s:2n-2+s]'*inv(gramian(u, n-2))*u[n-1+s:2n-3+s]
 
-
-        bk_sum = 1.0
-        anm = an(u, n-1)
-        ak_sum = (
-            anm
-        )^2 + (
-            anm - (
-                u[4] - u[3] / u[1] * u[2]
-            ) / (
-                u[3] - u[2] / u[1] * u[2]
-            )
-        )^2# (anm - a0)^2 + (anm - a1)^2
-        for k=2:n-1
-            bk_sum += bn(u, k)
-            ak_sum += (anm - an(u, k))^2
+    function an(u, n)
+        if n == 0
+            return u[1+s] / u[0+s]
+        elseif n == 1
+            return sigma_nnp(u, n) / sigma_nn(u, n) - u[1+s] / u[0+s]
+        else
+            return sigma_nnp(u, n) / sigma_nn(u, n) - sigma_nmn(u, n) / sigma_nmnm(u, n)
         end
-        closure = @views(
-            u[n+1:2n]' * inv(gramian(u, n-1)) * u[n+1:2n]
-        ) + (
-            u[2n-1] - u[n:2n-2]'*inv(gramian(u, n-2))*u[n:2n-2]
-        ) * (
-            4 / (2*(n-1)) * bk_sum + 2 / (2*(n-1)) * ak_sum
-        )
     end
+    function bn(u, n)
+        if n == 0
+            return 0
+        else
+            return sigma_nn(u, n) / sigma_nmnm(u, n)
+        end
+    end
+
+    α = zeros(eltype(u), n)
+    β = zeros(eltype(u), n)
+    α[0+s] = u[1+s] / u[0+s]
+    β[0+s] = 0.0
+    for k=1:n-1
+        α[k+s] = an(u, k)
+        β[k+s] = bn(u, k)
+    end
+    
+    β_k = 0.0
+    for k=1:n-1
+        β_k += 2 / (n-1) * β[k+s]
+    end
+    for l=0:n-1
+        β_k += 1 / (n-1) * (α[n-1+s] - α[l+s])^2
+    end
+    closure = @views(
+        u[n+s:2n-1+s]' * inv(gramian(u, n-1)) * u[n+s:2n-1+s]
+    ) + (
+        sigma_nmnm(u, n)
+    ) * (
+        β_k
+    )
 
     return closure
 end
@@ -350,119 +307,7 @@ function solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64
     return α
 end
 
-# -------------------------
-# Maximum entropy closure (discrete, uniform grid, exponential family)
-# -------------------------
 
-"""
-    closure(u::AbstractVector, equations::GramianMomentEquations1D, ::Val{:MaxEnt})
-
-Compute u_{M+1} by reconstructing a discrete MaxEnt distribution on a velocity grid
-that matches the given convective moments u[1..M+1]. We solve for Lagrange multipliers α
-in the exponential family f_i = exp(α_0 + α_1 c_i + ... + α_M c_i^M), subject to
-moment constraints A f = u, then compute the next moment via the same quadrature.
-
-Notes:
-- Grid: c ∈ [v - L√Θ, v + L√Θ], uniform with n cells; defaults L=6, n=200.
-- Type-generic and AD-safe (works with ForwardDiff.Dual).
-"""
-function closure(u::AbstractVector, equations::GramianMomentEquations1D, ::Val{:MaxEnt})
-    M = length(u) - 1
-    T = eltype(u)
-    ρ = u[1]
-    v = u[2] / ρ
-    Θ = (u[3] / ρ) - v^2
-    Θ = Θ > zero(T) ? Θ : T(eps(Float64))
-
-    # Default grid parameters
-    L = T(6)        # width in std devs
-    n = 200         # number of cells
-    cmin = v - L * sqrt(Θ)
-    cmax = v + L * sqrt(Θ)
-
-    # Solve for multipliers α matching moments 0..M
-    α = _maxent_solve_multipliers(u, M, cmin, cmax, n)
-
-    # Compute closure u_{M+1}
-    dc = (cmax - cmin) / T(n)
-    # Use nodes i=0..n (n+1 points) as in the Mathematica snippet
-    c = [cmin + dc * T(i) for i in 0:n]
-    # f_i from α
-    # build polynomial α_0 + Σ α_k c^k
-    poly(i) = begin
-        ci = c[i]
-        acc = α[1]            # α_0
-        @inbounds for k in 1:M
-            acc += α[k+1] * (ci^k)
-        end
-        acc
-    end
-    f = similar(c)
-    @inbounds for i in eachindex(c)
-        f[i] = exp(poly(i))
-    end
-    # next moment via rectangular rule with Dc weights
-    # u_{M+1} ≈ Σ dc c_i^{M+1} f_i
-    next_moment = zero(T)
-    @inbounds for i in eachindex(c)
-        next_moment += dc * (c[i]^(M+1)) * f[i]
-    end
-    return next_moment
-end
-
-# Solve for α ∈ R^{M+1} such that A(α) f(α) = u, where
-# f_i(α) = exp(α_0 + α_1 c_i + ... + α_M c_i^M),
-# A_{j,i} = dc * (c_i^j) with the convention c^0 ≡ 1.
-function _maxent_solve_multipliers(u::AbstractVector, M::Integer, cmin, cmax, n::Integer)
-    T = eltype(u)
-    dc = (cmax - cmin) / T(n)
-    c = [cmin + dc * T(i) for i in 0:n]   # n+1 points
-
-    # Build A operator as a closure to avoid materializing a large matrix
-    function Af(α)
-        # compute f_i = exp(α⋅φ(c_i)) and moments m_j = Σ dc c_i^j f_i
-        m = zeros(T, M+1)
-        @inbounds for i in eachindex(c)
-            # φ(c_i) polynomial
-            ci = c[i]
-            s = α[1]
-            for k in 1:M
-                s += α[k+1] * (ci^k)
-            end
-            fi = exp(s)
-            # accumulate moments
-            pow = one(T)            # ci^0
-            for j in 0:M
-                m[j+1] += dc * pow * fi
-                pow *= ci
-            end
-        end
-        return m
-    end
-
-    # Residual R(α) = Af(α) - u[1:M+1]
-    u_vec = @views u[1:M+1]
-    R(α) = Af(α) .- u_vec
-
-    # Newton iteration
-    α = zeros(T, M+1)
-    maxit = 40
-    rtol = T(1e-10)
-    atol = T(1e-12)
-    for it in 1:maxit
-        r = R(α)
-        rnorm = sqrt(sum(abs2, r))
-        if rnorm <= rtol * max(T(1), sqrt(sum(abs2, u_vec))) + atol
-            return α
-        end
-        # Jacobian via ForwardDiff
-        J = ForwardDiff.jacobian(R, α)
-        Δ = - (J \ r)
-        α .= α .+ Δ
-    end
-    # If not converged, return the best effort α
-    return α
-end
 
 
 # compute Gramian matrix G_n

@@ -68,12 +68,12 @@ end
 
     # todo: update to new closure
     # Extended
-    # equations = GramianMomentEquations1D(M, Kn, "ExtGram")
-    # mathematica_closure = [6.93077, -401.198, 1.05553e+7]
-    # for i in eachindex(testmoments)
-    #     trixi_closure = closure(testmoments[i], equations)
-    #     @test isapprox(trixi_closure, mathematica_closure[i], atol=1e-4, rtol=1e-4)
-    # end
+    equations = GramianMomentEquations1D(M, Kn, "ExtGram")
+    mathematica_closure = [0.42447552447552983, -4.647057751101944e6, 2.8145060917939074e7]
+    for i in eachindex(testmoments)
+        trixi_closure = HyQMOM.closure(testmoments[i], equations)
+        @test isapprox(trixi_closure, mathematica_closure[i], atol=1e-4, rtol=1e-4)
+    end
 end
 
 @testset "Compare with Mathematica for M=4" begin
@@ -117,12 +117,12 @@ end
 
     # todo: update to new closure
     # Extended
-    # equations = GramianMomentEquations1D(M, Kn, "ExtGram")
-    # mathematica_closure = [37.1617, 309.211, -150923.]
-    # for i in eachindex(testmoments)
-    #     trixi_closure = closure(testmoments[i], equations)
-    #     @test isapprox(trixi_closure, mathematica_closure[i], atol=1e-4, rtol=1e-4)
-    # end
+    equations = GramianMomentEquations1D(M, Kn, "ExtGram")
+    mathematica_closure = [144.0434217111978, 642.0048025874873, -4.180103517965229e13]
+    for i in eachindex(testmoments)
+        trixi_closure = HyQMOM.closure(testmoments[i], equations)
+        @test isapprox(trixi_closure, mathematica_closure[i], atol=1e-4, rtol=1e-4)
+    end
 end
 
 @testset "Compare with Mathematica for M=6" begin
