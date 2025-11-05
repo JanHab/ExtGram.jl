@@ -5,16 +5,16 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-M = 3    # number of moments
+M = 7    # number of moments
 closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
 T_end = 0.5
 source = zero_source #!relaxation_source
 
 # Domain and discretization parameters
-x_lower = -2.0; x_upper = 2.0
+x_lower = -4.0; x_upper = 4.0
 domain = (x_lower, x_upper)
-polydeg = 1  # polynomial degree
+polydeg = 0  # polynomial degree
 base_tree_level = 8  # initial mesh refinement level
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
@@ -27,7 +27,7 @@ equations = GramianMomentEquations1D(M, Kn, closure)
 #     equations
 # )
 initial_condition = InitialConditionsShockTube(
-    Maxwellian(7.0, 0.0, 1.0), # Density, velocity, temperature
+    Maxwellian(2.0, 0.0, 1.0), # Density, velocity, temperature
     Maxwellian(1.0, 0.0, 1.0), # Shock in density, but not velocity, temperature initially
     equations
 )
@@ -71,7 +71,7 @@ ode = semidiscretize(semi, tspan)
 
 callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
-    cfl = 0.45,          # Maximum cfl number
+    cfl = 0.9,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
     name="gram_solution",
 )

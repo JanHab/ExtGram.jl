@@ -61,6 +61,32 @@ end
 
 
 
+struct InitialConditionsShockTubeNormalized{N}
+    left::SVector{N}
+    right::SVector{N}
+
+    function InitialConditionsShockTubeNormalized(f_left, f_right, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+        left = convective_moments(f_left, Val(Mp1))
+        right = convective_moments(f_right, Val(Mp1))
+        # Normalize moments
+        # W_n = 1/ρ (1/θ)^{(n)/2} u_n with u_n the n-th convective moment
+        # W_n = [1, 0, 1, W_3, …, W_n]'
+        left_n = similar(left); right_n = similar(right);
+        for i in eachindex(left)
+            left_n[i] = 1 / left[1] * (1 / left[3])^((i-1)/2) * left[i]
+            right_n[i] = 1 / right[1] * (1 / right[3])^((i-1)/2) * right[i] # same size
+        end
+        # ToDo: verbose=false
+        @assert check_realizability(left_n, verbose=false) && check_realizability(right_n, verbose=false)
+        return new{Mp1}(left_n, right_n)
+    end
+end
+
+function (ic::InitialConditionsShockTubeNormalized)(coords, t, equations::GramianMomentEquations1D)
+    if coords[1] < 0.0; return ic.left; else; return ic.right; end
+end
+
+
 struct InitialConditionsTwoShocks{N}
     outer::SVector{N}
     inner::SVector{N}

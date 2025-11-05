@@ -5,9 +5,9 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 # Parameter
-M_vector = [4, 6, 8, 10, 12]    # number of moments
+M_vector = [5, 7, 9, 11, 13]    # number of moments
 closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
-Kn = 0.01 #!1.0  # Knudsen number
+Kn = 1.0 #!1.0  # Knudsen number
 T_end = 0.3
 source = relaxation_source
 x_lower = -2.0; x_upper = 2.0
@@ -41,7 +41,7 @@ for M in M_vector
         semi, tspan, basis; 
         cfl = 0.45,          # Maximum cfl number
         plot_interval = 20,  # plot every 20 steps
-        name="Convergence/ConvergenceEvenOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)", # name of output files
+        name="Convergence/ConvergenceOddOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)", # name of output files
     )
 
     #= solve =#
@@ -61,11 +61,11 @@ for M in M_vector
     # Post Processing
     x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
     display(p1)
-    savefig(p1, "out/Convergence/ConvergenceEvenOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.pdf")
+    savefig(p1, "out/Convergence/ConvergenceOddOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.pdf")
 
     # Store primitive variables in CSV file
     CSV.write(
-        "out/Convergence/ConvergenceEvenOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.csv",
+        "out/Convergence/ConvergenceOddOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.csv",
         Tables.columntable((x=x, rho=ρ, v=v, p=p))
     )
 
@@ -73,12 +73,12 @@ for M in M_vector
     n_plots = 5
     p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
     display(p2)
-    savefig(p2, "out/Convergence/ConvergenceEvenOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_λ_max.pdf")
+    savefig(p2, "out/Convergence/ConvergenceOddOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_λ_max.pdf")
 
     # Plot total variation in space over time
     p3, TV_t = TVD_space(sol, M)
     display(p3)
-    savefig(p3, "out/Convergence/ConvergenceEvenOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_TV_space.pdf")
+    savefig(p3, "out/Convergence/ConvergenceOddOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_TV_space.pdf")
 end
 
 # Load the solutions and plot convergence
@@ -91,7 +91,7 @@ for _ in 1:plot_moments
     push!(primitive_plots, plot())
 end
 for M in M_vector
-    solution_file = "out/Convergence/ConvergenceEvenOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).tsv"
+    solution_file = "out/Convergence/ConvergenceOddOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).tsv"
 
     x, conservative_moments = readfile(solution_file)
     primitive_moments = similar(conservative_moments)
@@ -124,9 +124,9 @@ for M in M_vector
 end
 for i in 1:plot_moments
     display(conservative_plots[i])
-    savefig(conservative_plots[i], "out/Convergence/ConvergenceEvenOrder/conservative$(i)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+    savefig(conservative_plots[i], "out/Convergence/ConvergenceOddOrder/conservative$(i)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
     display(primitive_plots[i])
-    savefig(primitive_plots[i], "out/Convergence/ConvergenceEvenOrder/primitive$(i)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+    savefig(primitive_plots[i], "out/Convergence/ConvergenceOddOrder/primitive$(i)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
 end
 
 # relative L2-error
@@ -158,6 +158,6 @@ for j in 1:plot_moments
     )
 end
 display(l2_plot_conservative)
-savefig(l2_plot_conservative, "out/Convergence/ConvergenceEvenOrder/L2_error_conservative__Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+savefig(l2_plot_conservative, "out/Convergence/ConvergenceOddOrder/L2_error_conservative__Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
 display(l2_plot_primitive)
-savefig(l2_plot_primitive, "out/Convergence/ConvergenceEvenOrder/L2_error_primitive__Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
+savefig(l2_plot_primitive, "out/Convergence/ConvergenceOddOrder/L2_error_primitive__Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R).pdf")
