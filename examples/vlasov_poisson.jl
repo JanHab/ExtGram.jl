@@ -6,8 +6,8 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 4    # number of moments
-closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
+M = 6    # number of moments
+closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 15.0
 source = vlasov_poisson_source

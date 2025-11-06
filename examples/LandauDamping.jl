@@ -6,7 +6,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 4    # number of moments
+M = 6    # number of moments
 closures = ["Gram", "ExtGram", "Grad"] # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 15.0
@@ -14,14 +14,15 @@ source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
-base_tree_level = 6 # 5 # ! 8
-polydeg = 3
+base_tree_level = 6
+polydeg = 1
+
+ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
+ϵ = 0.001
+k = 0.2
 
 for closure in closures
     equations = GramianMomentEquations1D(M, Kn, closure)
-    ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
-    ϵ = 0.001
-    k = 0.5
     initial_condition = InitialConditionsCosine(
         ρ0,
         ϵ,
@@ -56,8 +57,6 @@ for closure in closures
 
     mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=true) # ! periodic
 
-    # boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
-
     semi = SemidiscretizationHyperbolic(
         mesh, equations, 
         initial_condition, solver, 
@@ -74,7 +73,7 @@ for closure in closures
         cfl = 0.99,          # Maximum cfl number
         plot_interval = 20,  # plot every 20 steps
         time_interval = 500, # save at 500 time intervals
-        name="VlasovPoisson/VlasovPoisson_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)", # name used for output
+        name="VlasovPoisson/VlasovPoisson_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper)", # name used for output
     )
     # Add Vlasov-Poisson callback
     callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, mesh, domain))
@@ -113,10 +112,10 @@ for closure in closures
         linestyle=:dash
     )
     plot!(legend=:bottomleft)
-    savefig("out/VlasovPoisson/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).pdf")
+    savefig("out/VlasovPoisson/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).pdf")
     # store to csv file
     CSV.write(
-        "out/VlasovPoisson/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).csv",
+        "out/VlasovPoisson/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).csv",
         Tables.columntable((
             time=time_callback, E_L2=E_L2_history, 
             E_L2_normalized=E_L2_history ./ E_L2_history[1], 
