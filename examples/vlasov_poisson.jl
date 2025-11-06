@@ -7,7 +7,7 @@ using LaTeXStrings
 
 # Parameter
 M = 4    # number of moments
-closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
+closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 15.0
 source = vlasov_poisson_source
@@ -30,7 +30,7 @@ initial_condition = InitialConditionsCosine(
 )
 
 #= set up semidiscretization =#
-polydeg = 2 #!1 #!1
+polydeg = 3
 basis = LobattoLegendreBasis(polydeg)
 
 # shock capturing
@@ -53,9 +53,7 @@ volume_integral = VolumeIntegralShockCapturingHG(
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=true) # ! periodic
-
-# boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
+mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=true)
 
 semi = SemidiscretizationHyperbolic(
     mesh, equations, 
@@ -94,25 +92,25 @@ sol = solve(
 summary_callback()
 
 # Access the energy history
-E_L2_history = HyQMOM.ELECTRIC_FIELD.E_L2
-time_callback = HyQMOM.ELECTRIC_FIELD.times  # Use actual times from callback
+E_L2_history = HyQMOM.ELECTRIC_FIELD.E_L2;
+time_callback = HyQMOM.ELECTRIC_FIELD.times;  # Use actual times from callback
 
 # You can then plot it or analyze it
-γ = -0.1533 # theoretical decay rate for k=1/2
-γt = exp.(γ .* time_callback)
+γ = -0.1533; # theoretical decay rate for k=1/2
+γt = exp.(γ .* time_callback);
 plot(
     time_callback, E_L2_history ./ E_L2_history[1],
     xlabel="Time", 
     label="HyQMOM M=$M (from callback)",
     ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
-    yaxis=:log
+    yaxis=:log,
+    legend=:bottomleft
 )
 plot!(
     time_callback, γt,
     label="Theoretical Decay exp($γ t)", 
     linestyle=:dash
 )
-plot!(legend=:bottomleft)
 savefig("out/VlasovPoisson/energy_from_callback.pdf")
 # store to csv file
 CSV.write(

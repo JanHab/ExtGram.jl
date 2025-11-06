@@ -1,28 +1,26 @@
 # Global storage for the electric field
 # This will be updated during each RHS evaluation
 mutable struct ElectricFieldStorage
-    E::Vector{Float64}
-    domain::Tuple{Float64, Float64}
-    x_range::Vector{Float64}
-    n::Int
-    initialized::Bool
+    E::Vector{Float64} # Electric field values at spatial points
+    Lx::Float64 # Length of the domain (x_max - x_min) for Poisson solve
+    x_range::Vector{Float64}    # Spatial grid points
+    initialized::Bool   # Flag to check if initialized
     ρ::Vector{Float64} # todo: remove this later
-    MP1::Int
-    E_L2::Vector{Float64}
+    MP1::Int    # number of moments + 1
+    E_L2::Vector{Float64}   # Track L2 norm of electric field over time
     times::Vector{Float64}  # Track actual times when E_L2 is recorded
-    variables#::Matrix{Float64} # todo: remove this later
+    variables#::Matrix{Float64} # Store solution variables at spatial points
+    coordinates::Vector{Float64}    # Store spatial coordinates
 end
 
 # Global instance
-const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], (0.0, 0.0), Float64[], 0, false, Float64[], 0, Float64[], Float64[],
-    [Float64[]], # todo: remove this later
+const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], 0.0, Float64[], false, Float64[], 0, Float64[], Float64[],
+    [Float64[]], Float64[]
 )
 
 # Source term that solves Poisson globally and applies local source
 function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    # todo: hard-coded for the moment
-    x_range = ELECTRIC_FIELD.x_range
-    E_field = linear_interpolation(x_range, ELECTRIC_FIELD.E, extrapolation_bc = Interpolations.Line())
+    E_field = linear_interpolation(ELECTRIC_FIELD.x_range, ELECTRIC_FIELD.E, extrapolation_bc = Interpolations.Line())
     
     # Evaluate electric field at position x
     E_local = E_field(x[1])
@@ -42,30 +40,28 @@ function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}
 end
 
 function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real})
-    n = length(ρ)
-    Lx = ELECTRIC_FIELD.domain[end] - ELECTRIC_FIELD.domain[1]
-    ρ̃  = ρ .- 1#! mean(ρ)  # neutralizing background
+    n = length(ρ) # number of spatial points
+    ρ̃  = ρ .- mean(ρ) #!ρ .- 1#! mean(ρ)  # neutralizing background
     ρk = fft(ρ̃)
 
     # build wavenumbers k consistent with FFT ordering
     # k = 0, 1, ..., floor(n/2), -ceil((n-1)/2), ..., -1
     k_int = [0:div(n,2); -div(n-1,2):-1]
-    kx = (2π / Lx) .* k_int
+    kx = (2π / ELECTRIC_FIELD.Lx) .* k_int
 
+    # Solve for E in Fourier space
     Ek = similar(ρk)
     Ek[1] = 0 # k = 0 mode
     for j in 2:n
         if kx[j] != 0.0
             # Directly solves for E in Fourier space
-            Ek[j] = ρk[j] / (im * kx[j]) # ? Which sign is correct???
-            # Alternative: solves for potential and then differentiate
-            # ! Expression E is wrong here!!!
-            # ? Ek[j] = ρk[j] / (kx[j]^2)
+            Ek[j] = ρk[j] / (im * kx[j])
         else
             Ek[j] = 0
         end
     end
 
+    # Transform back to physical space
     E = real(ifft(Ek))
     return E
 end
@@ -75,27 +71,26 @@ function vlasov_poisson_callback(integrator)
     u = integrator.u
     t = integrator.t
 
-    connectivity, coordinates, variables = collect1dTreeArrays(integrator, cons2cons) # cons2cons only relevant for connectivity -> not relevant here
+    _, coordinates, variables = collect1dTreeArrays(integrator, cons2cons) # cons2cons only relevant for connectivity (first return argument) -> not relevant here
+    if !ELECTRIC_FIELD.initialized
+        ELECTRIC_FIELD.x_range = vec(coordinates[2:end-1])  # exclude ghost cells
+        ELECTRIC_FIELD.initialized = true
+    end
 
+    # Extract density from solution variables
+    # Helps for higher polynomial degrees, but could be optimized further
     ρ = variables[2:end-1, 1]  # First column is density # todo: why 2:end-1? What's wrong here? The first and last entry seem to be off, though.
-    ELECTRIC_FIELD.variables = variables # todo: remove this later
-    ELECTRIC_FIELD.ρ = vec(ρ)
-    ELECTRIC_FIELD.x_range = vec(coordinates[2:end-1])
 
     # Solve Poisson equation globally
     E = solve_poisson_periodic_fft(ρ)
     # Store the electric field
     ELECTRIC_FIELD.E = copy(E)
 
-    # Add energy vector
-    # Energy = ||E(t,⋅)||_L2 = (∫ |E(t,x)|² dx)^(1/2)  (approximated via trapezoidal rule)
     # L2-norm of electric field
+    # Energy = ||E(t,⋅)||_L2 = (∫ |E(t,x)|² dx)^(1/2)  (approximated via trapezoidal rule)
     E_L2 = trapz(ELECTRIC_FIELD.x_range, E.^2)^(1/2)
-    # E_L2 = 1/2 * sum(E.^2) * (ELECTRIC_FIELD.x_range[2] - ELECTRIC_FIELD.x_range[1]) / n_cells
     push!(ELECTRIC_FIELD.E_L2, E_L2)
     push!(ELECTRIC_FIELD.times, t)  # Store the actual time
-
-    ELECTRIC_FIELD.initialized = true
     
     return nothing
 end
@@ -106,10 +101,8 @@ function vlasov_poisson_callback(;M, mesh, domain)
     empty!(ELECTRIC_FIELD.E)
     empty!(ELECTRIC_FIELD.E_L2)
     empty!(ELECTRIC_FIELD.times)
-    empty!(ELECTRIC_FIELD.ρ)
-    ELECTRIC_FIELD.n = 0
     ELECTRIC_FIELD.initialized = false
-    ELECTRIC_FIELD.domain = domain
+    ELECTRIC_FIELD.Lx = domain[end] - domain[1]
     
     # Set parameters for this run
     ELECTRIC_FIELD.MP1 = M+1
