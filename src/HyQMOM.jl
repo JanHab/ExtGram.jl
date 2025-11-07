@@ -39,7 +39,7 @@ export setupGramianMomentEquations1DRiemann, callbacksGramianMomentEquations
 
 # analysis tools
 include("analysis.jl")
-export plot_ρ_v_p, plot_λ_max, TVD_space, readsol, readfile
+export plot_ρ_v_p, plot_λ_max, conservation, readsol, readfile
 
 # BGK equation
 include("bgk_equation.jl")

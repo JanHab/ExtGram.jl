@@ -5,16 +5,16 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-M = 7    # number of moments
+M = 4    # number of moments
 closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
-T_end = 0.5
+T_end = 0.65
 source = zero_source #!relaxation_source
 
 # Domain and discretization parameters
 x_lower = -4.0; x_upper = 4.0
 domain = (x_lower, x_upper)
-polydeg = 0  # polynomial degree
+polydeg = 1  # polynomial degree
 base_tree_level = 8  # initial mesh refinement level
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
@@ -111,6 +111,6 @@ display(p2)
 # savefig(p2, "out/Riemann1D/λ_max.pdf")
 
 # Plot total variation in space over time
-p3, TV_t = TVD_space(sol, M)
+p3, mass, momentum, energy = conservation(sol, M, semi)
 display(p3)
-# savefig(p3, "out/Riemann1D/TV_space.pdf")
+# savefig(p3, "out/Riemann1D/conservation.pdf")
