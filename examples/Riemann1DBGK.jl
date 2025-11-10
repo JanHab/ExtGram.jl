@@ -22,8 +22,9 @@ basis, mesh, equations, initial_condition, solver, boundary_conditions = setupBG
     c_l, c_u, 
     Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
     Maxwellian(ρ_R, v_R, θ_R);
-    base_tree_level = 8,
+    base_tree_level = 10,
     domain = domain,
+    polydeg = 0,
 )
 
 semi = SemidiscretizationHyperbolic(

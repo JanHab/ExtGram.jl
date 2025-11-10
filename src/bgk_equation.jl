@@ -190,20 +190,21 @@ function setupBGK1DRiemann(
     # ==================================== volume integral treatment ==================================== #
 
     # shock capturing
-    indicator_sc = IndicatorHennemannGassner(
-        equations, 
-        basis,
-        alpha_max = 1.0,
-        alpha_min = 0.01,
-        alpha_smooth = true,
-        variable = (u, eqns)->u[1]*u[3]
-    ) # ? Which variable?
+    # indicator_sc = IndicatorHennemannGassner(
+    #     equations, 
+    #     basis,
+    #     alpha_max = 1.0,
+    #     alpha_min = 0.01,
+    #     alpha_smooth = true,
+    #     variable = (u, eqns)->u[1]*u[3]
+    # ) # ? Which variable?
 
-    volume_integral = VolumeIntegralShockCapturingHG(
-        indicator_sc;
-        volume_flux_dg = volume_flux,
-        volume_flux_fv = surface_flux
-    )
+    # volume_integral = VolumeIntegralShockCapturingHG(
+    #     indicator_sc;
+    #     volume_flux_dg = volume_flux,
+    #     volume_flux_fv = surface_flux
+    # )
+    volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
     # =================================================================================================== #
 
