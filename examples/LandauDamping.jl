@@ -23,7 +23,7 @@ k = 0.2
 
 for closure in closures
     equations = GramianMomentEquations1D(M, Kn, closure)
-    initial_condition = InitialConditionsCosine(
+    initial_condition = InitialConditionsLandauDamping(
         ρ0,
         ϵ,
         v0,

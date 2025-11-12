@@ -24,7 +24,7 @@ k = 0.5
 
 for M in Moments
     equations = GramianMomentEquations1D(M, Kn, closure)
-    initial_condition = InitialConditionsCosine(
+    initial_condition = InitialConditionsLandauDamping(
         ρ0,
         ϵ,
         v0,

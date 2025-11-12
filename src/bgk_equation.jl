@@ -370,19 +370,19 @@ function vlasov_poisson_callback_BGK(;N, mesh, domain, equations)
     )
 end
 
-struct InitialConditionsCosine_BGK{N}
+struct InitialConditionsLandauDamping_BGK{N}
     ρ0::Float64
     ϵ::Float64
     v0::Float64
     θ0::Float64
     k::Float64
 
-    function InitialConditionsCosine_BGK(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::BGKEquations1D{N}) where {N}
+    function InitialConditionsLandauDamping_BGK(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::BGKEquations1D{N}) where {N}
         return new{N}(ρ0, ϵ, v0, θ0, k)
     end
 end
 
-function (ic::InitialConditionsCosine_BGK)(coords, t, equations::BGKEquations1D{N}) where {N}
+function (ic::InitialConditionsLandauDamping_BGK)(coords, t, equations::BGKEquations1D{N}) where {N}
     ρx = ic.ρ0 * (1 + ic.ϵ * cos(ic.k * coords[1]))
     f = Maxwellian(ρx, ic.v0, ic.θ0)
     # return convective_moments(f, Val(Mp1))

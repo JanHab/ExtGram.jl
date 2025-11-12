@@ -20,7 +20,7 @@ equations = GramianMomentEquations1D(M, Kn, closure)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
 ϵ = 0.001
 k = 0.5
-initial_condition = InitialConditionsCosine(
+initial_condition = InitialConditionsLandauDamping(
     ρ0,
     ϵ,
     v0,

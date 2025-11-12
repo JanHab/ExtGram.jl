@@ -22,8 +22,8 @@ equations = HyQMOM.BGKEquations1D(N, c_l, c_u, Kn)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
 ϵ = 0.001
 k = 0.5
-# todo: need to export InitialConditionsCosine_BGK
-initial_condition = HyQMOM.InitialConditionsCosine_BGK(
+# todo: need to export InitialConditionsLandauDamping_BGK
+initial_condition = HyQMOM.InitialConditionsLandauDamping_BGK(
     ρ0,
     ϵ,
     v0,
