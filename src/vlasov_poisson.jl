@@ -132,3 +132,21 @@ function (ic::InitialConditionsCosine)(coords, t, equations::GramianMomentEquati
     f = Maxwellian(ρx, ic.v0, ic.θ0)
     return convective_moments(f, Val(Mp1))
 end
+
+struct InitialConditionsTwoStream{N}
+    ρ0::Float64
+    ϵ::Float64
+    v0::Float64
+    θ0::Float64
+    k::Float64
+
+    function InitialConditionsTwoStream(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+        return new{Mp1}(ρ0, ϵ, v0, θ0, k)
+    end
+end
+
+function (ic::InitialConditionsTwoStream)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
+    ρx = ic.ρ0 * (1 + ic.ϵ * cos(ic.k * coords[1]))
+    f = Maxwellian(ρx, ic.v0, ic.θ0) .* ic.v0.^2
+    return convective_moments(f, Val(Mp1))
+end

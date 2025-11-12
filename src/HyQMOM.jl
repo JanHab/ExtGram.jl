@@ -23,7 +23,7 @@ export test_closure, check_realizability
 # needed dependencies: StaticArrays, Interpolations
 using FFTW, Trapz
 include("vlasov_poisson.jl")
-export vlasov_poisson_callback, vlasov_poisson_source, InitialConditionsCosine
+export vlasov_poisson_callback, vlasov_poisson_source, InitialConditionsLandauDamping, InitialConditionsCosine, InitialConditionsTwoStream
 
 # TrixiTree2Triangulation
 # This module implements the triangulation of a 2D TreeMesh with subsequent

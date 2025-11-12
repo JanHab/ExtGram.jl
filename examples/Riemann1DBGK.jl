@@ -8,7 +8,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 N = 100 # ! 250
 c_l = -6.0
 c_u = 6.0
-Kn = 1.0 # Knudsen number
+Kn = 0.01 # Knudsen number
 source = relaxation_source
 
 domain = (-5.0, 5.0)
