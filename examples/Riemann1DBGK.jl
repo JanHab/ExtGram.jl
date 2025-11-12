@@ -5,7 +5,7 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 # Parameter
-N = 50 # ! 250
+N = 100 # ! 250
 c_l = -6.0
 c_u = 6.0
 Kn = 1.0 # Knudsen number
@@ -22,9 +22,9 @@ basis, mesh, equations, initial_condition, solver, boundary_conditions = setupBG
     c_l, c_u, 
     Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
     Maxwellian(ρ_R, v_R, θ_R);
-    base_tree_level = 10,
+    base_tree_level = 11, # !8
     domain = domain,
-    polydeg = 0,
+    polydeg = 0, #! 1
 )
 
 semi = SemidiscretizationHyperbolic(
@@ -40,9 +40,10 @@ ode = semidiscretize(semi, tspan)
 
 callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
-    cfl = 0.45,          # Maximum cfl number
+    cfl = 0.99,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
-    name="Riemann1D/bgk" #! "Riemann1D/bgk_solution_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)", # name of output files
+    # name="Riemann1D/bgk" #
+    name="Riemann1D/bgk_solution_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)", # name of output files
 )
 
 #= solve =#
