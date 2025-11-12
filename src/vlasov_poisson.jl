@@ -134,19 +134,19 @@ function (ic::InitialConditionsLandauDamping)(coords, t, equations::GramianMomen
 end
 
 struct InitialConditionsTwoStream{N}
-    ρ0::Float64
     ϵ::Float64
-    v0::Float64
-    θ0::Float64
     k::Float64
 
-    function InitialConditionsTwoStream(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
-        return new{Mp1}(ρ0, ϵ, v0, θ0, k)
+    function InitialConditionsTwoStream(ϵ::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+        return new{Mp1}(ϵ, k)
     end
 end
 
 function (ic::InitialConditionsTwoStream)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    ρx = ic.ρ0 * (1 + ic.ϵ * cos(ic.k * coords[1]))
-    f = Maxwellian(ρx, ic.v0, ic.θ0) .* ic.v0.^2
-    return convective_moments(f, Val(Mp1))
+    max(c) = 1/sqrt(2*π) * exp(-c^2 / 2) * c^2 .* (1 + ic.ϵ * cos(ic.k * coords[1])) # note: normalized in 1D velocity space 
+    # copying from convective_moments for standard Maxwellian
+    ξ, w = gausshermite(Mp1+1) # +1 for good measure, should not be necessary
+    C = sqrt(2*1.0) .* ξ; c = C .+ 0.0
+    fw = max.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*1.0)
+    return SVector{Mp1,Float64}(ntuple(n->sum(c .^(n-1) .* fw), Mp1))
 end
