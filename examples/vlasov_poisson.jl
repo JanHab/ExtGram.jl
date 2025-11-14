@@ -18,7 +18,7 @@ base_tree_level = 6 #!8
 
 equations = GramianMomentEquations1D(M, Kn, closure)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
-ϵ = 0.001
+ϵ = 0.01
 k = 0.5
 initial_condition = InitialConditionsLandauDamping(
     ρ0,
@@ -30,7 +30,7 @@ initial_condition = InitialConditionsLandauDamping(
 )
 
 #= set up semidiscretization =#
-polydeg = 4 #!3
+polydeg = 3 #!4 #!3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs

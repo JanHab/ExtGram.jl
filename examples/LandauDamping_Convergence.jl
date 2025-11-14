@@ -6,8 +6,8 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-# Moments = [4, 6, 8, 10, 12, 14]    # number of moments
-Moments = [5, 7, 9, 11, 13, 15]    # number of moments
+Moments = [4, 6, 8, 10, 12, 14]    # number of moments
+# Moments = [5, 7, 9, 11, 13, 15]    # number of moments
 closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 15.0
@@ -16,10 +16,10 @@ x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
 base_tree_level = 6
-polydeg = 1
+polydeg = 3
 
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
-ϵ = 0.001
+ϵ = 0.01
 k = 0.5
 
 for M in Moments
@@ -36,23 +36,9 @@ for M in Moments
     #= set up semidiscretization =#
     basis = LobattoLegendreBasis(polydeg)
 
-    # shock capturing
-    # #= crashes for p > 1, i.e. this does not help at all
-    indicator_sc = IndicatorHennemannGassner(
-        equations, basis,
-        alpha_max = 1.0,
-        alpha_min = 0.01,
-        alpha_smooth = true,
-        variable = (u, eqns)->u[1]*u[3]
-    )
-
     surface_flux = flux_lax_friedrichs
     volume_flux = flux_central
-    volume_integral = VolumeIntegralShockCapturingHG(
-        indicator_sc;
-        volume_flux_dg = volume_flux,
-        volume_flux_fv = surface_flux
-    )
+    volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
     solver = DGSEM(basis, surface_flux, volume_integral)
 
@@ -74,7 +60,7 @@ for M in Moments
         cfl = 0.99,          # Maximum cfl number
         plot_interval = 20,  # plot every 20 steps
         time_interval = 500, # save at 500 time intervals
-        name="VlasovPoisson/VlasovPoisson_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper)", # name used for output
+        name="VlasovPoisson/LandauDamping/moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper)", # name used for output
     )
     # Add Vlasov-Poisson callback
     callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, mesh, domain))
@@ -113,10 +99,10 @@ for M in Moments
         linestyle=:dash
     )
     plot!(legend=:bottomleft)
-    savefig("out/VlasovPoisson/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).pdf")
+    savefig("out/VlasovPoisson/LandauDamping/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).pdf")
     # store to csv file
     CSV.write(
-        "out/VlasovPoisson/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).csv",
+        "out/VlasovPoisson/LandauDamping/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).csv",
         Tables.columntable((
             time=time_callback, E_L2=E_L2_history, 
             E_L2_normalized=E_L2_history ./ E_L2_history[1], 

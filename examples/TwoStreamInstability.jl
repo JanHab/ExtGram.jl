@@ -6,10 +6,10 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings, FastGaussQuadrature
 
 # Parameter
-M = 12    # number of moments
-closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
+M = 13    # number of moments
+closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
-T_end = 45#!50.0
+T_end = 25#!50.0
 source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
@@ -28,16 +28,11 @@ initial_condition = InitialConditionsTwoStream(
 polydeg = 1 #! 3, 4
 basis = LobattoLegendreBasis(polydeg)
 
-surface_flux = flux_central #!flux_lax_friedrichs
+surface_flux = flux_lax_friedrichs #flux_central #!flux_lax_friedrichs
 volume_flux = flux_central #!flux_central
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
-# solver = DGSEM(
-#     polydeg = polydeg, 
-#     # surface_flux = surface_flux,
-#     # volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
-# )
 
 mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=true)
 
@@ -80,7 +75,7 @@ save_solution = SaveTriangulationCallback(
     append_solution=true,
     solution_variables = cons2cons,
     clear_out_dir=false,
-    name="gram_solution",
+    name=name="VlasovPoisson/TwoStreamInstability/moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper)", # name used for output
     info="basis = $(Base.typename(typeof(basis)).wrapper)"
 )
 
@@ -102,8 +97,8 @@ sol = solve(
         williamson_condition = false
     );
     dt = 1.0,
-    # Vern6(); #Euler();
-    # dt = 1/16, # solve needs some value here but it will be overwritten by the stepsize_callback
+    # Euler(); #Euler();# Vern6(); #Euler();
+    # dt = 1/50, # solve needs some value here but it will be overwritten by the stepsize_callback
     ode_default_options()..., 
     save_everystep=true,
     callback = callbacks,
@@ -126,15 +121,10 @@ plot(
     yaxis=:log,
     legend=:bottomleft
 )
-# plot!(
-#     time_callback, γt,
-#     label="Theoretical Decay exp($γ t)", 
-#     linestyle=:dash
-# )
-savefig("out/VlasovPoisson/energy_from_callback.pdf")
+savefig("out/VlasovPoisson/TwoStreamInstability/energy_from_callback.pdf")
 # store to csv file
 CSV.write(
-    "out/VlasovPoisson/energy_moments_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).csv",
+    "out/VlasovPoisson/TwoStreamInstability/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).csv",
     Tables.columntable((
         time=time_callback, E_L2=E_L2_history, 
         E_L2_normalized=E_L2_history ./ E_L2_history[1], 
@@ -158,7 +148,7 @@ heatmap(
 contourf(
     x_vals, c_vals, (x,c)->f_ic(x,c),
 )
-savefig("out/VlasovPoisson/initial_condition_two_stream.pdf")
+savefig("out/VlasovPoisson/TwoStreamInstability/initial_condition_two_stream.pdf")
 
 function collect1DTreeArrays_local(semi, u_ode, solution_variables)
     mesh, equations, solver, cache = Trixi.mesh_equations_solver_cache(semi)
@@ -294,36 +284,36 @@ plot!(
     label="E"
 )
 
-init_ρ, init_v, init_θ = [], [], []
-using FastGaussQuadrature
-Mp1 = M+1
-for x_ in x
-    max(c) = 1/sqrt(2*π) * exp(-c^2 / 2) * c^2 .* (1 + ϵ * cos(k * x_))
-    ξ, w = gausshermite(Mp1+1) # +1 for good measure, should not be necessary
-    C = sqrt(2*1.0) .* ξ; c = C .+ 0.0
-    fw = max.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*1.0)
-    ic = SVector{Mp1,Float64}(ntuple(n->sum(c .^(n-1) .* fw), Mp1))
-    push!(init_ρ, ic[1])
-    push!(init_v, ic[2])
-    push!(init_θ, ic[3])
-end
+# init_ρ, init_v, init_θ = [], [], []
+# using FastGaussQuadrature
+# Mp1 = M+1
+# for x_ in x
+#     max(c) = 1/sqrt(2*π) * exp(-c^2 / 2) * c^2 .* (1 + ϵ * cos(k * x_))
+#     ξ, w = gausshermite(Mp1+1) # +1 for good measure, should not be necessary
+#     C = sqrt(2*1.0) .* ξ; c = C .+ 0.0
+#     fw = max.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*1.0)
+#     ic = SVector{Mp1,Float64}(ntuple(n->sum(c .^(n-1) .* fw), Mp1))
+#     push!(init_ρ, ic[1])
+#     push!(init_v, ic[2])
+#     push!(init_θ, ic[3])
+# end
 
-plt = plot(layout=3)
-plot!(
-    plt, subplot=1,
-    x, init_ρ,
-    label="ρ",
-    ylims=(0.98,1.02)
-)
-plot!(
-    plt, subplot=2,
-    x, init_v,
-    label="v",
-    ylims=(-0.01,0.01)
-)
-plot!(
-    plt, subplot=3,
-    x, init_θ,
-    label="θ",
-    ylims=(2.95,3.05)
-)
+# plt = plot(layout=3)
+# plot!(
+#     plt, subplot=1,
+#     x, init_ρ,
+#     label="ρ",
+#     ylims=(0.98,1.02)
+# )
+# plot!(
+#     plt, subplot=2,
+#     x, init_v,
+#     label="v",
+#     ylims=(-0.01,0.01)
+# )
+# plot!(
+#     plt, subplot=3,
+#     x, init_θ,
+#     label="θ",
+#     ylims=(2.95,3.05)
+# )
