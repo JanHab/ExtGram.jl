@@ -6,7 +6,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 6    # number of moments
+M = 4    # number of moments
 closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 15.0
@@ -14,7 +14,7 @@ source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
-base_tree_level = 5
+base_tree_level = 6 #!8
 
 equations = GramianMomentEquations1D(M, Kn, closure)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
@@ -30,26 +30,12 @@ initial_condition = InitialConditionsLandauDamping(
 )
 
 #= set up semidiscretization =#
-polydeg = 3
+polydeg = 4 #!3
 basis = LobattoLegendreBasis(polydeg)
-
-# shock capturing
-# #= crashes for p > 1, i.e. this does not help at all
-indicator_sc = IndicatorHennemannGassner(
-    equations, basis,
-    alpha_max = 1.0,
-    alpha_min = 0.01,
-    alpha_smooth = true,
-    variable = (u, eqns)->u[1]*u[3]
-)
 
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
-volume_integral = VolumeIntegralShockCapturingHG(
-    indicator_sc;
-    volume_flux_dg = volume_flux,
-    volume_flux_fv = surface_flux
-)
+volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 

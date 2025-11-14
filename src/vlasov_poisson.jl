@@ -142,6 +142,16 @@ struct InitialConditionsTwoStream{N}
     end
 end
 
+# function (ic::InitialConditionsTwoStream)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
+#     v0 = 2.0
+#     f = c -> 0.5/sqrt(2π) * (exp.(-(c - v0).^2 ./ 2) .+ exp.(-(c + v0).^2 ./ 2)) .* (1 .+ ic.ϵ * cos(ic.k * coords[1]))
+#     ξ, w = gausshermite(Mp1+1)
+#     C = sqrt(2.0) .* ξ
+#     fw = f.(C) .* w .* exp.(ξ.^2) * sqrt(2.0)
+#     return SVector{Mp1,Float64}(ntuple(n->sum(C .^(n-1) .* fw), Mp1))
+# end
+
+
 function (ic::InitialConditionsTwoStream)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
     max(c) = 1/sqrt(2*π) * exp(-c^2 / 2) * c^2 .* (1 + ic.ϵ * cos(ic.k * coords[1])) # note: normalized in 1D velocity space 
     # copying from convective_moments for standard Maxwellian
@@ -150,3 +160,39 @@ function (ic::InitialConditionsTwoStream)(coords, t, equations::GramianMomentEqu
     fw = max.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*1.0)
     return SVector{Mp1,Float64}(ntuple(n->sum(c .^(n-1) .* fw), Mp1))
 end
+
+# using QuadGK
+
+# struct InitialConditionsTwoStream{N}
+#     ϵ::Float64
+#     k::Float64
+#     v0::Float64
+
+#     # default constructor keeps the old call signature InitialConditionsTwoStream(ϵ,k,eqns)
+#     function InitialConditionsTwoStream(ϵ::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+#         return new{Mp1}(ϵ, k, 2.5) # default beam speed v0=2.5 (in thermal units)
+#     end
+
+#     # alternative constructor allowing explicit beam speed
+#     function InitialConditionsTwoStream(ϵ::Float64, k::Float64, v0::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+#         return new{Mp1}(ϵ, k, v0)
+#     end
+# end
+
+# function (ic::InitialConditionsTwoStream)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
+#     x = coords[1]
+#     # density modulation in x
+#     ρscale = 1.0 * (1.0 + ic.ϵ * cos(ic.k * x))
+
+#     # two symmetric beams shifted by ±v0 (each with half the density)
+#     v0 = ic.v0
+#     # build the total distribution f(c) = ρscale * 0.5*(M(v0) + M(-v0)) with thermal θ=1.0
+#     Mplus  = Maxwellian(1.0, v0, 1.0)
+#     Mminus = Maxwellian(1.0, -v0, 1.0)
+
+#     f_total(c) = ρscale * 0.5 * (Mplus(c) + Mminus(c))
+
+#     # compute moments by numerical integration over velocity (use quadgk on (-Inf, Inf))
+#     moments = ntuple(n -> quadgk(c -> c^(n-1) * f_total(c), -Inf, Inf)[1], Mp1)
+#     return SVector{Mp1,Float64}(moments)
+# end

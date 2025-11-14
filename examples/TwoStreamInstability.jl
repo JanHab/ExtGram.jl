@@ -6,15 +6,15 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings, FastGaussQuadrature
 
 # Parameter
-M = 4    # number of moments
-closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
+M = 12    # number of moments
+closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
-T_end = 50.0
+T_end = 45#!50.0
 source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
-base_tree_level = 5 #!3#!5
+base_tree_level = 6 #!8 3#!5
 
 equations = GramianMomentEquations1D(M, Kn, closure)
 ϵ = 0.01
@@ -25,29 +25,19 @@ initial_condition = InitialConditionsTwoStream(
 )
 
 #= set up semidiscretization =#
-polydeg = 1 #!
+polydeg = 1 #! 3, 4
 basis = LobattoLegendreBasis(polydeg)
 
-# shock capturing
-# #= crashes for p > 1, i.e. this does not help at all
-# indicator_sc = IndicatorHennemannGassner(
-#     equations, basis,
-#     alpha_max = 1.0,
-#     alpha_min = 0.01,
-#     alpha_smooth = true,
-#     variable = (u, eqns)->u[1]*u[3]
-# )
-
-surface_flux = flux_lax_friedrichs
-volume_flux = flux_central
-# volume_integral = VolumeIntegralShockCapturingHG(
-#     indicator_sc;
-#     volume_flux_dg = volume_flux,
-#     volume_flux_fv = surface_flux
-# )
+surface_flux = flux_central #!flux_lax_friedrichs
+volume_flux = flux_central #!flux_central
 volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
+# solver = DGSEM(
+#     polydeg = polydeg, 
+#     # surface_flux = surface_flux,
+#     # volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+# )
 
 mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=true)
 
@@ -62,24 +52,58 @@ semi = SemidiscretizationHyperbolic(
 tspan = (0.0, T_end)
 ode = semidiscretize(semi, tspan)
 
-callbacks, summary_callback = callbacksGramianMomentEquations(
-    semi, tspan, basis; 
-    cfl = 0.99,          # Maximum cfl number
-    plot_interval = 20,  # plot every 20 steps
-    time_interval = 500, # save at 500 time intervals
-    # * name="VlasovPoisson/VlasovPoisson_moments_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)", # name used for output
-    name="VlasovPoisson/gram_moments", # name used for output
+# callbacks, summary_callback = callbacksGramianMomentEquations(
+#     semi, tspan, basis; 
+#     cfl = 0.99,          # Maximum cfl number
+#     plot_interval = 20,  # plot every 20 steps
+#     time_interval = 500, # save at 500 time intervals
+#     # * name="VlasovPoisson/VlasovPoisson_moments_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)", # name used for output
+#     name="VlasovPoisson/gram_moments", # name used for output
+# )
+alive_callback = AliveCallback(analysis_interval=100)
+summary_callback = SummaryCallback()
+cfl = 0.99
+stepsize_callback = StepsizeCallback(cfl=cfl)
+
+plot_callback = VisualizationCallback(
+    semi;
+    interval=20,
+    solution_variables=cons2cons,
+    plot_data_creator=PlotData1D,
+    plot_creator=Trixi.show_plot
+)
+
+save_solution = SaveTriangulationCallback(
+    time_interval=tspan[2]/20,
+    save_initial_solution=true,
+    file_format="tsv",
+    append_solution=true,
+    solution_variables = cons2cons,
+    clear_out_dir=false,
+    name="gram_solution",
+    info="basis = $(Base.typename(typeof(basis)).wrapper)"
+)
+
+callbacks = CallbackSet(
+    alive_callback,
+    stepsize_callback,
+    plot_callback,
+    save_solution,
 )
 # Add Vlasov-Poisson callback
 callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, mesh, domain))
 
 #= solve =#
+# ? may need a fixed time-step to get the instabilities through.
+# ? Currently stopping when reaching it
 sol = solve(
     ode, 
     CarpenterKennedy2N54(
         williamson_condition = false
     );
-    dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+    dt = 1.0,
+    # Vern6(); #Euler();
+    # dt = 1/16, # solve needs some value here but it will be overwritten by the stepsize_callback
     ode_default_options()..., 
     save_everystep=true,
     callback = callbacks,
@@ -102,11 +126,11 @@ plot(
     yaxis=:log,
     legend=:bottomleft
 )
-plot!(
-    time_callback, γt,
-    label="Theoretical Decay exp($γ t)", 
-    linestyle=:dash
-)
+# plot!(
+#     time_callback, γt,
+#     label="Theoretical Decay exp($γ t)", 
+#     linestyle=:dash
+# )
 savefig("out/VlasovPoisson/energy_from_callback.pdf")
 # store to csv file
 CSV.write(
@@ -130,6 +154,9 @@ heatmap(
     xlabel="x", ylabel="c",
     title="Initial Condition f(x,c)",
     colorbar_title="f(x,c)"
+)
+contourf(
+    x_vals, c_vals, (x,c)->f_ic(x,c),
 )
 savefig("out/VlasovPoisson/initial_condition_two_stream.pdf")
 
@@ -200,7 +227,7 @@ function collect1DTreeArrays_local(semi, u_ode, solution_variables)
 end
 
 
-for i in 1:500:length(sol.t)
+for i in 1:800:length(sol.t)
     println("Time step $(i)/$(length(sol.t)): t=$(sol.t[i])")
     _, coords, vars = collect1DTreeArrays_local(semi, sol.u[i], cons2cons)
 
@@ -241,3 +268,62 @@ for i in 1:500:length(sol.t)
     display(current())
     # savefig("f_distribution_grad_t$(round(sol.t[i], digits=2)).pdf")
 end
+
+
+
+# Plot ρ, φ, E
+_, coords, vars = collect1DTreeArrays_local(semi, sol.u[end], cons2cons)
+
+x = coords[2:end-1]  # exclude ghost cells
+c_vec = range(-3.0, 3.0, length=100)
+ρ = vars[2:end-1, 1]
+E = HyQMOM.ELECTRIC_FIELD.E
+
+using Statistics
+plt = plot(
+    xlabel="x",
+)
+plot!(
+    plt,
+    x, ρ .- mean(ρ),
+    label="ρ - ρ̄"
+)
+plot!(
+    plt,
+    x, E,
+    label="E"
+)
+
+init_ρ, init_v, init_θ = [], [], []
+using FastGaussQuadrature
+Mp1 = M+1
+for x_ in x
+    max(c) = 1/sqrt(2*π) * exp(-c^2 / 2) * c^2 .* (1 + ϵ * cos(k * x_))
+    ξ, w = gausshermite(Mp1+1) # +1 for good measure, should not be necessary
+    C = sqrt(2*1.0) .* ξ; c = C .+ 0.0
+    fw = max.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*1.0)
+    ic = SVector{Mp1,Float64}(ntuple(n->sum(c .^(n-1) .* fw), Mp1))
+    push!(init_ρ, ic[1])
+    push!(init_v, ic[2])
+    push!(init_θ, ic[3])
+end
+
+plt = plot(layout=3)
+plot!(
+    plt, subplot=1,
+    x, init_ρ,
+    label="ρ",
+    ylims=(0.98,1.02)
+)
+plot!(
+    plt, subplot=2,
+    x, init_v,
+    label="v",
+    ylims=(-0.01,0.01)
+)
+plot!(
+    plt, subplot=3,
+    x, init_θ,
+    label="θ",
+    ylims=(2.95,3.05)
+)
