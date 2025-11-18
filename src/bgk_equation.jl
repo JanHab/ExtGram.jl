@@ -29,6 +29,8 @@ function relaxation_source(f, x, t, equations::BGKEquations1D{N}) where {N}
     v = trapz(equations.c_vec, f .* equations.c_vec) / ρ # velocity
     θ = trapz(equations.c_vec, f .* (equations.c_vec .- v).^ 2) / ρ # temperature
 
+    # ρ = max.(ρ, 1e-12)
+    # θ = max.(θ, 1e-12)
     f_Maxwellian = Maxwellian(ρ, v, θ).(equations.c_vec)
     # @assert all(f_Maxwellian .>= 0.0)
     return (-1.0 / equations.Kn) * (f .- f_Maxwellian)
