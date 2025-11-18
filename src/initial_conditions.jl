@@ -103,3 +103,53 @@ end
 function (ic::InitialConditionsTwoShocks)(coords, t, equations::GramianMomentEquations1D)
     if -1.0 < coords[1] && coords[1] < 1.0; return ic.inner; else; return ic.outer; end
 end
+
+
+
+
+#######################################
+# Electron hole distribution function #
+#######################################
+struct ElectronHole
+    ψ::Real
+    Δ::Real
+    v0::Real
+    β::Real
+    ElectronHole(ψ, Δ, v0, β) = new(ψ, Δ, v0, β)
+end
+
+f0_eh(v, ϕ, v0) = 1 / √(2π) * exp(-.5 * (sign(v) * √(v^2 - 2ϕ) - v0)^2)
+f1_eh(v, ϕ, v0, β) = 1 / √(2π) * exp(-.5 * (β  * (v^2 - 2ϕ) + v0)^2)
+f_eh(v, ϕ, v0, β) = if v^2 > 2ϕ; f0_eh(v, ϕ, v0); else; f1_eh(v, ϕ, v0, β); end;
+
+(eh::ElectronHole)(x::Real, c::Real) = begin
+    ϕ = eh.ψ * exp(((x/eh.Δ))^2)
+    return f_eh(c, ϕ, eh.v0, eh.β)
+end
+
+function convective_moments(eh::ElectronHole, x::Real, ::Val{N}) where {N}
+    moments = zeros(N)
+    c = LinRange(-5.0, 5.0, 1_000) # todo: maybe make this generic
+    # Compute the integral with the trapezoidal rule
+    fc = eh.(x, c)
+    for n in 1:N
+        moments[n] = trapz(c, c.^(n-1) .* fc)
+    end
+    return SVector{N,Float64}(moments)
+end
+
+struct InitialConditionsElectronHole{N}
+    eh::ElectronHole
+    MP1::Int
+
+    function InitialConditionsElectronHole(eh, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+        return new{Mp1}(eh, Mp1)
+    end
+end
+
+function (ic::InitialConditionsElectronHole)(coords, t, equations::GramianMomentEquations1D)
+    moments = convective_moments(ic.eh, coords[1], Val(ic.MP1))
+    # ToDo: verbose=false
+    @assert check_realizability(moments, verbose=false)
+    return moments
+end
