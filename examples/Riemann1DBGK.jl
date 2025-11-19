@@ -5,7 +5,7 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 # Parameter
-N = 300 #!100 # ! 250
+N = 200 #!100 # ! 250
 c_l = -6.0
 c_u = 6.0
 Kn = 1.0 #!0.01 # Knudsen number
@@ -22,9 +22,9 @@ basis, mesh, equations, initial_condition, solver, boundary_conditions = setupBG
     c_l, c_u, 
     Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
     Maxwellian(ρ_R, v_R, θ_R);
-    base_tree_level = 6, #!11, # !8
+    base_tree_level = 8, #!11, # !8
     domain = domain,
-    polydeg = 0, #! 1
+    polydeg = 4, #! 0
 )
 
 semi = SemidiscretizationHyperbolic(
