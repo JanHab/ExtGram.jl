@@ -5,16 +5,16 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-M = 4    # number of moments
+M = 12    # number of moments
 closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
-T_end = 0.65
-source = zero_source #!relaxation_source
+T_end = 0.3
+source = relaxation_source
 
 # Domain and discretization parameters
-x_lower = -4.0; x_upper = 4.0
+x_lower = -2.0; x_upper = 2.0
 domain = (x_lower, x_upper)
-polydeg = 1  # polynomial degree
+polydeg = 3  # polynomial degree
 base_tree_level = 8  # initial mesh refinement level
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
@@ -27,7 +27,7 @@ equations = GramianMomentEquations1D(M, Kn, closure)
 #     equations
 # )
 initial_condition = InitialConditionsShockTube(
-    Maxwellian(2.0, 0.0, 1.0), # Density, velocity, temperature
+    Maxwellian(7.0, 0.0, 1.0), # Density, velocity, temperature
     Maxwellian(1.0, 0.0, 1.0), # Shock in density, but not velocity, temperature initially
     equations
 )
@@ -39,8 +39,8 @@ basis = LobattoLegendreBasis(polydeg)
 # #= crashes for p > 1, i.e. this does not help at all
 indicator_sc = IndicatorHennemannGassner(
     equations, basis,
-    alpha_max = 1.0,#*0.5,#0.1, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
-    alpha_min = 0.01,#0.01,
+    alpha_max = 0.5, #!1.0,#*0.5,#0.1, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
+    alpha_min = 0.001, #!0.01,#0.01,
     alpha_smooth = true, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
     variable = (u, eqns)->u[1]*u[3]#! *u[5]
 ) # ? Seems to restrict to M>=4
@@ -51,10 +51,16 @@ volume_integral = VolumeIntegralShockCapturingHG(
     volume_flux_dg = volume_flux,
     volume_flux_fv = surface_flux
 )
+# volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=false)
+mesh = TreeMesh(
+    (domain[1],), (domain[2],), 
+    initial_refinement_level=base_tree_level, 
+    n_cells_max=10_000, 
+    periodicity=false
+)
 
 boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
 

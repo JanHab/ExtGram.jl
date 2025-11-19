@@ -6,10 +6,10 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
-M = 4    # number of moments
-closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
+M = 12    # number of moments
+closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
-T_end = 15.0
+T_end = 25.0
 source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
@@ -18,7 +18,7 @@ base_tree_level = 6 #!8
 
 equations = GramianMomentEquations1D(M, Kn, closure)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
-ϵ = 0.01
+ϵ = 0.5 #! strong damping 0.01
 k = 0.5
 initial_condition = InitialConditionsLandauDamping(
     ρ0,
@@ -30,7 +30,7 @@ initial_condition = InitialConditionsLandauDamping(
 )
 
 #= set up semidiscretization =#
-polydeg = 3 #!4 #!3
+polydeg = 1 #!3
 basis = LobattoLegendreBasis(polydeg)
 
 surface_flux = flux_lax_friedrichs

@@ -8,7 +8,9 @@ function setupGramianMomentEquations1DRiemann(
     polydeg = 1,        # DG polynomial degree
     domain = (-2.0, 2.0),
     χ_set = "optimal",
-    
+    alpha_max = 0.5,
+    alpha_min = 0.001,
+    alpha_smooth = true,
     )
     equations = GramianMomentEquations1D(M, Kn, closure; χ_set=χ_set)
     initial_condition = InitialConditionsShockTube(
@@ -24,9 +26,9 @@ function setupGramianMomentEquations1DRiemann(
     # #= crashes for p > 1, i.e. this does not help at all
     indicator_sc = IndicatorHennemannGassner(
         equations, basis,
-        alpha_max = 1.0,#*0.5,#0.1, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
-        alpha_min = 0.01,#0.01,
-        alpha_smooth = true, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
+        alpha_max = alpha_max, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
+        alpha_min = alpha_min,
+        alpha_smooth = alpha_smooth, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
         variable = (u, eqns)->u[1]*u[3]#! *u[5]
     ) # ? Seems to restrict to M>=4
     # `custom variable for smoothness detection?`

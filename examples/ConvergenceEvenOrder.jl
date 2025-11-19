@@ -7,11 +7,12 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 # Parameter
 M_vector = [4, 6, 8, 10, 12]    # number of moments
 closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
-Kn = 0.01 #!1.0  # Knudsen number
+Kn = 1.0  # Knudsen number
 T_end = 0.3
 source = relaxation_source
 x_lower = -2.0; x_upper = 2.0
 domain = (x_lower, x_upper)
+polydeg = 2
 
 ρ_L = 7.0; v_L = 0.0; θ_L = 1.0
 ρ_R = 1.0; v_R = 0.0; θ_R = 1.0
@@ -24,6 +25,7 @@ for M in M_vector
         Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
         Maxwellian(ρ_R, v_R, θ_R);
         domain = domain,
+        polydeg = polydeg,
     )
 
     semi = SemidiscretizationHyperbolic(
@@ -76,9 +78,9 @@ for M in M_vector
     savefig(p2, "out/Convergence/ConvergenceEvenOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_λ_max.pdf")
 
     # Plot total variation in space over time
-    p3, TV_t = TVD_space(sol, M)
-    display(p3)
-    savefig(p3, "out/Convergence/ConvergenceEvenOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_TV_space.pdf")
+    # p3, TV_t = TVD_space(sol, M)
+    # display(p3)
+    # savefig(p3, "out/Convergence/ConvergenceEvenOrder/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_TV_space.pdf")
 end
 
 # Load the solutions and plot convergence
