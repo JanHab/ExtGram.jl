@@ -5,7 +5,7 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 # Parameter
-N = 200 #!100 # ! 250
+N = 20 #!100 # ! 250
 c_l = -6.0
 c_u = 6.0
 Kn = 1.0 #!0.01 # Knudsen number
@@ -63,8 +63,11 @@ summary_callback()
 
 # Post Processing
 # Plotting density, velocity, 
-x = LinRange(domain[1], domain[2], length(sol.u[end]) ÷ N)
-ρ, v, θ, p = ρ_v_θ_p_BGK(sol.u[end], equations)
+# x = LinRange(domain[1], domain[2], length(sol.u[end]) ÷ N)
+# _, coords, variables = HyQMOM.collect1DTreeArrays_local(semi, sol.u[end], cons2cons)
+# x = coords[2:end-1]
+# ρ, v, θ, p = ρ_v_θ_p_BGK(sol.u[end], equations)
+x, ρ, v, θ, p = ρ_v_θ_p_BGK(semi, sol, equations)
 
 p1 = plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))
 display(p1)

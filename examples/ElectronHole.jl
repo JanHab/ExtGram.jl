@@ -13,16 +13,16 @@ f(v, ϕ, v0, β) = if v^2 > 2ϕ; f0(v, ϕ, v0); else; f1(v, ϕ, v0, β); end;
 
 # Parameter
 ψ = 0.2
-Δ = 4
+Δ = 1
 x0 = 0.0
 ϕ(x) = ψ * exp(((x-x0)/Δ)^2) #10.
 v0 = 1.
 β = -0.1
 
-x = LinRange(-10, 10, 500)
+x = LinRange(-4, 4, 500)
 v = LinRange(-5, 5, 100)
 
-heatmap(x, v, [f(vj, ϕ(xi), v0, β) for xi in x, vj in v]', xlabel="x", ylabel="v", title="Electron hole distribution function f(x,v)", colorbar_title="f(x,v)")
+heatmap(x, v, [f(vj, ϕ(xi), v0, β) for xi in x, vj in v]', c=:bluesreds, xlabel="x", ylabel="v", title="Electron hole distribution function f(x,v)", colorbar_title="f(x,v)")
 
 
 x = 0.0
@@ -30,17 +30,17 @@ plot(v, f.(v, ϕ(x), v0, β), xlabel="v", ylabel="f(v)", title="Electron hole di
 
 
 # Parameter
-M = 5    # number of moments
-closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
+M = 4    # number of moments
+closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
-T_end = 0.65
+T_end = 0.3
 source = zero_source #!relaxation_source
 
 # Domain and discretization parameters
-x_lower = -10.0; x_upper = 10.0 #! -4.0, 4.0
+x_lower = -4.0; x_upper = 4.0 #! -4.0, 4.0
 domain = (x_lower, x_upper)
 polydeg = 1  # polynomial degree
-base_tree_level = 5 #!8  # initial mesh refinement level
+base_tree_level = 9 #!8  # initial mesh refinement level
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
 
@@ -48,8 +48,8 @@ equations = GramianMomentEquations1D(M, Kn, closure)
 
 # Parameter
 ψ = 0.1 # 0.2
-Δ = 4
-v0 = 1.
+Δ = 1#!4
+v0 = 0.1 #!1.
 β = -0.1
 initial_condition = InitialConditionsElectronHole(
     ElectronHole(ψ, Δ, v0, β), # Density, velocity, temperature
@@ -62,7 +62,7 @@ volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
 
 solver = DGSEM(basis, surface_flux, volume_integral)
 
-mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=true) # ! do we use a periodic domain here?
+mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_level, n_cells_max=10_000, periodicity=false) # ! do we use a periodic domain here?
 
 boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
 
@@ -127,6 +127,6 @@ sol = solve(
 
 summary_callback()
 
-# # Post Processing
-# x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
-# display(p1)
+# Post Processing
+x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
+display(p1)

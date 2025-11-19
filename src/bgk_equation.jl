@@ -126,15 +126,18 @@ end
 # physical variables
 # u_i = ∫ c^i f(c) dc, i=1,...,N
 # u_i(x) = ∫ c_k^i f(c_k)|_x dc, k=1,...,N
-function ρ_v_θ_p_BGK(f::Vector, equations::BGKEquations1D)
-    L = length(f)
-    Nloc = L ÷ equations.N
-    Fmat = reshape(f, equations.N, Nloc)
+function ρ_v_θ_p_BGK(semi, sol, equations::BGKEquations1D)
+    _, coords, variables = collect1DTreeArrays_local(semi, sol.u[end], cons2cons)
+    x = coords[2:end-1]
+    Fmat = variables[2:end-1, :]'  # First column is density
+    # L = length(f)
+    # Nloc = L ÷ equations.N
+    # Fmat = reshape(f, equations.N, Nloc)
     ρ = dc(equations) * sum(Fmat, dims=1)
     v = dc(equations) * sum(Fmat .* equations.c_vec, dims=1) ./ ρ
     Θ = dc(equations) * sum(Fmat .* (equations.c_vec .- v).^ 2, dims=1) ./ ρ
     p = ρ .* Θ
-    return vec(ρ), vec(v), vec(Θ), vec(p)
+    return vec(x), vec(ρ), vec(v), vec(Θ), vec(p)
 end
 
 function plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))
