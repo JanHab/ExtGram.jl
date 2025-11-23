@@ -5,10 +5,10 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-M = 12    # number of moments
+M = 4    # number of moments
 closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
-T_end = 0.3
+T_end = 0.65
 source = relaxation_source
 
 # Domain and discretization parameters

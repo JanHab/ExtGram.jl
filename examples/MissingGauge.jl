@@ -12,13 +12,13 @@ T_end = 0.3
 source = relaxation_source
 x_lower = -2.0; x_upper = 2.0
 domain = (x_lower, x_upper)
+polydeg = 2
 
 ρ_L = 7.0; v_L = 0.0; θ_L = 1.0
 ρ_R = 1.0; v_R = 0.0; θ_R = 1.0
 
 # χ value -> Gauge for χ = (n+1)/n with n = M/2
-# ! χ_vector = [-1.0, 0.0, 1.0, "optimal", 2.0, 3.0]
-χ_vector = [1.5]
+χ_vector = [-1.0, 0.0, 1.0, 1.5, "optimal", 2.0, 3.0]
 # copy the convergence routine for each χ value and adapt the χ in the equations
 for χ in χ_vector
     println("Running simulations with χ = $χ")
@@ -89,9 +89,9 @@ for χ in χ_vector
         savefig(p2, "out/Convergence/ChiValues/$(name)_λ_max.pdf")
 
         # Plot total variation in space over time
-        p3, TV_t = TVD_space(sol, M)
-        display(p3)
-        savefig(p3, "out/Convergence/ChiValues/$(name)_TV_space.pdf")
+        # p3, TV_t = TVD_space(sol, M)
+        # display(p3)
+        # savefig(p3, "out/Convergence/ChiValues/$(name)_TV_space.pdf")
     end
 
     # Load the solutions and plot convergence

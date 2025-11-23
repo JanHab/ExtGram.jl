@@ -10,7 +10,7 @@ Moments = [4, 6, 8, 10, 12, 14]    # number of moments
 # Moments = [5, 7, 9, 11, 13, 15]    # number of moments
 closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
-T_end = 15.0
+T_end = 25.0
 source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)

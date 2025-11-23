@@ -7,9 +7,9 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 # Parameter
 M_vector = [4, 6, 8, 10, 12]    # number of moments
 closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
-Kn = 1.0  # Knudsen number
+Kn = 1e20  # Knudsen number
 T_end = 0.3
-source = relaxation_source
+source = zero_source #!relaxation_source
 x_lower = -2.0; x_upper = 2.0
 domain = (x_lower, x_upper)
 polydeg = 2

@@ -8,7 +8,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 N = 200 # ! 250
 c_l = -6.0
 c_u = 6.0
-Kn = 1.0 #!0.01 # Knudsen number
+Kn = 0.1 #!0.01 # Knudsen number
 source = relaxation_source
 
 domain = (-5.0, 5.0)
@@ -42,8 +42,8 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
     cfl = 0.99,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
-    name="Riemann1D/bgk" #
-    # name="Riemann1D/bgk_solution_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)", # name of output files
+    # name="Riemann1D/bgk" #
+    name="Riemann1D/bgk_solution_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)", # name of output files
 )
 
 #= solve =#
