@@ -7,7 +7,7 @@ using LaTeXStrings, FastGaussQuadrature
 
 # Access arguments by index
 M = parse(Int, ARGS[1])
-closure = parse(String, ARGS[2]) # "Gram", "ExtGram" or "Grad"
+closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 T_end = parse(Float64, ARGS[3])
 base_tree_level = parse(Int, ARGS[4]) # e.g. 8
 polydeg = parse(Int, ARGS[5]) # e.g. 3
