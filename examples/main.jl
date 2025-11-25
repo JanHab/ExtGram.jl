@@ -101,22 +101,22 @@ summary_callback()
 
 # Post Processing
 x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
-display(p1)
-# savefig(p1, "out/Riemann1D/ρ_v_p.pdf")
+# display(p1)
+savefig(p1, "out/Riemann1D/ρ_v_p.pdf")
 
-# # Store primitive variables in CSV file
-# CSV.write(
-#     "out/Riemann1D/ρ_v_p.csv",
-#     Tables.columntable((x=x, rho=ρ, v=v, p=p))
-# )
+# Store primitive variables in CSV file
+CSV.write(
+    "out/Riemann1D/ρ_v_p.csv",
+    Tables.columntable((x=x, rho=ρ, v=v, p=p))
+)
 
 # Plot maximum eigenvalue (wave-speed) of flux Jacobian over time
 n_plots = 5
 p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
-display(p2)
-# savefig(p2, "out/Riemann1D/λ_max.pdf")
+# display(p2)
+savefig(p2, "out/Riemann1D/λ_max.pdf")
 
 # Plot total variation in space over time
 p3, mass, momentum, energy = conservation(sol, M, semi)
-display(p3)
-# savefig(p3, "out/Riemann1D/conservation.pdf")
+# display(p3)
+savefig(p3, "out/Riemann1D/conservation.pdf")
