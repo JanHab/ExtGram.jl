@@ -1,5 +1,5 @@
 #!/usr/bin/zsh
-
+#
 ### Job Parameters
 #SBATCH --job-name=twostream             # Job name
 #SBATCH --output=slurm/out/twostream_out.txt   # Standard output file
@@ -8,10 +8,10 @@
 #SBATCH --ntasks-per-node=1           # Number of tasks per node
 #SBATCH --time=01:00:00                # Maximum runtime (D-HH:MM:SS)
 #SBATCH --cpus-per-task=4           # Number of CPU cores per task
-
+#
 #Load necessary modules (if needed)
-# module load Julia
-
+module load Julia
+#
 #Your job commands go here
 #For example:
 threads=4
@@ -24,7 +24,7 @@ for M in "${M_vector[@]}"
     do
         # echo "Starting job for M=$M"
         # srun 
-        julia examples/TwoStreamInstability_clusterrun.jl --threads=$threads --M=$M --closure=$closure --T_end=$T_end --base_tree_level=$base_tree_level &
+        srun julia examples/TwoStreamInstability_clusterrun.jl --threads=$threads --M=$M --closure=$closure --T_end=$T_end --base_tree_level=$base_tree_level &
     done
 
 #Optionally, you can include cleanup commands here (e.g., after the job finishes)
