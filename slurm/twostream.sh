@@ -16,7 +16,7 @@ module load Julia
 #For example:
 threads=4
 # export JULIA_NUM_THREADS=$threads
-M_vector=(3 5) #!(4 6 8 10 12)
+M_vector=(3)#! 5) #!(4 6 8 10 12)
 closure="Gram"
 T_end=25.0
 base_tree_level=8

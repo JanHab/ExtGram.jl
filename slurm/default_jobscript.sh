@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+#SBATCH --job-name=jn
+#SBATCH --output=output.txt
+#
+#SBATCH --cpus-per-task=cppt
+#SBATCH --ntasks=1
+#SBATCH --nodes=numno
+#SBATCH --time=aot
+#
+###SBATCH --account=thes1498
+
+if [ -r /usr/local_host/etc/bashrc ]; then
+    . /usr/local_host/etc/bashrc
+fi
+
+export PATH=$PATH:/home/$USER/bin
+
+module load Julia
+
+cmd
