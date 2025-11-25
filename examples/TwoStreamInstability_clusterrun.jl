@@ -120,7 +120,7 @@ plot(
     yaxis=:log,
     legend=:bottomleft
 )
-savefig("out/VlasovPoisson/TwoStreamInstability/energy_from_callback.pdf")
+savefig("out/VlasovPoisson/TwoStreamInstability/energy_from_callback_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).pdf")
 # store to csv file
 CSV.write(
     "out/VlasovPoisson/TwoStreamInstability/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).csv",

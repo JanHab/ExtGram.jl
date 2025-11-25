@@ -2,7 +2,7 @@ from pathlib import Path
 import os
 
 # Saves a given command as an sbatch file for SLURM and executes it
-def createsbatch(command, nproc=1, nnodes=1, time='00:15:00'):
+def createsbatch(command, nproc=1, nnodes=1, time='00:15:00', output_file='output.out'):
     """createsbatch Creates a slurm batch script that can be executed on high performance clusters
 
     Takes user-defined properties and generates a corresponding slurm batch script 
@@ -26,6 +26,7 @@ def createsbatch(command, nproc=1, nnodes=1, time='00:15:00'):
         data = data.replace(b'numno', bytes(str(nnodes), 'utf-8'))
         data = data.replace(b'aot', bytes(time, 'utf-8'))
         data = data.replace(b'cmd', bytes(str(command), 'utf-8'))
+        data = data.replace(b'outfile', bytes(str(output_file), 'utf-8'))
     save_path = (Path(os.getcwd())/'run_simulation.sh').resolve()
     # Save sbatch file to cwd
     with open(save_path, 'wb') as sbatch:
