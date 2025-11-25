@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #SBATCH --job-name=jn
-#SBATCH --output=output.txt
+#SBATCH --output=outfile
 #
 #SBATCH --cpus-per-task=cppt
 #SBATCH --ntasks=1
