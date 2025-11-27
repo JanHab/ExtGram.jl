@@ -1,15 +1,24 @@
 from clusterrun import createsbatch
+import os
 
-threads = 16
-M_vector = [4] #![3, 5, 7, 9, 11, 13] #! number of moments
-closure = "Gram"
+threads = 1 #!16
+M_vector = [14] #![5, 7, 9, 11, 13]#![3, 5, 7, 9, 11, 13] #! number of moments
+closures = ["ExtGram"]#!["Gram", "ExtGram"]
 T_end = 25.0
 base_tree_level = 8
 polydeg = 3
 
 nnodes = 1
-time = '00:15:00'
+time = '04:00:00'
+memory_request = '16G'
 
-for M in M_vector:
-    command = f"julia examples/TwoStreamInstability_clusterrun.jl {M} {closure} {T_end} {base_tree_level} {polydeg} --threads={threads}"
-    createsbatch(command, nproc=threads, nnodes=nnodes, time=time, outfile=f"out/VlasovPoisson/TwoStreamInstability/slurm_output_closure{closure}_T{T_end}_M{M}_p{polydeg}_level{base_tree_level}.out")
+for closure in closures:
+    for M in M_vector:
+        command = f"julia examples/TwoStreamInstability_clusterrun.jl {M} {closure} {T_end} {base_tree_level} {polydeg} --threads={threads}"
+        # os.system(command)
+        createsbatch(
+            command, 
+            nproc=threads, nnodes=nnodes, 
+            time=time, mem=memory_request, 
+            output_file=f"out/VlasovPoisson/TwoStreamInstability/slurm_output_closure{closure}_T{T_end}_M{M}_p{polydeg}_level{base_tree_level}.out"
+        )
