@@ -7,6 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=numno
 #SBATCH --time=aot
+#SBATCH --mem=mem_req
 #
 ###SBATCH --account=thes1498
 

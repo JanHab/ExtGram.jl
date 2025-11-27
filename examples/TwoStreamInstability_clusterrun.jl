@@ -59,13 +59,13 @@ summary_callback = SummaryCallback()
 cfl = 0.99
 stepsize_callback = StepsizeCallback(cfl=cfl)
 
-plot_callback = VisualizationCallback(
-    semi;
-    interval=20,
-    solution_variables=cons2cons,
-    plot_data_creator=PlotData1D,
-    plot_creator=Trixi.show_plot
-)
+# plot_callback = VisualizationCallback(
+#     semi;
+#     interval=20,
+#     solution_variables=cons2cons,
+#     plot_data_creator=PlotData1D,
+#     plot_creator=Trixi.show_plot
+# )
 
 save_solution = SaveTriangulationCallback(
     time_interval=tspan[2]/20,
@@ -81,7 +81,7 @@ save_solution = SaveTriangulationCallback(
 callbacks = CallbackSet(
     alive_callback,
     stepsize_callback,
-    plot_callback,
+    # plot_callback,
     save_solution,
 )
 # Add Vlasov-Poisson callback
