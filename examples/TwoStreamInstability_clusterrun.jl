@@ -74,7 +74,7 @@ save_solution = SaveTriangulationCallback(
     append_solution=true,
     solution_variables = cons2cons,
     clear_out_dir=false,
-    name=name="VlasovPoisson/TwoStreamInstability/moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper)", # name used for output
+    name="VlasovPoisson/TwoStreamInstability/moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper)", # name used for output
     info="basis = $(Base.typename(typeof(basis)).wrapper)"
 )
 
