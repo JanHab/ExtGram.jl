@@ -6,15 +6,15 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings, FastGaussQuadrature
 
 # Parameter
-M_vector = [4] #![4, 12, 24]    # number of moments
-closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
+M_vector = [5, 15, 25] #![4, 12, 24]    # number of moments
+closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0 # ! doesn't matter, as zero-relaxation in the vlasov_poisson_source_term # Knudsen number
 T_end = 25#!50.0
 source = vlasov_poisson_source
 x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
-base_tree_level = 8 # ! 6#!5
+base_tree_level = 6 #!8 # ! 6#!5
 polydeg = 3
 
 for M in M_vector
