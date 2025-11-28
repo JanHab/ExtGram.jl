@@ -2,11 +2,11 @@ from clusterrun import createsbatch
 import os
 
 threads = 1
-N_vector = [10, 50, 100, 200, 500, 1_000]
+N_vector = [10, 50, 100, 200]#!, 500, 1_000]
 T_end = 0.2
 base_tree_level = 8
 polydeg = 1
-Kn = 1.0
+Kn = 0.1
 
 nnodes = 1
 time = '04:00:00'
