@@ -8,7 +8,7 @@ M_vector = [4, 8, 14, 5, 9, 15]
 closures = ["Gram", "ExtGram"]
 T_end = 25.0
 base_tree_level = 8
-polydeg = 3
+polydeg = 1 #!3
 
 nnodes = 1
 time = '04:00:00'
