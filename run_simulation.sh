@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-#SBATCH --job-name=out/VlasovPoisson/LandauDamping/slurm_output_closureExtGram_T25.0_M25_p3_level6.out
-#SBATCH --output=out/VlasovPoisson/LandauDamping/slurm_output_closureExtGram_T25.0_M25_p3_level6.out
+#SBATCH --job-name=out/Riemann1D/slurm_output_Kn1.0_T0.3_N2000_p1_level8.out
+#SBATCH --output=out/Riemann1D/slurm_output_Kn1.0_T0.3_N2000_p1_level8.out
 #
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 #SBATCH --mem=16G
 #
 ###SBATCH --account=thes1498
@@ -19,4 +19,4 @@ export PATH=$PATH:/home/$USER/bin
 
 module load Julia
 
-julia examples/LandauDamping_clusterrun.jl 25 ExtGram 25.0 6 3
+julia examples/Riemann1DBGK_clusterrun.jl 2000 0.3 8 1 1.0
