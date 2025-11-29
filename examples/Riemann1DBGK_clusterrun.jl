@@ -89,7 +89,7 @@ summary_callback()
 # _, coords, variables = HyQMOM.collect1DTreeArrays_local(semi, sol.u[end], cons2cons)
 # x = coords[2:end-1]
 # ρ, v, θ, p = ρ_v_θ_p_BGK(sol.u[end], equations)
-x, ρ, v, θ, p = ρ_v_θ_p_BGK(semi, sol, equations)
+x, ρ, v, θ, p = ρ_v_θ_p_BGK(semi, sol, equations, polydeg, domain)
 
 p1 = plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))
 display(p1)
