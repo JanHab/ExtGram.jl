@@ -126,7 +126,18 @@ end
 # physical variables
 # u_i = ∫ c^i f(c) dc, i=1,...,N
 # u_i(x) = ∫ c_k^i f(c_k)|_x dc, k=1,...,N
-function ρ_v_θ_p_BGK(semi, sol, equations::BGKEquations1D)
+function ρ_v_θ_p_BGK(semi, sol, equations::BGKEquations1D, polydeg, domain)
+    if polydeg == 0
+        x = LinRange(domain[1], domain[2], length(sol.u[end]) ÷ equations.N)
+        L = length(sol.u[end])
+        Nloc = L ÷ equations.N
+        Fmat = reshape(sol.u[end], equations.N, Nloc)
+        ρ = dc(equations) * sum(Fmat, dims=1)
+        v = dc(equations) * sum(Fmat .* equations.c_vec, dims=1) ./ ρ
+        Θ = dc(equations) * sum(Fmat .* (equations.c_vec .- v).^ 2, dims=1) ./ ρ
+        p = ρ .* Θ
+        return vec(x), vec(ρ), vec(v), vec(Θ), vec(p)
+    end
     _, coords, variables = collect1DTreeArrays_local(semi, sol.u[end], cons2cons)
     x = coords[2:end-1]
     Fmat = variables[2:end-1, :]'  # First column is density

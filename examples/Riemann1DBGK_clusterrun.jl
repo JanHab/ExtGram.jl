@@ -4,17 +4,19 @@ if !endswith(Base.active_project(), "../Project.toml")
 end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
+# Access arguments by index
+N = parse(Int, ARGS[1])
+T_end = parse(Float64, ARGS[2])
+base_tree_level = parse(Int, ARGS[3]) # e.g. 8
+polydeg = parse(Int, ARGS[4]) # e.g. 2
+Kn = parse(Float64, ARGS[5]) # e.g. 0.1
+
 # Parameter
-N = 50 #!200 # ! 250
 c_l = -6.0
 c_u = 6.0
-Kn = 1.0  # Knudsen number
 source = relaxation_source
 
 domain = (-5.0, 5.0)
-T_end = 0.3
-base_tree_level = 12 #!8
-polydeg = 1
 
 ρ_L = 7.0; v_L = 0.0; θ_L = 1.0
 ρ_R = 1.0; v_R = 0.0; θ_R = 1.0
@@ -40,12 +42,30 @@ semi = SemidiscretizationHyperbolic(
 tspan = (0.0, T_end)
 ode = semidiscretize(semi, tspan)
 
-callbacks, summary_callback = callbacksGramianMomentEquations(
-    semi, tspan, basis; 
-    cfl = 0.99,          # Maximum cfl number
-    plot_interval = 20,  # plot every 20 steps
-    # name="Riemann1D/bgk" #
-    name="Riemann1D/bgk_solution_N$(N)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name of output files
+cfl = 0.99          # Maximum cfl number
+time_interval = 20
+name="Riemann1D/bgk_solution_N$(N)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)" # name of output files
+# name="Riemann1D/bgk_solution_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)", # name of output files
+
+alive_callback = AliveCallback(analysis_interval=100)
+summary_callback = SummaryCallback()
+stepsize_callback = StepsizeCallback(cfl=cfl)
+
+save_solution = SaveTriangulationCallback(
+    time_interval=tspan[2]/time_interval,
+    save_initial_solution=true,
+    file_format="tsv",
+    append_solution=true,
+    solution_variables = cons2cons,
+    clear_out_dir=false,
+    name=name,
+    info="basis = $(Base.typename(typeof(basis)).wrapper)"
+)
+
+callbacks = CallbackSet(
+    alive_callback,
+    stepsize_callback,
+    save_solution,
 )
 
 #= solve =#
