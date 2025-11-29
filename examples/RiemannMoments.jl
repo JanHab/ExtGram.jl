@@ -8,19 +8,24 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 M = parse(Int, ARGS[1])
 closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = parse(Float64, ARGS[3])
-T_end = parse(Float64, ARGS[4])
-base_tree_level = parse(Int, ARGS[5]) # e.g. 8
-polydeg = parse(Int, ARGS[6]) # e.g. 3
-ρ_L = parse(Float64, ARGS[7]) # 7.0
-v_L = parse(Float64, ARGS[8]) # 0.0
-θ_L = parse(Float64, ARGS[9]) # 1.0
-ρ_R = parse(Float64, ARGS[10]) # 1.0
-v_R = parse(Float64, ARGS[11]) # 0.0
-θ_R = parse(Float64, ARGS[12]) # 1.0
+source_string = ARGS[4]
+# source = source_string == "relaxation_source" ? relaxation_source : zero_source
+# println("Using source term: $source_string")
+# println("Source: $source")
+# println("typeof(source): $(typeof(source))")
+source = relaxation_source
+T_end = parse(Float64, ARGS[5])
+base_tree_level = parse(Int, ARGS[6]) # e.g. 8
+polydeg = parse(Int, ARGS[7]) # e.g. 3
+ρ_L = parse(Float64, ARGS[8]) # 7.0
+v_L = parse(Float64, ARGS[9]) # 0.0
+θ_L = parse(Float64, ARGS[10]) # 1.0
+ρ_R = parse(Float64, ARGS[11]) # 1.0
+v_R = parse(Float64, ARGS[12]) # 0.0
+θ_R = parse(Float64, ARGS[13]) # 1.0
 
 
 # Fixed settings
-source = relaxation_source
 x_lower = -2.0; x_upper = 2.0
 domain = (x_lower, x_upper)
 
@@ -50,7 +55,8 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
     cfl = 0.45,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
-    name="Riemann1D/Moments/relaxation/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name of output files
+    name="gram_solution"
+    # name="Riemann1D/Moments/relaxation/gram_solution_M$(M)_Kn$(Kn)_source$(ARGS[4])_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name of output files
 )
 
 #= solve =#
@@ -70,11 +76,11 @@ summary_callback()
 # Post Processing
 x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
 display(p1)
-savefig(p1, "out/Riemann1D/Moments/relaxation/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.pdf")
+savefig(p1, "out/Riemann1D/Moments/relaxation/gram_solution_M$(M)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.pdf")
 
 # Store primitive variables in CSV file
 CSV.write(
-    "out/Riemann1D/Moments/relaxation/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.csv",
+    "out/Riemann1D/Moments/relaxation/gram_solution_M$(M)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.csv",
     Tables.columntable((x=x, rho=ρ, v=v, p=p))
 )
 
@@ -82,4 +88,4 @@ CSV.write(
 n_plots = 5
 p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
 display(p2)
-savefig(p2, "out/Riemann1D/Moments/relaxation/gram_solution_M$(M)_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_lambda_max.pdf")
+savefig(p2, "out/Riemann1D/Moments/relaxation/gram_solution_M$(M)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_lambda_max.pdf")
