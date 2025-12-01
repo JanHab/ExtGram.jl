@@ -105,7 +105,103 @@ function (ic::InitialConditionsTwoShocks)(coords, t, equations::GramianMomentEqu
 end
 
 
+#######################################
+########### 1D3D Maxwellian ###########
+#######################################
+struct Maxwellian1D3D
+    ρ::Real
+    v::NTuple{3,Real}
+    θ::Real # defined here as ∫ C^2 f dc (no factor 1/2)
+    Maxwellian1D3D(ρ, v, θ) = new(ρ, v, θ)
+end
 
+(f::Maxwellian1D3D)(cx::Real, cy::Real, cz::Real) = f.ρ/(2*π*f.θ)^(3/2) * exp(-((cx-f.v[1])^2 + (cy-f.v[2])^2 + (cz-f.v[3])^2) / (2*f.θ)) # note: normalized in 1D velocity space 
+
+"""
+    index3D(total_degree)
+
+Return a vector of multi-indices (i,j,k) with i+j+k == total_degree.
+Ordering matches a lexicographic-style ordering and is intended for moment lists.
+"""
+function index3D(n::Integer)
+    tuples = collect(Iterators.product(0:n, 0:n, 0:n))
+    vecs = [collect(t) for t in tuples]
+    selected = filter(v -> sum(v) == n, vecs)
+    sort!(selected)
+    return reverse(selected)
+end
+
+"""
+    multi_index_list(M)
+
+Return a flattened list of multi-indices for all shells 0..M.
+"""
+function multi_index_list(M::Integer)
+    return vcat([index3D(n) for n in 0:M]...)
+end
+
+"""
+    convective_moments_1D3D(M; rho=1.0, u=(0,0,0), theta=1.0, q=8)
+
+Compute the velocity moments up to `M` (all multi-indices with i+j+k <= M)
+using tensor-product Gauss–Hermite with `q` nodes per dimension. Returns a Vector{Float64}
+with the same ordering as `multi_index_list(M)`.
+"""
+function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0.0,0.0,0.0), theta::Real=1.0; q::Integer=35+1)
+    # 35+1 is max degree in the test cases for M=4 (hard-coded)
+    # quadrature nodes and weights for ∫ e^{-x^2} g(x) dx
+    ξ, w = gausshermite(q)
+
+    # scaling: v = u + sqrt(2 theta) * ξ
+    s = sqrt(2 * theta)
+    ux, uy, uz = u
+
+    # Precompute 1D transformed node values for each dimension
+    vx_nodes = ux .+ s .* ξ
+    vy_nodes = uy .+ s .* ξ
+    vz_nodes = uz .+ s .* ξ
+
+    # Prefactor from change of variables: rho / π^{3/2}
+    pref = rho / (π^(3/2))
+
+    # Prepare storage for moments: a Dict from (i,j,k) -> value
+    idxs = multi_index_list(M)
+    moments = zeros(Float64, length(idxs))
+
+    # Triple loop over quadrature points
+    # Complexity q^3 but q is typically small (8..16)
+    for a in 1:q, b in 1:q, c in 1:q
+        wt = w[a] * w[b] * w[c]
+        vx = vx_nodes[a]
+        vy = vy_nodes[b]
+        vz = vz_nodes[c]
+        # Accumulate into all requested moments
+        for (idx_pos, (i,j,k)) in enumerate(idxs)
+            moments[idx_pos] += wt * (vx^i) * (vy^j) * (vz^k)
+        end
+    end
+
+    # Apply prefactor
+    moments .*= pref
+    return moments
+end
+
+struct InitialConditionsShockTube1D3D{N}
+    left::SVector{N}
+    right::SVector{N}
+
+    function InitialConditionsShockTube1D3D(f_left, f_right, M, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1}
+        left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
+        right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
+        # ToDo: Adapt to 3D velocity case
+        # @assert check_realizability(left, verbose=false) && check_realizability(right, verbose=false)
+        return new{Mp1}(left, right)
+    end
+end
+
+function (ic::InitialConditionsShockTube1D3D)(coords, t, equations::GramianMomentEquations1D3D)
+    if coords[1] < 0.0; return ic.left; else; return ic.right; end
+end
 
 #######################################
 # Electron hole distribution function #
