@@ -8,7 +8,7 @@ Kn = 1.0
 source = "zero_source"#!"relaxation_source"
 T_end = 0.3
 base_tree_level = 6
-polydeg = 3
+polydeg = 1
 
 # Initial condition parameters for the Riemann problem
 rho_L = 7.0
