@@ -5,27 +5,22 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-M = 4    # number of moments
+M = 12    # number of moments
 closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
-T_end = 0.65
-source = relaxation_source
+T_end = 0.3
+source = zero_source # * relaxation_source
 
 # Domain and discretization parameters
 x_lower = -2.0; x_upper = 2.0
 domain = (x_lower, x_upper)
-polydeg = 3  # polynomial degree
+polydeg = 1  # polynomial degree
 base_tree_level = 8  # initial mesh refinement level
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
 
 # Setting up everything
 equations = GramianMomentEquations1D(M, Kn, closure)
-# initial_condition = InitialConditionsTwoShocks(
-#     Maxwellian(1.0, 0.0, 1.0), # Density, velocity, temperature
-#     Maxwellian(7.0, 0.0, 1.0), # Shock in density, but not velocity, temperature initially
-#     equations
-# )
 initial_condition = InitialConditionsShockTube(
     Maxwellian(7.0, 0.0, 1.0), # Density, velocity, temperature
     Maxwellian(1.0, 0.0, 1.0), # Shock in density, but not velocity, temperature initially
@@ -101,7 +96,7 @@ summary_callback()
 
 # Post Processing
 x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
-# display(p1)
+display(p1)
 savefig(p1, "out/Riemann1D/ρ_v_p.pdf")
 
 # Store primitive variables in CSV file

@@ -34,6 +34,7 @@ basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGr
     Maxwellian(ρ_R, v_R, θ_R);
     domain = domain,
     polydeg = polydeg,
+    # alpha_max = 1.0 # ! to be removed again
 )
 
 semi = SemidiscretizationHyperbolic(
