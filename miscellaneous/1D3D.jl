@@ -29,6 +29,7 @@ function idx(n)
 end
 
 # Equivalent to: index[n_]
+# ! needed
 function index(n)
     # Generate tuples 0 to n of length 3
     # Iterators.product creates the Cartesian product
@@ -71,6 +72,7 @@ function index_1d(n)
 end
 
 # Equivalent to: mainmomindex[nmax_]
+# ! needed
 function mainmomindex(nmax)
     # Flatten[Table[...], 1] is equivalent to vcat in Julia
     # We map the index function over the range 0 to nmax
@@ -112,12 +114,14 @@ function raw_moment_normal(mu, sigma, n)
 end
 
 # REVISED: Moment1D
+# ! needed
 function moment_1d(mu, sigma2, n)
     # We pass standard deviation (sqrt of variance) to our helper
     return raw_moment_normal(mu, sqrt(sigma2), n)
 end
 
 # REVISED: Moment3D (No changes needed here, just calling the fixed moment_1d)
+# ! needed
 function moment_3d(indices, v2)
     i, j, k = indices
     p = PARAMS
@@ -129,6 +133,7 @@ function moment_3d(indices, v2)
 end
 
 # Equivalent to: MomList[v2_, degree_]
+# ! needed
 function mom_list(v2, degree)
     # Map the Moment3D function over the generated indices
     indices = mainmomindex(degree)
@@ -215,8 +220,10 @@ function tensor_transformation_symbolic(n, theta, phi)
 end
 
 # 1. Create a specific cache for numeric matrices to speed up loops
+# ! needed
 const NUMERIC_CACHE = Dict{Tuple{Int, Float64, Float64}, Matrix{Float64}}()
 
+# ! needed
 function tensor_transformation_memo(n::Int, theta::Real, phi::Real)
     # Ensure inputs are Float64 for the cache key
     val_theta = Float64(theta)
@@ -336,6 +343,7 @@ display(M)
 
 
 # --- Helper: Numeric Block Diagonal Construction ---
+# ! needed
 function construct_numeric_block_diagonal(matrices::Vector{Matrix{Float64}})
     total_rows = sum(size(m, 1) for m in matrices)
     total_cols = sum(size(m, 2) for m in matrices)
@@ -358,6 +366,7 @@ end
 
 # --- 1. RotNumeric Implementation ---
 # Equivalent to: RotNumeric[MomentDegree_, theta, phi]
+# ! needed
 function rot_numeric(moment_degree, theta, phi)
     blocks = Matrix{Float64}[]
     
@@ -424,6 +433,7 @@ display(reshape(V_sym, :, 1))
 
 
 # Equivalent to: nIDX[MomentDegree_] := Table[1 + 1/6 k (k + 1) (k + 2), ...]
+# ! needed
 function nidx(moment_degree)
     # Julia is 1-based, matching the specific logic of the Mathematica script
     # This generates the start index of every moment shell in the flattened list
@@ -455,12 +465,11 @@ end
 # --- 3. FP Symbolic Logic ---
 
 # Cache for the compiled functions
+# ! needed
 const FP_CACHE = Dict{Int, Function}()
 
 # Equivalent to: FPSymbolic[NextMomentdegree_]
-# Cache for the compiled functions
-const FP_CACHE = Dict{Int, Function}()
-
+# ! needed
 function fp_symbolic_expr(next_moment_degree)
     @variables theta phi
     
@@ -485,6 +494,7 @@ function fp_symbolic_expr(next_moment_degree)
 end
 
 # REVISED: CompileFP
+# ! needed
 function compile_fp(degree::Int)
     if haskey(FP_CACHE, degree)
         return FP_CACHE[degree]
@@ -512,6 +522,7 @@ function fp_optimized(degree, theta_val, phi_val)
 end
 
 # The function wrapper you requested
+# ! needed
 function run_gramian_closure(mom_list)
     # 1. Setup Configuration
     M = length(mom_list)-1 # Or specific logic for M
@@ -568,8 +579,7 @@ const ANGLES_M4 = [
     (3.14159, 1.5708),
     (0.684719, 4.71239),
     (2.03444, 1.5708),
-    (2.18628, 0.886077), # The last angle seems to make problems
-    # (0.0, 0.0)
+    (2.18628, 0.886077), # ! The last angle seems to make problems
 ]
 
 # Run the compiled FP function on the angles (resultM4)
@@ -582,43 +592,6 @@ const MD_M4 = NEXT_M4 - 1 # Degree 4
 
 # 4. Define bvecM4 Function
 # Logic: Rotate moments numerically, pick specific indices, run closure.
-# function bvec_m4(v2)
-#     # A. Calculate Raw Moments in Global Frame
-#     # Corresponds to: MomList[v2, MDM4]
-#     # This creates a vector of Float64 moments [M_000, M_100, M_010...]
-#     raw_moments = mom_list(v2, MD_M4)
-
-#     # Pre-calculate the shell head indices we need to extract
-#     # Corresponds to: nIDX[MDM4]
-#     target_indices = nidx(MD_M4)
-
-#     results = Float64[]
-
-#     for (theta, phi) in ANGLES_M4
-#         # B. Get Rotation Matrix for this angle
-#         # Corresponds to: RotNumeric[MDM4, ...]
-#         R = rot_numeric(MD_M4, theta, phi)
-
-#         # C. Rotate the Moments
-#         # Mathematica does: (Rot . Vars) /. Vars->Vals
-#         # Julia does: Rot . Vals (Matrix-Vector Multiplication)
-#         # This is mathematically identical but much faster.
-#         rotated_moments_full = R * raw_moments
-
-#         # D. Extract the specific "Shell Head" moments
-#         # Corresponds to: [[nIDX[MDM4]]]
-#         substituted = rotated_moments_full[target_indices]
-
-#         # E. Run Closure
-#         # Corresponds to: GramianExtEven[substituted]
-#         # Using the HyQMOM wrapper we defined earlier
-#         val = run_gramian_closure(substituted)
-        
-#         push!(results, val)
-#     end
-    
-#     return results
-# end
 function bvec_m4(v2)
     # Constants
     md_m4 = 4 # Degree 4
@@ -673,6 +646,7 @@ display(b_M4_matrix)
 # This calculates the theoretical moments and filters them exactly like 'get_unknowns_shell'
 # Matches: NextOrderMomList[v2, 5][[index1D[5]]]
 # Equivalent to Mathematica: NextOrderMomList[v2, 5][[index1D[5]]]
+# ! needed for comparison
 function get_exact_next_order_moments(v2, degree)
     # 1. Get indices ONLY for the specific shell (sum = degree)
     shell_indices = index(degree) 
