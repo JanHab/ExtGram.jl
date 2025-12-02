@@ -2,7 +2,7 @@ from clusterrun import createsbatch
 import os
 
 # Solver and simulation parameters
-M = 24
+M = 20
 closure = "ExtGram"
 Kn = 1.0
 source = "zero_source"#!"relaxation_source"
