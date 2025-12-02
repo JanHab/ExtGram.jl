@@ -430,7 +430,9 @@ const ANGLES_M4 = [
 
 # Run the compiled FP function on the angles (resultM4)
 result_M4 = [FPM4_FUNC(theta, phi) for (theta, phi) in ANGLES_M4];
-display(result_M4)
+A_matrix = hcat(result_M4...)';
+display(A_matrix)
+# ! A_matrix is correct
 
 # Example run how I could use it in Trixi.jl
 v2 = 1.5; # Example velocity
@@ -455,8 +457,8 @@ for (theta, phi) in ANGLES_M4
     
     push!(rhs, trixi_closure)
 end
-# Solve system Ax = b where b is 'rhs' and A is from result_M4
-A_matrix = hcat(result_M4...)';
+# Solve system Ax = b where b is 'rhs' and A is from A_matrix
+# ? The last angle of rhs is calculated incorrectly, but why is this?
 approx_moments = A_matrix \ rhs;
 
 # Get Exact Result
