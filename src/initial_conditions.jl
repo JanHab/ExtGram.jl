@@ -190,12 +190,24 @@ struct InitialConditionsShockTube1D3D{N}
     left::SVector{N}
     right::SVector{N}
 
+    # ToDo: This is not the efficient way to do this
     function InitialConditionsShockTube1D3D(f_left, f_right, M, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1}
         left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
         right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
         # ToDo: Adapt to 3D velocity case
         # @assert check_realizability(left, verbose=false) && check_realizability(right, verbose=false)
-        return new{Mp1}(left, right)
+        slab_indices = get_valid_indices(M)
+        left_reduced = []
+        for i in eachindex(slab_indices)
+            push!(left_reduced, left[i])
+        end
+        left_reduced = SVector{length(left_reduced)}(left_reduced)
+        right_reduced = []
+        for i in eachindex(slab_indices)
+            push!(right_reduced, right[i])
+        end
+        right_reduced = SVector{length(right_reduced)}(right_reduced)
+        return new{length(slab_indices)}(left_reduced, right_reduced)
     end
 end
 

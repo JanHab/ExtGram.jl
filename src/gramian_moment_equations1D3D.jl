@@ -55,13 +55,13 @@ struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquati
         else
             error("Unknown closure type: $closure. Supported types are \"Gram\" and \"ExtGram\".\n.")
         end
-        new{35, n, typeof(Knudsen)}(inv(Knudsen), χ, n, closure_value)
+        new{10, n, typeof(Knudsen)}(inv(Knudsen), χ, n, closure_value)
     end
 end
 
 # * Conservative to Primitive variables and vice versa
+Trixi.varnames(::typeof(cons2cons), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = ["U_(000)", "U_(100)", "U_(200)", "U_(020)", "U_(300)", "U_(120)", "U_(400)", "U_(220)", "U_(040)", "U_(022)"]
 # ToDo: Change for 3D velocity case
-Trixi.varnames(::typeof(cons2cons), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = ntuple(i->"u^($(i-1))", Mp1)
 Trixi.varnames(::typeof(cons2prim), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = ntuple(i->"w^($(i-1))", Mp1)
 
 # * basic variable definitions to be used as e.g. sc indicator variable
@@ -77,10 +77,75 @@ function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D
     # ∂_t u^k + \partial_x u^{k+1} = ... (0)
     # Last u from closure
     # return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations))
-    return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations, Val(equations.closure)))
+    return SVector(ntuple(i->u[i+1], 6)..., closure_transform(u, equations))
 end
-isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
+# isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
 
+# ToDo: Make generic for arbitrary M
+# const FPM4_FUNC = compile_fp(4+1) # Compile once with hard-coded M=4
+# This does the transformation
+function closure_transform(u, equations)
+    # ToDo: Make generic for arbitrary M
+    M = 4 #!length(u)-1
+    # @assert(M == 4, "Currently only M=4 is supported.")
+
+    FPM4_FUNC = compile_fp(M+1);
+
+    # 1. Define Angles
+    ANGLES_M4 = [
+        (3.14159, 1.5708),
+        (0.684719, 4.71239),
+        (2.03444, 1.5708),
+        (2.18628, 0.886077),
+    ];
+
+    # 2. Define Matrix A
+    # ! Invokelatest as function generated in same function, maybe put it outside or smth
+    result_M4 = [Base.invokelatest(FPM4_FUNC, theta, phi) for (theta, phi) in ANGLES_M4];
+    A_matrix = hcat(result_M4...)';
+
+    # 3. Reallocate the moments into the whole geometry with 0 moments for slab
+    slab_indices = []
+    index_start = 0
+    for i in 0:M
+        append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
+        index_start += size(index(i), 1)
+    end
+    # moments_full = zeros(Float64, length(mainmomindex(M))) # The full set of moments 
+    # To use ForwardDiff
+    moments_full = similar(u, length(mainmomindex(M)))
+    j = 1
+    for i in slab_indices
+        moments_full[i] = u[j]
+        j += 1
+    end
+
+    # 4. Compute rhs b
+    target_indices = nidx(M) # What we use for the closure
+    rhs = Float64[] # To store the rhs
+
+    for (theta, phi) in ANGLES_M4
+        # 3. Get Rotation Matrix (Using NEW idx order)
+        R = rot(M, theta, phi)
+
+        # 4. Rotate
+        rotated_moments_full = R * moments_full
+
+        # 5. Extract (m0, m1, m2, m3, m4)
+        substituted = rotated_moments_full[target_indices]
+
+        # println("Substituted moments: ", substituted)
+        val = closure(substituted, equations)
+        # val = Float64(Symbolics.value(val))
+        # val = 0
+        push!(rhs, val)
+    end
+
+    # 5. Solve for weights
+    transformed_moments = A_matrix \ rhs;
+
+    return transformed_moments
+end
 
 ########################## Closure ##########################
 
@@ -96,17 +161,18 @@ closure(u, equations::GramianMomentEquations1D3D) = closure(u, equations, Val(eq
 # Gramian closure 
 # -------------------------
 # Decides which closure implementation is used based on the number of Moments (even vs. odd)
-# closure(u, equations::GramianMomentEquations1D, ::Val{:Gram}) = closure(u, equations, Val(iseven(length(u)-1) ? :GramEven : :GramOdd))
+# closure(u, equations::GramianMomentEquations1D3D, ::Val{:Gram}) = closure(u, equations, Val(iseven(length(u)-1) ? :GramEven : :GramOdd))
 # # -------------------------
-# closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGram}) = closure(u, equations, Val(iseven(length(u)-1) ? :ExtGramEven : :ExtGramOdd))
+# closure(u, equations::GramianMomentEquations1D3D, ::Val{:ExtGram}) = closure(u, equations, Val(iseven(length(u)-1) ? :ExtGramEven : :ExtGramOdd))
 
 # Even case (classical and extended)
 """
-    closure(u, equations::GramianMomentEquations1D, ::Val{true}; verbose_=false)
+    closure(u, equations::GramianMomentEquations1D3D, ::Val{true}; verbose_=false)
 
     Closure for the even case
 """
-function closure(u, equations::GramianMomentEquations1D, ::Val{:GramEven})
+# ToDo: Nicely rewrite the closures so that they can be used for both 1D and 1D3D cases without code duplication
+function closure(u, equations::GramianMomentEquations1D3D, ::Val{:GramEven})
     M = length(u)-1 # u[0, ..., M]
     @assert iseven(M)
     n = equations.n 
@@ -116,8 +182,10 @@ function closure(u, equations::GramianMomentEquations1D, ::Val{:GramEven})
     )
 end
 
-function closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGramEven})
+function closure(u, equations::GramianMomentEquations1D3D, ::Val{:ExtGramEven})
     M = length(u)-1 # u[0, ..., M]
+    # println("Extended Gramian closure called.")
+    # println("u: ", u)
     @assert iseven(M)
     n = equations.n 
     invG_nm1 = inv(gramian(u, n-1))
@@ -135,22 +203,22 @@ end
 
 
 
-# compute Gramian matrix G_n
-"""
-    gramian(u, n::Int)
+# # compute Gramian matrix G_n
+# """
+#     gramian(u, n::Int)
 
-    Gramian matrix
-    G_{ij} = u_{i+j}
-"""
-function gramian(u, n::Int)
-    G = zeros(eltype(u), n+1,n+1)
-    for i=1:n+1
-        for j=1:n+1
-            G[i,j] = u[i+j-1]
-        end
-    end
-    return G
-end
+#     Gramian matrix
+#     G_{ij} = u_{i+j}
+# """
+# function gramian(u, n::Int)
+#     G = zeros(eltype(u), n+1,n+1)
+#     for i=1:n+1
+#         for j=1:n+1
+#             G[i,j] = u[i+j-1]
+#         end
+#     end
+#     return G
+# end
 
 
 
@@ -177,50 +245,50 @@ end
 # end
 
 # Zero source, no RHS
-zero_source(u, x, t, eqns::EqT) where {N, EqT <: Trixi.AbstractEquations{1, N}} = SVector{N}(ntuple(i->0.0, N))
+# zero_source(u, x, t, eqns::EqT) where {N, EqT <: Trixi.AbstractEquations{1, N}} = SVector{N}(ntuple(i->0.0, N))
 
 
 # computes c^n = v^n + 0 + (n over 2) v^(n-2)C^2 + ... + (n over 1) vC^(n-1) + C^n, where u[k] is the primitive moment arising from C^(k-1) 
-function binomial_moment_sum(u, n::Integer=length(u)-1)
-    @assert length(u) > n > 1
-    ρ = u[1]; v = u[2]
-    res = v^n
-    for k=2:n
-        res += binomial(n, k)*v^(n-k)*u[k+1]
-    end
-    return res
-end
+# function binomial_moment_sum(u, n::Integer=length(u)-1)
+#     @assert length(u) > n > 1
+#     ρ = u[1]; v = u[2]
+#     res = v^n
+#     for k=2:n
+#         res += binomial(n, k)*v^(n-k)*u[k+1]
+#     end
+#     return res
+# end
 
 
 
 # convert primitive [1, v, C^2, ...] variables to conservative [1, c, c^2, ....] variables
-function moment_prim2cons(u_prim)
-    m = length(u_prim)
-    @assert m > 2
-    cons = zeros(eltype(u_prim), m)
-    # u_prim[1] is rho and u_prim[2] is v
-    cons[1] = u_prim[1]; cons[2] = u_prim[1]*u_prim[2]
-    for k=3:m
-        cons[k] = u_prim[1]*binomial_moment_sum(u_prim, k-1)
-    end
-    return cons
-end
+# function moment_prim2cons(u_prim)
+#     m = length(u_prim)
+#     @assert m > 2
+#     cons = zeros(eltype(u_prim), m)
+#     # u_prim[1] is rho and u_prim[2] is v
+#     cons[1] = u_prim[1]; cons[2] = u_prim[1]*u_prim[2]
+#     for k=3:m
+#         cons[k] = u_prim[1]*binomial_moment_sum(u_prim, k-1)
+#     end
+#     return cons
+# end
 
 # convert conservative to primitive variables
-function moment_cons2prim(u_cons)
-    m = length(u_cons)
-    @assert m > 2
-    prim = zeros(eltype(u_cons), m)
-    prim[1] = u_cons[1]; prim[2] = u_cons[2]/prim[1]
-    for k=3:m
-        prim[k] = u_cons[k]/prim[1]- binomial_moment_sum(prim, k-1)
-    end
-    return prim
-end
+# function moment_cons2prim(u_cons)
+#     m = length(u_cons)
+#     @assert m > 2
+#     prim = zeros(eltype(u_cons), m)
+#     prim[1] = u_cons[1]; prim[2] = u_cons[2]/prim[1]
+#     for k=3:m
+#         prim[k] = u_cons[k]/prim[1]- binomial_moment_sum(prim, k-1)
+#     end
+#     return prim
+# end
 
 # ToDo: Need to check for 3D velocity case
-Trixi.prim2cons(u, eqns::GramianMomentEquations1D3D) = moment_prim2cons(u)
-Trixi.cons2prim(u, eqns::GramianMomentEquations1D3D) = moment_cons2prim(u)
+# Trixi.prim2cons(u, eqns::GramianMomentEquations1D3D) = moment_prim2cons(u)
+# Trixi.cons2prim(u, eqns::GramianMomentEquations1D3D) = moment_cons2prim(u)
 
 # Convert conservative variables to entropy (necessary dummy)
 Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
@@ -229,7 +297,7 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
 # Derivative of closure
 function dCdu(u, equations::GramianMomentEquations1D3D)
     # automatic differentiation
-    closure_wrapped(x) = closure(x, equations)
+    closure_wrapped(x) = closure_transform(x, equations)
     grad = ForwardDiff.gradient(closure_wrapped, u)
     return ForwardDiff.value(grad)
 end
@@ -239,9 +307,12 @@ end
 function flux_jacobian(u, equations::GramianMomentEquations1D3D)
     m = length(u)
     A = zeros(eltype(u), m, m)
-    for i=1:m-1 A[i, i+1] = 1 end
-    A[end, :] .= dCdu(u, equations)
-    
+    # for i=1:m-1 A[i, i+1] = 1 end
+    # A[end, :] .= dCdu(u, equations)
+    # ToDo: Make generic
+    for i=1:2 A[i, i+1] = 1 end
+    for i=3:6 A[i, i+2] = 1 end
+    A[7:10, :] .= dCdu(u[7:10], equations)
     return A
 end
 

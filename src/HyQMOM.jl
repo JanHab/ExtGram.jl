@@ -8,6 +8,12 @@ include("gramian_moment_equations.jl")
 include("testing.jl")
 # Gramian Moments Implementation for 1D3D
 include("gramian_moment_equations1D3D.jl")
+
+using Symbolics
+using LinearAlgebra
+using Distributions
+include("1D3D_Transformations.jl")
+
 include("initial_conditions.jl")
 
 export GramianMomentEquations1D, gramian, closure, moment_prim2cons, moment_cons2prim, dCdu, flux_jacobian, relaxation_source, zero_source, numerical_flux
