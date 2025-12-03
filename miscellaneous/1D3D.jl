@@ -438,6 +438,15 @@ display(A_matrix)
 v2 = 1.5; # Example velocity
 M = 4
 moments_init = mom_list(v2, M) # Init moments of degree 4
+# moments_init = [1., 0.9, 0, 0, 1.95, 0., 0., 0.6, 0, 0.6, 3.645, 0, 0, 0.54, 0., 0.54, 0, 0, 0, 0, 8.9775, 0., 0., 1.17, 0, 1.17, 0., 0., 0., 0., 1.08, 0, 0.36, 0, 1.08]
+# Set everything to zero where index_1d says so
+# ToDo: Something like this, but not this, not working :(
+# ToDo: Find only the non-zero indices directly
+valid_indices = []
+index_start = 0
+for i in 1:M
+    append!(valid_indices, index_1d(i) .+ nidx(M)[i] .- 1) # Offset by shell start
+end
 target_indices = nidx(M) # What we use for the closure
 rhs = Num[] # To store the rhs
 
