@@ -82,7 +82,6 @@ function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D
     # return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations))
     return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations, Val(equations.closure)))
 end
-isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
 
 
 ########################## Closure ##########################
