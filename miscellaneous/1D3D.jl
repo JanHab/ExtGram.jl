@@ -442,11 +442,13 @@ moments_init = mom_list(v2, M) # Init moments of degree 4
 # Set everything to zero where index_1d says so
 # ToDo: Something like this, but not this, not working :(
 # ToDo: Find only the non-zero indices directly
-valid_indices = []
+slab_indices = []
 index_start = 0
-for i in 1:M
-    append!(valid_indices, index_1d(i) .+ nidx(M)[i] .- 1) # Offset by shell start
+for i in 0:M
+    append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
+    index_start += size(index(i), 1)
 end
+moments_init = [i in slab_indices ? moments_init[i] : 0.0 for i in 1:length(moments_init)]
 target_indices = nidx(M) # What we use for the closure
 rhs = Num[] # To store the rhs
 
@@ -460,11 +462,15 @@ for (theta, phi) in ANGLES_M4
     # 5. Extract (m0, m1, m2, m3, m4)
     substituted = rotated_moments_full[target_indices]
 
+    val = run_gramian_closure(substituted)
+        
+    push!(rhs, val)
+
     # 6. Closure
-    equations = GramianMomentEquations1D(M, 1.0, "ExtGram") # Kn and ExtGram currently "placeholder"
-    trixi_closure = HyQMOM.closure(substituted, equations)
+    # equations = GramianMomentEquations1D(M, 1.0, "ExtGram") # Kn and ExtGram currently "placeholder"
+    # trixi_closure = HyQMOM.closure(substituted, equations)
     
-    push!(rhs, trixi_closure)
+    # push!(rhs, trixi_closure)
 end
 # Solve system Ax = b where b is 'rhs' and A is from A_matrix
 # ? The last angle of rhs is calculated incorrectly, but why is this?
@@ -486,6 +492,15 @@ println("Relative Error: ", abs.(exact_moments .- approx_moments) ./ abs.(exact_
 function bvec_m4(v2)
     # 1. Calculate Raw Moments (Degree 4)
     raw_moments = mom_list(v2, M)
+
+    # Only consider those from the slab geometry
+    slab_indices = []
+    index_start = 0
+    for i in 0:M
+        append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
+        index_start += size(index(i), 1)
+    end
+    raw_moments = [i in slab_indices ? raw_moments[i] : 0.0 for i in 1:length(raw_moments)]
 
     # 2. Get Indices for Shell Heads (1, 2, 5, 11, 21)
     target_indices = nidx(M)
