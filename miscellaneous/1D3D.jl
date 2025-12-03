@@ -268,9 +268,9 @@ get_unknowns_shell(2) # Test call
 
 
 
-# ? The whole FP part is a riddle to me, so let's keep it as it is for the moment
-# ToDo: Understand and simplify later
-# I am sure that this is not the most efficient way to do this
+# This constructs a function to be evaluated on θ, φ for a given moment degree
+# Returns the coefficients matrix
+# * I am sure that this is not the most efficient way to do this
 # --- 3. FP Symbolic Logic ---
 # ToDo: Work with cache?
 
