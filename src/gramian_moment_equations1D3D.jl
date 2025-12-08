@@ -77,7 +77,10 @@ function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D
     # ∂_t u^k + \partial_x u^{k+1} = ... (0)
     # Last u from closure
     # return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations))
-    return SVector(ntuple(i->u[i+1], 6)..., closure_transform(u, equations))
+
+    known_moments = SVector{6}(ntuple(i->u[i+1], 6))
+    closure_transformation = SVector{4}(closure_transform(u, equations)) 
+    return vcat(known_moments, closure_transformation)
 end
 # isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
 
@@ -111,9 +114,9 @@ function closure_transform(u, equations)
         append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
         index_start += size(index(i), 1)
     end
-    # moments_full = zeros(Float64, length(mainmomindex(M))) # The full set of moments 
+    moments_full = zeros(Float64, length(mainmomindex(M))) # The full set of moments 
     # To use ForwardDiff
-    moments_full = similar(u, length(mainmomindex(M)))
+    # moments_full = similar(u, length(mainmomindex(M)))
     j = 1
     for i in slab_indices
         moments_full[i] = u[j]
@@ -127,6 +130,10 @@ function closure_transform(u, equations)
     for (theta, phi) in ANGLES_M4
         # 3. Get Rotation Matrix (Using NEW idx order)
         R = rot(M, theta, phi)
+        # Transform type Num to Float64 for LinearAlgebra operations
+        # ToDo: Do it somewhere else or avoid Num entirely
+        R = Symbolics.value.(R)
+        R = Float64.(R)
 
         # 4. Rotate
         rotated_moments_full = R * moments_full
@@ -295,12 +302,31 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
 
 
 # Derivative of closure
-function dCdu(u, equations::GramianMomentEquations1D3D)
-    # automatic differentiation
-    closure_wrapped(x) = closure_transform(x, equations)
-    grad = ForwardDiff.gradient(closure_wrapped, u)
-    return ForwardDiff.value(grad)
+# function dCdu(u, equations::GramianMomentEquations1D3D)
+#     # automatic differentiation
+#     closure_wrapped(x) = closure_transform(x, equations)
+#     grad = ForwardDiff.gradient(closure_wrapped, u)
+#     return ForwardDiff.value(grad)
+# end
+function dCdu(u, equations::GramianMomentEquations1D3D, h::Float64 = 1e-6)
+    # grad = zeros(length(u))
+    # u_aux = zeros(eltype(u), length(u)); @. u_aux = u
+    # for i in eachindex(u)
+    #     u_aux[i] += h
+    #     grad[i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
+    #     u_aux[i] = u[i]
+    # end
+    # return grad
+    grad = zeros(eltype(u), 4, length(u))
+    u_aux = zeros(eltype(u), length(u)); @. u_aux = u
+    for i in eachindex(u)
+        u_aux[i] += h
+        grad[:,i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
+        u_aux[i] = u[i]
+    end
+    return grad
 end
+
 
 
 # Jacobian of the flux
@@ -312,7 +338,7 @@ function flux_jacobian(u, equations::GramianMomentEquations1D3D)
     # ToDo: Make generic
     for i=1:2 A[i, i+1] = 1 end
     for i=3:6 A[i, i+2] = 1 end
-    A[7:10, :] .= dCdu(u[7:10], equations)
+    A[7:10, :] .= dCdu(u, equations) #dCdu(u[7:10], equations)
     return A
 end
 
