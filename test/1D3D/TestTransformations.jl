@@ -152,9 +152,7 @@ let # Start a local scope
     end
     moments_init = [i in slab_indices ? moments_init[i] : 0.0 for i in 1:length(moments_init)]
     target_indices = HyQMOM.nidx(M) # What we use for the closure
-    using Symbolics # for Num
-    # ToDo: Only use Float64
-    rhs = Num[] # To store the rhs
+    rhs = Float64[] # To store the rhs
 
     Kn = 1.0
     closure_type = "ExtGram"

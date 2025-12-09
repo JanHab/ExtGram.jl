@@ -132,8 +132,8 @@ function closure_transform(u, equations)
         R = rot(M, theta, phi)
         # Transform type Num to Float64 for LinearAlgebra operations
         # ToDo: Do it somewhere else or avoid Num entirely
-        R = Symbolics.value.(R)
-        R = Float64.(R)
+        # R = Symbolics.value.(R)
+        # R = Float64.(R)
 
         # 4. Rotate
         rotated_moments_full = R * moments_full

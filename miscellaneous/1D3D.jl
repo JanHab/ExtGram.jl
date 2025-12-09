@@ -5,7 +5,7 @@
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using Symbolics
+# using Symbolics
 using LinearAlgebra
 using Distributions
 using HyQMOM, Trixi
@@ -81,14 +81,12 @@ mainmomindex(4) # Test call
 # --- 3. Tensor Transformation Logic ---
 
 # Memoization Cache: Key is (degree, theta_symbol, phi_symbol)
-# ToDo: Do it completely numeric later
 # ToDo: Work with cache?
-# Constructs the rotation matrix for given theta, phi
-function get_rotation_matrix(theta, phi)
-    # If theta/phi are symbolic, these return symbolic expressions.
-    # ToDo: Ensure compatibility with numeric inputs later.
-    ct, st = cos(theta), sin(theta)
-    cp, sp = cos(phi), sin(phi)
+function get_rotation_matrix(theta::Real, phi::Real)
+    # Ensure calculations are Float64
+    t, p = Float64(theta), Float64(phi)
+    ct, st = cos(t), sin(t)
+    cp, sp = cos(p), sin(p)
     
     return [
         -ct*sp  -st*sp   cp;
@@ -96,38 +94,38 @@ function get_rotation_matrix(theta, phi)
         -ct*cp  -cp*st  -sp
     ]
 end
-# Define symbolic variables
-@variables θ φ 
-get_rotation_matrix(θ, φ) # Test call
 get_rotation_matrix(0.5, 0.3) # Test call
 
-function tensor_transformation(n, theta, phi)
-    row_basis = idx(n) # indices
-    col_basis = index(n) # moments
-    col_lookup = Dict(vec => i for (i, vec) in enumerate(col_basis)) # allocating indices to moments
+function tensor_transformation(n::Int, theta::Real, phi::Real)
+    row_basis = idx(n) 
+    col_basis = index(n) 
+    col_lookup = Dict(vec => i for (i, vec) in enumerate(col_basis))
     
-    # CRITICAL CHANGE: Initialize with symbolic zeros (Num(0))
-    # We use size matching row/col basis
     dim_rows = length(row_basis)
     dim_cols = length(col_basis)
-    TT = zeros(Num, dim_rows, dim_cols)
     
+    # Initialize with Float64 zeros instead of generic/symbolic
+    TT = zeros(Float64, dim_rows, dim_cols)
     R = get_rotation_matrix(theta, phi)
+    
+    # Pre-allocate tuples generator to avoid recreating it inside loops if possible
     all_tuples = collect(Iterators.product(fill(1:3, n)...))
 
-    # This is where the magic happens
     for (r_idx, iList) in enumerate(row_basis)
         for jList_tuple in all_tuples
-            jList = collect(jList_tuple)
-            
-            # Calculate coefficient product
-            # Initialize coef as generic 1 (integer) so it can become symbolic
-            coef = 1
+            # Compute Coefficient
+            coef = 1.0
             for k in 1:n
-                coef *= R[iList[k], jList[k]]
+                # iList is the row index (target), jList is the column index (source)
+                coef *= R[iList[k], jList_tuple[k]]
             end
             
-            powers = tuple_to_powers(jList, n)
+            # Identify Column
+            # tuple_to_powers inline logic for speed
+            c1 = count(==(1), jList_tuple)
+            c2 = count(==(2), jList_tuple)
+            c3 = count(==(3), jList_tuple)
+            powers = [c1, c2, c3]
             
             if haskey(col_lookup, powers)
                 c_idx = col_lookup[powers]
@@ -135,10 +133,9 @@ function tensor_transformation(n, theta, phi)
             end
         end
     end
-
     return TT
 end
-tensor_transformation(2, θ, φ) # Test call with symbolic angles
+# tensor_transformation(2, θ, φ) # Test call with symbolic angles
 tensor_transformation(2, 0.5, 0.3) # Test call with numeric angles
 
 
@@ -150,90 +147,39 @@ tensor_transformation(2, 0.5, 0.3) # Test call with numeric angles
 
 # Helper function to manually construct a Block Diagonal Matrix
 # (Stitches a list of matrices [M1, M2...] into one large matrix)
-function construct_block_diagonal(matrices::Vector{Matrix{Num}})
-    # Calculate total dimensions
+function construct_block_diagonal(matrices::Vector{Matrix{Float64}})
     total_rows = sum(size(m, 1) for m in matrices)
     total_cols = sum(size(m, 2) for m in matrices)
     
-    # Initialize large symbolic matrix with zeros
-    # ToDo: Can assign Float64 later?
-    full_matrix = zeros(Num, total_rows, total_cols) # 'Num' to hold symbolic variables
+    full_matrix = zeros(Float64, total_rows, total_cols)
     
     current_row = 1
     current_col = 1
     
     for m in matrices
-        rows, cols = size(m)
-        # Paste the current matrix into the correct block position
-        full_matrix[current_row:(current_row + rows - 1), 
-                    current_col:(current_col + cols - 1)] = m
-        
-        # Move the cursor
-        current_row += rows
-        current_col += cols
+        r, c = size(m)
+        full_matrix[current_row:(current_row + r - 1), 
+                    current_col:(current_col + c - 1)] = m
+        current_row += r
+        current_col += c
     end
-    
     return full_matrix
 end
 
 # Equivalent to: RotSymbolic[MomentDegree_]
 # Generates the full block diagonal rotation matrix symbolically/numerically
-function rot(moment_degree, theta, phi)
-
-    # Collect the blocks for n = 0 to moment_degree
-    blocks = Matrix{Num}[] # "Num" to hold symbolic entries, # ToDo: Can assign Float64 later?
+function rot(moment_degree::Int, theta::Real, phi::Real)
+    blocks = Matrix{Float64}[]
+    push!(blocks, reshape([1.0], 1, 1)) # Degree 0
     
-    # First block matrix
-    # IdentityMatrix[1] is just a 1x1 matrix containing 1
-    push!(blocks, reshape([Num(1)], 1, 1)) # "Num" again
     for n in 1:moment_degree
-        # Call the tensor transformation function we defined earlier
-        mat = tensor_transformation(n, theta, phi)
-        push!(blocks, mat)
+        push!(blocks, tensor_transformation(n, theta, phi))
     end
     
-    # Stitch them together
-    final_matrix = construct_block_diagonal(blocks)
-    
-    return final_matrix
+    return construct_block_diagonal(blocks)
 end
-rot(2, θ, φ) # Test call
+# rot(2, θ, φ) # Test call
 rot(2, 0.5, 0.3) # Test call
-
-
-
-# --- 2. VarsSymbolic Implementation ---
-# Equivalent to: VarsSymbolic[MomentDegree]
-# This generates the vector of variables V_i_j_k, which are ≠ 0 in slab geometry
-function vars_symbolic(moment_degree)
-    # Initialize an empty vector of Symbolic Numbers
-    vars = Num[]
-    
-    # n=0 is always valid (V_0_0_0)
-    push!(vars, first(@variables V_0_0_0))
-    for n in 1:moment_degree
-        # 1. Get the FULL list of indices for this degree
-        full_indices = index(n) 
-        
-        for (i, j, k) in full_indices
-            # 2. Check the validity condition:
-            # EvenQ[y] && EvenQ[z] && (y >= z), Here: y->j, z->k
-            if iseven(j) && iseven(k) && (j >= k)
-                # Case A: Valid -> Generate Symbol
-                sym_name = Symbol("V_$(i)_$(j)_$(k)")
-                var = Symbolics.unwrap(first(@variables $sym_name))
-                push!(vars, Num(var))
-            else
-                # Case B: Invalid -> Insert Zero
-                push!(vars, Num(0))
-            end
-        end
-    end
-    
-    return vars
-end
-vars_symbolic(2) # Test call
-
 
 
 
@@ -244,74 +190,56 @@ function nidx(moment_degree)
 end
 nidx(4) # Test call
 
-# --- 2. Unknowns Helper (x) ---
-# Which moments we are looking for in the closure
-# ToDo: Pretty sure this is not necessary at all, but let's see
-function get_unknowns_shell(n)
-    vars = Num[]
+function compile_fp(degree::Int)
+    # --- Pre-calculation Phase (Run once when compiled) ---
+    col_basis = index(degree)
+    col_lookup = Dict(vec => i for (i, vec) in enumerate(col_basis))
     
-    # 1. Iterate only indices for degree 'n'
-    full_indices = index(n)
-    
-    for (i, j, k) in full_indices
-        # 2. Check symmetry condition
-        if iseven(j) && iseven(k) && (j >= k)
-            # Create symbol
-            sym_name = Symbol("V_$(i)_$(j)_$(k)")
-            var = Symbolics.unwrap(first(@variables $sym_name))
-            push!(vars, Num(var))
+    # Pre-calculate which indices in the output vector we actually need
+    # (The "Unknowns" validity check: y even, z even, y >= z)
+    valid_indices = Int[]
+    for (i, vec) in enumerate(col_basis)
+        _, y, z = vec
+        if iseven(y) && iseven(z) && (y >= z)
+            push!(valid_indices, i)
         end
     end
     
-    return vars
-end
-get_unknowns_shell(2) # Test call
+    # Pre-generate the iteration space for the degree
+    # We flatten it to a vector of tuples for faster iteration inside the closure
+    j_tuples = vec(collect(Iterators.product(fill(1:3, degree)...)))
 
-
-
-# This constructs a function to be evaluated on θ, φ for a given moment degree
-# Returns the coefficients matrix
-# * I am sure that this is not the most efficient way to do this
-# --- 3. FP Symbolic Logic ---
-# ToDo: Work with cache?
-
-function fp_symbolic_expr(next_moment_degree)
-    @variables theta phi
-    
-    # 1. Full Rotation (Degrees 0 to N)
-    # We still need the full matrix/vector to calculate the rotation correctly
-    rot_matrix = rot(next_moment_degree, theta, phi)
-    vars_full  = vars_symbolic(next_moment_degree)
-    
-    rot_mom_list = rot_matrix * vars_full
-    
-    # 2. Select the specific moment expression
-    indices = nidx(next_moment_degree)
-    last_rot_mom = rot_mom_list[indices[end]] # The head of the shell N
-    
-    # 3. Extract Coefficients
-    # FIX: Use ONLY the variables for the current shell (N=5 gives 4 vars)
-    unknowns_shell = get_unknowns_shell(next_moment_degree)
-    
-    coeffs = Symbolics.gradient(last_rot_mom, unknowns_shell)
-    
-    return coeffs, theta, phi
-end
-fp_symbolic_expr(2) # Test call
-
-# REVISED: CompileFP
-function compile_fp(degree::Int)
-    coeffs_sym, th, ph = fp_symbolic_expr(degree)
-    
-    # Force conversion to generic expressions to avoid Type/Array errors
-    expr_vector = [Symbolics.toexpr(simplify(c)) for c in coeffs_sym]
-    
-    # Manually construct the AST for a standard Julia Vector output
-    func_code = :(( $(Symbolics.toexpr(th)), $(Symbolics.toexpr(ph)) ) -> [$(expr_vector...)])
-    
-    func = eval(func_code)
-    
-    return func
+    # --- The Closure (The actual function FPM4_FUNC) ---
+    return (theta::Float64, phi::Float64) -> begin
+        R = get_rotation_matrix(theta, phi)
+        
+        # We only compute the row for tensor index [1, 1, ..., 1] (u_xxx...)
+        # This corresponds to the gradient of the first moment in the shell
+        row_coeffs = zeros(Float64, length(col_basis))
+        
+        for j_tuple in j_tuples
+            # Calculate product of Rotation matrix elements
+            # Target row is always [1, 1...], so R indices are R[1, val]
+            coef = 1.0
+            for val in j_tuple
+                coef *= R[1, val]
+            end
+            
+            # Determine column index (powers)
+            c1 = count(==(1), j_tuple)
+            c2 = count(==(2), j_tuple)
+            c3 = count(==(3), j_tuple)
+            powers = [c1, c2, c3]
+            
+            if haskey(col_lookup, powers)
+                c_idx = col_lookup[powers]
+                row_coeffs[c_idx] += coef
+            end
+        end
+        
+        # Return only the coefficients corresponding to the valid unknowns
+        return row_coeffs[valid_indices]
+    end
 end
 
 # Wrapper to match Mathematica's FPOptimized immediately
@@ -451,7 +379,7 @@ for i in 0:M
 end
 moments_init = [i in slab_indices ? moments_init[i] : 0.0 for i in 1:length(moments_init)]
 target_indices = nidx(M) # What we use for the closure
-rhs = Num[] # To store the rhs
+rhs = Float64[] # To store the rhs
 
 for (theta, phi) in ANGLES_M4
     # 3. Get Rotation Matrix (Using NEW idx order)

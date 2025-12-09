@@ -9,7 +9,7 @@ include("testing.jl")
 # Gramian Moments Implementation for 1D3D
 include("gramian_moment_equations1D3D.jl")
 
-using Symbolics
+# using Symbolics
 using LinearAlgebra
 using Distributions
 include("1D3D_Transformations.jl")
