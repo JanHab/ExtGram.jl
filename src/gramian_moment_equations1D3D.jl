@@ -79,8 +79,8 @@ function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D
     # return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations))
 
     known_moments = SVector{6}(ntuple(i->u[i+1], 6))
-    closure_transformation = SVector{4}(closure_transform(u, equations)) 
-    return vcat(known_moments, closure_transformation)
+    closure_transformation = closure_transform(u, equations)
+    return SVector{10}(known_moments..., closure_transformation...)
 end
 # isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
 
@@ -150,8 +150,8 @@ function closure_transform(u, equations)
 
     # 5. Solve for weights
     transformed_moments = A_matrix \ rhs;
-
-    return transformed_moments
+    # println("eltype(transformed_moments): $(eltype(transformed_moments))")
+    return SVector{4, Float64}(transformed_moments)
 end
 
 ########################## Closure ##########################
@@ -332,6 +332,7 @@ end
 # Jacobian of the flux
 function flux_jacobian(u, equations::GramianMomentEquations1D3D)
     m = length(u)
+    # println("eltype(u): $(eltype(u))")
     A = zeros(eltype(u), m, m)
     # for i=1:m-1 A[i, i+1] = 1 end
     # A[end, :] .= dCdu(u, equations)
@@ -354,5 +355,9 @@ end
 function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
     # estimate the flux Jacobian eigenvalues by means of Gerschgorin
     #return max(1.0, sum(abs.(dCdu(u))))
+    # println("eltype(u) in max_abs_speeds: $(eltype(u))")
+    # println("u in max_abs_speeds: $(u)")
+    u = Float64.(u)
+    # println("u converted to Float64: $(u)")
     return maximum(abs.(real.(eigen(flux_jacobian(u, equations)).values)))
 end

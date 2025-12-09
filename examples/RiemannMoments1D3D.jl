@@ -11,7 +11,7 @@ Kn = 1.0 #parse(Float64, ARGS[3])
 # source_string = ARGS[4]
 source = zero_source #relaxation_source
 T_end = 0.3 #parse(Float64, ARGS[5])
-base_tree_level = 6 #parse(Int, ARGS[6]) # e.g. 8
+base_tree_level = 2 #parse(Int, ARGS[6]) # e.g. 8
 polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
 ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
 v_L1 = 0.0 #parse(Float64, ARGS[9]) # 0.0
@@ -53,7 +53,7 @@ indicator_sc = IndicatorHennemannGassner(
     alpha_max = 0.5, #!1.0,#*0.5,#0.1, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
     alpha_min = 0.001, #!0.01,#0.01,
     alpha_smooth = true, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
-    variable = (u, eqns)->u[1]*u[3]#! *u[5]
+    variable = (u, eqns)->u[1]*u[5]#! *u[5]
 ) # ? Seems to restrict to M>=4
 
 surface_flux = flux_lax_friedrichs
@@ -86,11 +86,37 @@ semi = SemidiscretizationHyperbolic(
 tspan = (0.0, T_end)
 ode = semidiscretize(semi, tspan)
 
-callbacks, summary_callback = callbacksGramianMomentEquations(
-    semi, tspan, basis; 
-    cfl = 0.9,          # Maximum cfl number
-    plot_interval = 20,  # plot every 20 steps
-    name="gram_solution",
+# callbacks, summary_callback = callbacksGramianMomentEquations(
+#     semi, tspan, basis; 
+#     cfl = 0.9,          # Maximum cfl number
+#     plot_interval = 20,  # plot every 20 steps
+#     name="gram_solution",
+# )
+
+cfl = 0.99
+time_interval = 20
+name = "gram_solution_1D3D"
+
+alive_callback = AliveCallback(analysis_interval=100)
+summary_callback = SummaryCallback()
+stepsize_callback = StepsizeCallback(cfl=cfl)
+
+save_solution = SaveTriangulationCallback(
+    time_interval=tspan[2]/time_interval,
+    save_initial_solution=true,
+    file_format="tsv",
+    append_solution=true,
+    solution_variables = cons2cons,
+    clear_out_dir=false,
+    name=name,
+    info="basis = $(Base.typename(typeof(basis)).wrapper)"
+)
+
+callbacks = CallbackSet(
+    alive_callback,
+    stepsize_callback,
+    # plot_callback,
+    save_solution,
 )
 
 #= solve =#
@@ -100,7 +126,7 @@ sol = solve(
         williamson_condition = false
     );
     dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
-    ode_default_options()..., 
+    ode_default_options()...,
     callback = callbacks,
     saveat = range(tspan[1], tspan[2], length=100)
 );
