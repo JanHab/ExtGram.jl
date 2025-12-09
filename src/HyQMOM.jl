@@ -6,13 +6,13 @@ using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, Ordi
 # Gramian Moments Implementation
 include("gramian_moment_equations.jl")
 include("testing.jl")
-# Gramian Moments Implementation for 1D3D
-include("gramian_moment_equations1D3D.jl")
 
+# Gramian Moments Implementation for 1D3D
 # using Symbolics
 using LinearAlgebra
 using Distributions
 include("1D3D_Transformations.jl")
+include("gramian_moment_equations1D3D.jl")
 
 include("initial_conditions.jl")
 

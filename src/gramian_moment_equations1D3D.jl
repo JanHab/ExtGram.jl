@@ -1,5 +1,43 @@
 
 # (note: replacing all zeroes() calls with corresponding SVector and MVector calls would speed up things at the cost of arbitrary vector input types)
+# * Transformation functions, this is constant for all moments
+# Use {F<:Function} to keep it fast (Type Stability).
+struct Constants{F<:Function}
+    fp_func::F
+    Angles::Vector{Tuple{Float64,Float64}}
+    A_matrix::Matrix{Float64}
+    slab_indices::Vector{Int}
+    function Constants(fp_func::F, Angles::Vector{Tuple{Float64,Float64}}, A_matrix::Matrix{Float64}, slab_indices::Vector{Int}) where {F<:Function}
+        new{F}(fp_func, Angles, A_matrix, slab_indices)
+    end
+end
+
+function init_constants(M::Int)
+    # 1. Compile the function
+    fp_func = compile_fp(M+1)
+    
+    # 2. Define Angles
+    angles = [
+        (3.14159, 1.5708),
+        (0.684719, 4.71239),
+        (2.03444, 1.5708),
+        (2.18628, 0.886077)
+    ]
+    
+    # 3. Compute Matrix A immediately
+    results = [fp_func(theta, phi) for (theta, phi) in angles]
+    A_matrix = Matrix(hcat(results...)')
+    
+    slab_indices = Int[]
+    index_start = 0
+    for i in 0:M
+        append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
+        index_start += size(index(i), 1)
+    end
+
+    return Constants(fp_func, angles, A_matrix, slab_indices)
+end
+
 
 # * Basic struct for equations
 """
@@ -32,6 +70,7 @@ struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquati
     χ::RealT
     n::Int
     closure::Symbol
+    constants::Constants
 
     function GramianMomentEquations1D3D(M::Integer, Knudsen::Real, closure::String="ExtGram"; χ_set="optimal")
         @assert M > 1
@@ -55,7 +94,11 @@ struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquati
         else
             error("Unknown closure type: $closure. Supported types are \"Gram\" and \"ExtGram\".\n.")
         end
-        new{10, n, typeof(Knudsen)}(inv(Knudsen), χ, n, closure_value)
+
+        # Setup the Constants
+        constants = init_constants(M)
+
+        new{10, n, typeof(Knudsen)}(inv(Knudsen), χ, n, closure_value, constants)
     end
 end
 
@@ -74,51 +117,21 @@ Trixi.density(u, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1} = u[1]
 """
 function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D3D{Mp1}) where {Mp1}
     # First MP1-1 flux components from shifed moments
-    # ∂_t u^k + \partial_x u^{k+1} = ... (0)
-    # Last u from closure
-    # return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations))
-
     known_moments = SVector{6}(ntuple(i->u[i+1], 6))
     closure_transformation = closure_transform(u, equations)
     return SVector{10}(known_moments..., closure_transformation...)
 end
-# isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
 
-# ToDo: Make generic for arbitrary M
-# const FPM4_FUNC = compile_fp(4+1) # Compile once with hard-coded M=4
+
 # This does the transformation
 function closure_transform(u, equations)
     # ToDo: Make generic for arbitrary M
     M = 4 #!length(u)-1
-    # @assert(M == 4, "Currently only M=4 is supported.")
-
-    FPM4_FUNC = compile_fp(M+1);
-
-    # 1. Define Angles
-    ANGLES_M4 = [
-        (3.14159, 1.5708),
-        (0.684719, 4.71239),
-        (2.03444, 1.5708),
-        (2.18628, 0.886077),
-    ];
-
-    # 2. Define Matrix A
-    # ! Invokelatest as function generated in same function, maybe put it outside or smth
-    result_M4 = [Base.invokelatest(FPM4_FUNC, theta, phi) for (theta, phi) in ANGLES_M4];
-    A_matrix = hcat(result_M4...)';
 
     # 3. Reallocate the moments into the whole geometry with 0 moments for slab
-    slab_indices = []
-    index_start = 0
-    for i in 0:M
-        append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
-        index_start += size(index(i), 1)
-    end
     moments_full = zeros(Float64, length(mainmomindex(M))) # The full set of moments 
-    # To use ForwardDiff
-    # moments_full = similar(u, length(mainmomindex(M)))
     j = 1
-    for i in slab_indices
+    for i in equations.constants.slab_indices
         moments_full[i] = u[j]
         j += 1
     end
@@ -127,13 +140,9 @@ function closure_transform(u, equations)
     target_indices = nidx(M) # What we use for the closure
     rhs = Float64[] # To store the rhs
 
-    for (theta, phi) in ANGLES_M4
+    for (theta, phi) in equations.constants.Angles
         # 3. Get Rotation Matrix (Using NEW idx order)
         R = rot(M, theta, phi)
-        # Transform type Num to Float64 for LinearAlgebra operations
-        # ToDo: Do it somewhere else or avoid Num entirely
-        # R = Symbolics.value.(R)
-        # R = Float64.(R)
 
         # 4. Rotate
         rotated_moments_full = R * moments_full
@@ -141,16 +150,12 @@ function closure_transform(u, equations)
         # 5. Extract (m0, m1, m2, m3, m4)
         substituted = rotated_moments_full[target_indices]
 
-        # println("Substituted moments: ", substituted)
         val = closure(substituted, equations)
-        # val = Float64(Symbolics.value(val))
-        # val = 0
         push!(rhs, val)
     end
 
     # 5. Solve for weights
-    transformed_moments = A_matrix \ rhs;
-    # println("eltype(transformed_moments): $(eltype(transformed_moments))")
+    transformed_moments = equations.constants.A_matrix \ rhs;
     return SVector{4, Float64}(transformed_moments)
 end
 
@@ -355,7 +360,7 @@ end
 function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
     # estimate the flux Jacobian eigenvalues by means of Gerschgorin
     #return max(1.0, sum(abs.(dCdu(u))))
-    # println("eltype(u) in max_abs_speeds: $(eltype(u))")
+    println("eltype(u) in max_abs_speeds: $(eltype(u))")
     # println("u in max_abs_speeds: $(u)")
     u = Float64.(u)
     # println("u converted to Float64: $(u)")
