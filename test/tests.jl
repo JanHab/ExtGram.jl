@@ -5,18 +5,17 @@ using HyQMOM, StaticArrays
 
 using Test
 
-# ToDo: Re-enable other tests when issues are fixed
-# @testset "GradClosure" begin
-#     include("closure/Grad.jl")
-# end
+@testset "GradClosure" begin
+    include("closure/Grad.jl")
+end
 
-# @testset "GramianClosure" begin
-#     include("closure/Gramian.jl")
-# end
+@testset "GramianClosure" begin
+    include("closure/Gramian.jl")
+end
 
-# @testset "ExtendedGramianClosure" begin
-#     include("closure/ExtendedGramian.jl")
-# end
+@testset "ExtendedGramianClosure" begin
+    include("closure/ExtendedGramian.jl")
+end
 
 @testset "1D3D" begin
     include("1D3D/TestTransformations.jl")
