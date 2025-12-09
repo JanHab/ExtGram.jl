@@ -67,7 +67,7 @@ function index_1d(n)
     end
     return pos
 end
-index_1d(2) # Test call
+index_1d(4) # Test call
 
 # Equivalent to: mainmomindex[nmax_]
 # Generates the full list of multi-indices up to nmax
@@ -99,6 +99,7 @@ end
 # Define symbolic variables
 @variables θ φ 
 get_rotation_matrix(θ, φ) # Test call
+get_rotation_matrix(0.5, 0.3) # Test call
 
 function tensor_transformation(n, theta, phi)
     row_basis = idx(n) # indices
@@ -241,7 +242,7 @@ function nidx(moment_degree)
     # This generates the start index of every moment shell in the flattened list
     return Int[1 + div(k*(k+1)*(k+2), 6) for k in 0:moment_degree]
 end
-nidx(2) # Test call
+nidx(4) # Test call
 
 # --- 2. Unknowns Helper (x) ---
 # Which moments we are looking for in the closure
