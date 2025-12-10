@@ -9,7 +9,7 @@ M = parse(Int, ARGS[1])
 closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = parse(Float64, ARGS[3])
 source_string = ARGS[4]
-source = relaxation_source
+source = source_string == "relaxation_source" ? relaxation_source : zero_source # default to zero_source if not relaxation_source
 T_end = parse(Float64, ARGS[5])
 base_tree_level = parse(Int, ARGS[6]) # e.g. 8
 polydeg = parse(Int, ARGS[7]) # e.g. 3
