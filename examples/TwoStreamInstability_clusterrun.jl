@@ -7,7 +7,7 @@ using LaTeXStrings, FastGaussQuadrature
 
 # Access arguments by index
 M = parse(Int, ARGS[1])
-closure = parse(String, ARGS[2]) # "Gram", "ExtGram" or "Grad"
+closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 T_end = parse(Float64, ARGS[3])
 base_tree_level = parse(Int, ARGS[4]) # e.g. 8
 polydeg = parse(Int, ARGS[5]) # e.g. 3
@@ -59,13 +59,13 @@ summary_callback = SummaryCallback()
 cfl = 0.99
 stepsize_callback = StepsizeCallback(cfl=cfl)
 
-plot_callback = VisualizationCallback(
-    semi;
-    interval=20,
-    solution_variables=cons2cons,
-    plot_data_creator=PlotData1D,
-    plot_creator=Trixi.show_plot
-)
+# plot_callback = VisualizationCallback(
+#     semi;
+#     interval=20,
+#     solution_variables=cons2cons,
+#     plot_data_creator=PlotData1D,
+#     plot_creator=Trixi.show_plot
+# )
 
 save_solution = SaveTriangulationCallback(
     time_interval=tspan[2]/20,
@@ -74,14 +74,14 @@ save_solution = SaveTriangulationCallback(
     append_solution=true,
     solution_variables = cons2cons,
     clear_out_dir=false,
-    name=name="VlasovPoisson/TwoStreamInstability/moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper)", # name used for output
+    name="VlasovPoisson/TwoStreamInstability/moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper)", # name used for output
     info="basis = $(Base.typename(typeof(basis)).wrapper)"
 )
 
 callbacks = CallbackSet(
     alive_callback,
     stepsize_callback,
-    plot_callback,
+    # plot_callback,
     save_solution,
 )
 # Add Vlasov-Poisson callback
@@ -120,7 +120,7 @@ plot(
     yaxis=:log,
     legend=:bottomleft
 )
-savefig("out/VlasovPoisson/TwoStreamInstability/energy_from_callback.pdf")
+savefig("out/VlasovPoisson/TwoStreamInstability/energy_from_callback_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).pdf")
 # store to csv file
 CSV.write(
     "out/VlasovPoisson/TwoStreamInstability/energy_moments_closure$(closure)_T$(T_end)_M$(M)_k$(k)_ϵ$(ϵ)_p$(polydeg)_level$(base_tree_level).csv",
