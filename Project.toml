@@ -31,7 +31,11 @@ FastGaussQuadrature = "1.1.0"
 ForwardDiff = "1.2.1"
 HDF5 = "0.17.2"
 Interpolations = "0.16.2"
+<<<<<<< HEAD
 Latexify = "0.16.10"
+=======
+LaTeXStrings = "1.4.0"
+>>>>>>> d98bb56 (update)
 LinearAlgebra = "1.11.0"
 OrdinaryDiffEq = "6.102.1"
 Plots = "1.41.1"
