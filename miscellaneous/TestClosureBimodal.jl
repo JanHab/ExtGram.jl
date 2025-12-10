@@ -7,7 +7,7 @@ using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 ######################################################
 ################## Velocity Variation ################
 ######################################################
-M_vector = [5, 9, 13, 17, 25, 51]
+M_vector = [4, 5, 8, 9, 12, 13, 16, 17, 24, 25, 50, 51]
 Kn = 1.0 # Doesn't matter for the closure, necessary for defining the equations
 closures = ["Gram", "ExtGram", "Grad"]
 
@@ -46,23 +46,30 @@ for (i, M) in enumerate(M_vector)
             xlabel="v2", ylabel="ϵᵣ", 
             color=colors[findfirst(==(closure), closures)],
         )
+
+        CSV.write(
+            "out/CompareClosure/Accuracy_over_v2_closure_$(closure)_M$(M).csv",
+            Tables.columntable((
+                v2_vector=v2_vector, L2=L2
+            ))
+        )
     end
 end
 # labels = ["Gram", "ExtGram", "Grad"]
-labels = ["\n  $(closures[1])\n" "\n  $(closures[2])\n" "\n  $(closures[3])\n"]
-n_labels = length(closures)
-# colors = palette(:default)[1:n_labels]'
-p0 = scatter(
-    (-n_labels:-1)',(-n_labels:-1)', 
-    lims=(0,1), legendfontsize=7, 
-    legend=:left, fg_color_legend = nothing, 
-    label=labels, fc=colors, 
-    frame=:none
-);
-# display(pl)
-l = @layout  [grid(3,2) a{0.2w}]
-plot(pl..., p0, layout=l, size=(800,500))
-savefig("out/MorinClosure/ErrorVsVelocity.pdf")
+# labels = ["\n  $(closures[1])\n" "\n  $(closures[2])\n" "\n  $(closures[3])\n"]
+# n_labels = length(closures)
+# # colors = palette(:default)[1:n_labels]'
+# p0 = scatter(
+#     (-n_labels:-1)',(-n_labels:-1)', 
+#     lims=(0,1), legendfontsize=7, 
+#     legend=:left, fg_color_legend = nothing, 
+#     label=labels, fc=colors, 
+#     frame=:none
+# );
+# # display(pl)
+# l = @layout  [grid(3,2) a{0.2w}]
+# plot(pl..., p0, layout=l, size=(800,500))
+# savefig("out/Figures/CompareClosure/ErrorVsVelocity.pdf")
 
 ######################################################
 ################## Order of Moments M ################
@@ -100,13 +107,65 @@ for (i, v2) in enumerate(v2_vector)
             color=colors[findfirst(==(closure), closures)],
             # legend=:bottomright;
         )
+
+        CSV.write(
+            "out/CompareClosure/Accuracy_over_OddMoments_closure_$(closure)_v2$(v2).csv",
+            Tables.columntable((
+                M_vector=M_vector, L2=L2
+            ))
+        )
     end
 end
 # display(pl)
 l = @layout  [grid(2,2) a{0.2w}]
 plot(pl..., p0, layout=l, size=(800,500))
-savefig("out/MorinClosure/ErrorVsM.pdf")
+# savefig("out/Figures/CompareClosure/ErrorVsM.pdf")
 
+M_vector = 4:2:24
+
+n = length(v2_vector)
+pl = Vector{Any}(undef, n)# = scatter(layout=4)
+for i in 1:n
+    pl[i] = plot()
+end
+for (i, v2) in enumerate(v2_vector)
+    for closure in closures
+        L2 = Float64[]
+        for M in M_vector
+            equations = GramianMomentEquations1D(M, Kn, closure)
+
+            f1 = Maxwellian(ρ1, v1, θ1)
+            f2 = Maxwellian(ρ2, v2, θ2)
+            momentList = convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
+
+            nextMoment = HyQMOM.closure(momentList[1:end-1], equations)
+            push!(L2, abs((nextMoment - momentList[end]) / momentList[end]))
+        end
+
+        plot!(
+            pl[i],
+            M_vector, L2, 
+            yscale=:log10, 
+            label="",
+            marker=:o,
+            title="v₂ = $v2",
+            xlabel="M", ylabel="ϵᵣ", 
+            color=colors[findfirst(==(closure), closures)],
+            # legend=:bottomright;
+        )
+
+        CSV.write(
+            "out/CompareClosure/Accuracy_over_EvenMoments_closure_$(closure)_v2$(v2).csv",
+            Tables.columntable((
+                M_vector=M_vector, L2=L2
+            ))
+        )
+    end
+end
+# display(pl)
+l = @layout  [grid(2,2) a{0.2w}]
+plot(pl..., p0, layout=l, size=(800,500))
+# savefig("out/Figures/CompareClosure/ErrorVsM.pdf")
 
 ######################################################
 ################## Equilibrium Test ##################
@@ -150,4 +209,4 @@ plot!(
 )
 
 display(pl)
-savefig("out/MorinClosure/EquilibriumPreservation.pdf")
+# savefig("out/CompareClosure/EquilibriumPreservation.pdf")
