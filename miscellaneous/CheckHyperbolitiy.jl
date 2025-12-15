@@ -69,6 +69,7 @@ for v2 in v_R2_vec
     end
 end
 
+display(flux_jac)
 
 real_parts = real.(eigenvals)
 imag_parts = imag.(eigenvals)
