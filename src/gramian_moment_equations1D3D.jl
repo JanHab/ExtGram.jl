@@ -117,6 +117,7 @@ Trixi.density(u, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1} = u[1]
 """
 function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D3D{Mp1}) where {Mp1}
     # First MP1-1 flux components from shifed moments
+    println("Calculating flux for u: ", u)
     known_moments = SVector{6}(ntuple(i->u[i+1], 6))
     closure_transformation = closure_transform(u, equations)
     return SVector{10}(known_moments..., closure_transformation...)
@@ -126,6 +127,7 @@ end
 # This does the transformation
 function closure_transform(u, equations)
     # ToDo: Make generic for arbitrary M
+    println("Performing closure transformation for u: ", u)
     M = 4 #!length(u)-1
 
     # 3. Reallocate the moments into the whole geometry with 0 moments for slab
@@ -140,22 +142,29 @@ function closure_transform(u, equations)
     target_indices = nidx(M) # What we use for the closure
     rhs = Float64[] # To store the rhs
 
+    # println("Moments_full: ", moments_full)
     for (theta, phi) in equations.constants.Angles
         # 3. Get Rotation Matrix (Using NEW idx order)
+        # ToDo: Precompute the four rotation matrices and store them in constants for efficiency
         R = rot(M, theta, phi)
 
+        # println("Rotation matrix R for angle (θ=$(theta), φ=$(phi)): ", R)
         # 4. Rotate
         rotated_moments_full = R * moments_full
 
         # 5. Extract (m0, m1, m2, m3, m4)
         substituted = rotated_moments_full[target_indices]
+        # # ToDo: Handle NaNs properly
+        # substituted[isnan.(substituted)] .= 0.0 # Handle NaNs
 
+        println("Substituted moments for angle (θ=$(theta), φ=$(phi)): ", substituted)
         val = closure(substituted, equations)
         push!(rhs, val)
     end
 
     # 5. Solve for weights
     transformed_moments = equations.constants.A_matrix \ rhs;
+    println("Transformed moments: ", transformed_moments)
     return SVector{4, Float64}(transformed_moments)
 end
 
@@ -313,56 +322,81 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
 #     grad = ForwardDiff.gradient(closure_wrapped, u)
 #     return ForwardDiff.value(grad)
 # end
-function dCdu(u, equations::GramianMomentEquations1D3D, h::Float64 = 1e-6)
-    # grad = zeros(length(u))
-    # u_aux = zeros(eltype(u), length(u)); @. u_aux = u
-    # for i in eachindex(u)
-    #     u_aux[i] += h
-    #     grad[i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
-    #     u_aux[i] = u[i]
-    # end
-    # return grad
-    grad = zeros(eltype(u), 4, length(u))
-    u_aux = zeros(eltype(u), length(u)); @. u_aux = u
-    for i in eachindex(u)
-        u_aux[i] += h
-        grad[:,i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
-        u_aux[i] = u[i]
-    end
-    return grad
+# function dCdu(u, equations::GramianMomentEquations1D3D, h::Float64 = 1e-6)
+#     # grad = zeros(length(u))
+#     # u_aux = zeros(eltype(u), length(u)); @. u_aux = u
+#     # for i in eachindex(u)
+#     #     u_aux[i] += h
+#     #     grad[i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
+#     #     u_aux[i] = u[i]
+#     # end
+#     # return grad
+#     grad = zeros(eltype(u), 4, length(u))
+#     u_aux = zeros(eltype(u), length(u)); @. u_aux = u
+#     for i in eachindex(u)
+#         u_aux[i] += h
+#         grad[:,i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
+#         u_aux[i] = u[i]
+#     end
+#     return grad
+# end
+
+
+
+# # Jacobian of the flux
+# function flux_jacobian(u, equations::GramianMomentEquations1D3D)
+#     m = length(u)
+#     # println("eltype(u): $(eltype(u))")
+#     A = zeros(eltype(u), m, m)
+#     # for i=1:m-1 A[i, i+1] = 1 end
+#     # A[end, :] .= dCdu(u, equations)
+#     # ToDo: Make generic
+#     for i=1:2 A[i, i+1] = 1 end
+#     for i=3:6 A[i, i+2] = 1 end
+#     A[7:10, :] .= dCdu(u, equations) #dCdu(u[7:10], equations)
+#     return A
+# end
+
+# # Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
+# function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D3D)
+#     λ_l = Trixi.max_abs_speeds(u_l, equations)
+#     λ_r = Trixi.max_abs_speeds(u_r, equations)
+#     λ_max = max(λ_l, λ_r)
+#     return λ_max
+# end
+
+
+# function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
+#     # estimate the flux Jacobian eigenvalues by means of Gerschgorin
+#     #return max(1.0, sum(abs.(dCdu(u))))
+#     println("eltype(u) in max_abs_speeds: $(eltype(u))")
+#     # println("u in max_abs_speeds: $(u)")
+#     u = Float64.(u)
+#     # println("u converted to Float64: $(u)")
+#     return maximum(abs.(real.(eigen(flux_jacobian(u, equations)).values)))
+# end
+
+
+
+
+##########################################################
+#################### Maximum speeds ######################
+##########################################################
+
+# * For now, we assume a constant maximum speed (should be changed later)
+# ? What is the optimal maximum speed? We want to avoid calculating the flux Jacobian eigenvalues every time step if possible.
+function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
+    # REPLACE 1.0 with the maximum microscopic velocity of your model.
+    # For example:
+    # - If your basis is defined on [-1, 1], return 1.0.
+    # - If this is a gas dynamics code, this might need to be higher.
+    # ? What valud to choose here?
+    return 10.0 
 end
 
-
-
-# Jacobian of the flux
-function flux_jacobian(u, equations::GramianMomentEquations1D3D)
-    m = length(u)
-    # println("eltype(u): $(eltype(u))")
-    A = zeros(eltype(u), m, m)
-    # for i=1:m-1 A[i, i+1] = 1 end
-    # A[end, :] .= dCdu(u, equations)
-    # ToDo: Make generic
-    for i=1:2 A[i, i+1] = 1 end
-    for i=3:6 A[i, i+2] = 1 end
-    A[7:10, :] .= dCdu(u, equations) #dCdu(u[7:10], equations)
-    return A
-end
-
-# Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
+# This remains the same, but now calls the faster constant version above.
 function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D3D)
     λ_l = Trixi.max_abs_speeds(u_l, equations)
     λ_r = Trixi.max_abs_speeds(u_r, equations)
-    λ_max = max(λ_l, λ_r)
-    return λ_max
-end
-
-
-function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
-    # estimate the flux Jacobian eigenvalues by means of Gerschgorin
-    #return max(1.0, sum(abs.(dCdu(u))))
-    println("eltype(u) in max_abs_speeds: $(eltype(u))")
-    # println("u in max_abs_speeds: $(u)")
-    u = Float64.(u)
-    # println("u converted to Float64: $(u)")
-    return maximum(abs.(real.(eigen(flux_jacobian(u, equations)).values)))
+    return max(λ_l, λ_r)
 end
