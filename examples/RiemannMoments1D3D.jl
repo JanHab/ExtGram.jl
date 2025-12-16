@@ -137,7 +137,7 @@ sol = solve(
 
 # Post Processing
 n_equations = 10
-u_final = sol.u[end]
+u_final = sol.u[end] #!ode.u0 #!sol.u[end]
 L = length(u_final)
 Nloc = L ÷ (n_equations)
 Fmat = reshape(u_final, n_equations, Nloc)
@@ -178,11 +178,24 @@ plot!(
     color=:green,
 )
 
+# plot!(
+#     pl,
+#     x, u[4, :], 
+#     label="U020",
+#     color=:orange,
+# )
 plot!(
     pl,
-    x, u[4, :], 
-    label="U020",
-    color=:orange,
+    x, u[5, :], 
+    label="300",
+    color=:purple,
+)
+
+plot!(
+    pl,
+    x, u[7, :], 
+    label="U400",
+    color=:brown,
 )
 
 display(pl)
