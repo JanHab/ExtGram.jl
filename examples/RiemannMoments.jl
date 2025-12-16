@@ -71,8 +71,8 @@ summary_callback()
 
 # Post Processing
 x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
-display(p1)
-savefig(p1, "out/Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.pdf")
+# display(p1)
+# savefig(p1, "out/Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.pdf")
 
 # Store primitive variables in CSV file
 CSV.write(
@@ -81,7 +81,7 @@ CSV.write(
 )
 
 # Plot maximum eigenvalue (wave-speed) of flux Jacobian over time
-n_plots = 5
-p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
-display(p2)
-savefig(p2, "out/Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_lambda_max.pdf")
+# n_plots = 5
+# p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
+# display(p2)
+# savefig(p2, "out/Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_lambda_max.pdf")
