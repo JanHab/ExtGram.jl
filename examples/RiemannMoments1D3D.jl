@@ -10,16 +10,16 @@ closure = "ExtGram" #ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = 1.0 #parse(Float64, ARGS[3])
 # source_string = ARGS[4]
 source = zero_source #relaxation_source
-T_end = 0.3 #parse(Float64, ARGS[5])
-base_tree_level = 2 #parse(Int, ARGS[6]) # e.g. 8
+T_end = 0.1#0.3 #parse(Float64, ARGS[5])
+base_tree_level = 4 #!2 #parse(Int, ARGS[6]) # e.g. 8
 polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
 ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
-v_L1 = 0.0 #parse(Float64, ARGS[9]) # 0.0
+v_L1 = 1.0 #!1.5 #parse(Float64, ARGS[9]) # 0.0
 v_L2 = 0.0
 v_L3 = 0.0
 θ_L = 1.0 #parse(Float64, ARGS[10]) # 1.0
 ρ_R = 1.0 #parse(Float64, ARGS[11]) # 1.0
-v_R1 = 0.0 #parse(Float64, ARGS[12]) # 0.0
+v_R1 = 1.0 #parse(Float64, ARGS[12]) # 0.0
 v_R2 = 0.0
 v_R3 = 0.0
 θ_R = 1.0 #parse(Float64, ARGS[13]) # 1.0
@@ -36,6 +36,8 @@ equations = GramianMomentEquations1D3D(M, Kn, closure)
 # Mp1 = 35
 # f_left = Maxwellian1D3D(ρ_L, (v_L1, v_L2, v_L3), θ_L)
 # left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
+# f_right = Maxwellian1D3D(ρ_R, (v_R1, v_R2, v_R3), θ_R)
+# right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
 initial_condition = InitialConditionsShockTube1D3D(
     Maxwellian1D3D(ρ_L, (v_L1, v_L2, v_L3), θ_L), # Density, velocity, temperature
     Maxwellian1D3D(ρ_R, (v_R1, v_R2, v_R3), θ_R), # Shock in density, but not velocity, temperature initially
@@ -128,24 +130,59 @@ sol = solve(
     dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
     ode_default_options()...,
     callback = callbacks,
-    saveat = range(tspan[1], tspan[2], length=100)
+    # saveat = range(tspan[1], tspan[2], length=100)
 );
 
-summary_callback()
+# # summary_callback()
 
 # Post Processing
-# x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
-# display(p1)
-# savefig(p1, "out/Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.pdf")
+n_equations = 10
+u_final = sol.u[end]
+L = length(u_final)
+Nloc = L ÷ (n_equations)
+Fmat = reshape(u_final, n_equations, Nloc)
 
-# # Store primitive variables in CSV file
-# CSV.write(
-#     "out/Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.csv",
-#     Tables.columntable((x=x, rho=ρ, v=v, p=p))
-# )
+u = []
+for i in 1:n_equations
+    push!(u, Fmat[i, :])
+end
 
-# # Plot maximum eigenvalue (wave-speed) of flux Jacobian over time
-# n_plots = 5
-# p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
-# display(p2)
-# savefig(p2, "out/Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_lambda_max.pdf")
+# Plot first moments
+pl = plot()
+plot!(
+    pl,
+    title="Riemann Problem Moments 1D3D: M=$(M), closure=$(closure), Kn=$(Kn), source=$(source), T_end=$(T_end)",
+    xlabel="x",
+    ylabel="Primitive Variables",
+)
+x = range(x_lower, x_upper, length=Nloc)
+
+plot!(
+    pl,
+    x, u[1, :], 
+    label="U000",
+    color=:blue,
+)
+
+plot!(
+    pl,
+    x, u[2, :], 
+    label="U100",
+    color=:red,
+)
+
+plot!(
+    pl,
+    x, u[3, :], 
+    label="U200",
+    color=:green,
+)
+
+plot!(
+    pl,
+    x, u[4, :], 
+    label="U020",
+    color=:orange,
+)
+
+display(pl)

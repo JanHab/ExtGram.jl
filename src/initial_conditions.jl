@@ -211,7 +211,73 @@ struct InitialConditionsShockTube1D3D{N}
     end
 end
 
+# Important for IC
+const PARAMS = (
+    rho1 = 0.4,
+    v1 = 0.0,
+    theta1 = 0.6,
+    rho2 = 0.6,
+    theta2 = 0.6,
+    theta3 = 0.6
+)
+
+# Helper: Calculate E[Z^k] for Standard Normal Z ~ N(0,1)
+function std_normal_moment(k::Int)
+    if isodd(k)
+        return 0.0
+    else
+        # E[Z^k] = (k-1)!! which is equivalent to factorial(k) / (2^(k/2) * factorial(k/2))
+        return factorial(k) / (2^(k/2) * factorial(div(k, 2)))
+    end
+end
+
+# Helper: Calculate E[X^n] for X ~ N(mu, sigma)
+function raw_moment_normal(mu, sigma, n)
+    # Expansion of E[(mu + sigma*Z)^n]
+    total = 0.0
+    for k in 0:n
+        # Binomial coefficient: binomial(n, k)
+        coef = binomial(n, k)
+        term = coef * (mu^(n - k)) * (sigma^k) * std_normal_moment(k)
+        total += term
+    end
+    return total
+end
+
+# REVISED: Moment1D
+function moment_1d(mu, sigma2, n)
+    # We pass standard deviation (sqrt of variance) to our helper
+    return raw_moment_normal(mu, sqrt(sigma2), n)
+end
+
+# REVISED: Moment3D (No changes needed here, just calling the fixed moment_1d)
+function moment_3d(indices, v2)
+    i, j, k = indices
+    p = PARAMS
+    
+    term1 = p.rho1 * moment_1d(p.v1, p.theta1, i) * moment_1d(0.0, p.theta3, j) * moment_1d(0.0, p.theta3, k)
+    term2 = p.rho2 * moment_1d(v2, p.theta2, i) * moment_1d(0.0, p.theta3, j) * moment_1d(0.0, p.theta3, k)
+            
+    return term1 + term2
+end
+
+# Equivalent to: MomList[v2_, degree_]
+function mom_list(v2, degree)
+    # Map the Moment3D function over the generated indices
+    indices = mainmomindex(degree)
+    return [moment_3d(idx, v2) for idx in indices]
+end
+
 function (ic::InitialConditionsShockTube1D3D)(coords, t, equations::GramianMomentEquations1D3D)
+    # return ic.left
+    # M = 4
+    # slab_indices = Int[]
+    # index_start = 0
+    # for i in 0:M
+    #     append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
+    #     index_start += size(index(i), 1)
+    # end
+    # if coords[1] < 0.0; return mom_list(1.5, 4)[slab_indices]; else; return mom_list(1.4, 4)[slab_indices]; end
     if coords[1] < 0.0; return ic.left; else; return ic.right; end
 end
 
