@@ -31,12 +31,13 @@ function init_constants(M::Int)
     A_matrix = Matrix(hcat(results...)')
     
     # 4. Compute slab indices
-    slab_indices = Int[]
-    index_start = 0
-    for i in 0:M
-        append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
-        index_start += size(index(i), 1)
-    end
+    # slab_indices = Int[]
+    # index_start = 0
+    # for i in 0:M
+    #     append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
+    #     index_start += size(index(i), 1)
+    # end
+    slab_indices = get_valid_indices(M)
     target_indices = nidx(M) # What we use for the closure
 
     # 5. Precompute rotation matrices

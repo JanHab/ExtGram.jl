@@ -197,76 +197,78 @@ struct InitialConditionsShockTube1D3D{N}
         # ToDo: Adapt to 3D velocity case
         # @assert check_realizability(left, verbose=false) && check_realizability(right, verbose=false)
         slab_indices = get_valid_indices(M)
-        left_reduced = []
-        for i in eachindex(slab_indices)
-            push!(left_reduced, left[i])
-        end
-        left_reduced = SVector{length(left_reduced)}(left_reduced)
-        right_reduced = []
-        for i in eachindex(slab_indices)
-            push!(right_reduced, right[i])
-        end
-        right_reduced = SVector{length(right_reduced)}(right_reduced)
+        # left_reduced = []
+        # for i in eachindex(slab_indices)
+        #     push!(left_reduced, left[i])
+        # end
+        left_reduced = SVector{length(slab_indices)}(left[slab_indices])
+        # left_reduced = SVector{length(left_reduced)}(left_reduced)
+        right_reduced = SVector{length(slab_indices)}(right[slab_indices])
+        # right_reduced = []
+        # for i in eachindex(slab_indices)
+        #     push!(right_reduced, right[i])
+        # end
+        # right_reduced = SVector{length(right_reduced)}(right_reduced)
         return new{length(slab_indices)}(left_reduced, right_reduced)
     end
 end
 
-# Important for IC
-const PARAMS = (
-    rho1 = 0.4,
-    v1 = 0.0,
-    theta1 = 0.6,
-    rho2 = 0.6,
-    theta2 = 0.6,
-    theta3 = 0.6
-)
+# # Important for IC
+# const PARAMS = (
+#     rho1 = 0.4,
+#     v1 = 0.0,
+#     theta1 = 0.6,
+#     rho2 = 0.6,
+#     theta2 = 0.6,
+#     theta3 = 0.6
+# )
 
-# Helper: Calculate E[Z^k] for Standard Normal Z ~ N(0,1)
-function std_normal_moment(k::Int)
-    if isodd(k)
-        return 0.0
-    else
-        # E[Z^k] = (k-1)!! which is equivalent to factorial(k) / (2^(k/2) * factorial(k/2))
-        return factorial(k) / (2^(k/2) * factorial(div(k, 2)))
-    end
-end
+# # Helper: Calculate E[Z^k] for Standard Normal Z ~ N(0,1)
+# function std_normal_moment(k::Int)
+#     if isodd(k)
+#         return 0.0
+#     else
+#         # E[Z^k] = (k-1)!! which is equivalent to factorial(k) / (2^(k/2) * factorial(k/2))
+#         return factorial(k) / (2^(k/2) * factorial(div(k, 2)))
+#     end
+# end
 
-# Helper: Calculate E[X^n] for X ~ N(mu, sigma)
-function raw_moment_normal(mu, sigma, n)
-    # Expansion of E[(mu + sigma*Z)^n]
-    total = 0.0
-    for k in 0:n
-        # Binomial coefficient: binomial(n, k)
-        coef = binomial(n, k)
-        term = coef * (mu^(n - k)) * (sigma^k) * std_normal_moment(k)
-        total += term
-    end
-    return total
-end
+# # Helper: Calculate E[X^n] for X ~ N(mu, sigma)
+# function raw_moment_normal(mu, sigma, n)
+#     # Expansion of E[(mu + sigma*Z)^n]
+#     total = 0.0
+#     for k in 0:n
+#         # Binomial coefficient: binomial(n, k)
+#         coef = binomial(n, k)
+#         term = coef * (mu^(n - k)) * (sigma^k) * std_normal_moment(k)
+#         total += term
+#     end
+#     return total
+# end
 
-# REVISED: Moment1D
-function moment_1d(mu, sigma2, n)
-    # We pass standard deviation (sqrt of variance) to our helper
-    return raw_moment_normal(mu, sqrt(sigma2), n)
-end
+# # REVISED: Moment1D
+# function moment_1d(mu, sigma2, n)
+#     # We pass standard deviation (sqrt of variance) to our helper
+#     return raw_moment_normal(mu, sqrt(sigma2), n)
+# end
 
-# REVISED: Moment3D (No changes needed here, just calling the fixed moment_1d)
-function moment_3d(indices, v2)
-    i, j, k = indices
-    p = PARAMS
+# # REVISED: Moment3D (No changes needed here, just calling the fixed moment_1d)
+# function moment_3d(indices, v2)
+#     i, j, k = indices
+#     p = PARAMS
     
-    term1 = p.rho1 * moment_1d(p.v1, p.theta1, i) * moment_1d(0.0, p.theta3, j) * moment_1d(0.0, p.theta3, k)
-    term2 = p.rho2 * moment_1d(v2, p.theta2, i) * moment_1d(0.0, p.theta3, j) * moment_1d(0.0, p.theta3, k)
+#     term1 = p.rho1 * moment_1d(p.v1, p.theta1, i) * moment_1d(0.0, p.theta3, j) * moment_1d(0.0, p.theta3, k)
+#     term2 = p.rho2 * moment_1d(v2, p.theta2, i) * moment_1d(0.0, p.theta3, j) * moment_1d(0.0, p.theta3, k)
             
-    return term1 + term2
-end
+#     return term1 + term2
+# end
 
-# Equivalent to: MomList[v2_, degree_]
-function mom_list(v2, degree)
-    # Map the Moment3D function over the generated indices
-    indices = mainmomindex(degree)
-    return [moment_3d(idx, v2) for idx in indices]
-end
+# # Equivalent to: MomList[v2_, degree_]
+# function mom_list(v2, degree)
+#     # Map the Moment3D function over the generated indices
+#     indices = mainmomindex(degree)
+#     return [moment_3d(idx, v2) for idx in indices]
+# end
 
 function (ic::InitialConditionsShockTube1D3D)(coords, t, equations::GramianMomentEquations1D3D)
     # return ic.left
