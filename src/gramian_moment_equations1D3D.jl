@@ -7,8 +7,10 @@ struct Constants{F<:Function}
     Angles::Vector{Tuple{Float64,Float64}}
     A_matrix::Matrix{Float64}
     slab_indices::Vector{Int}
-    function Constants(fp_func::F, Angles::Vector{Tuple{Float64,Float64}}, A_matrix::Matrix{Float64}, slab_indices::Vector{Int}) where {F<:Function}
-        new{F}(fp_func, Angles, A_matrix, slab_indices)
+    target_indices::Vector{Int}
+    rotations::AbstractVector{<:AbstractMatrix{Float64}}
+    function Constants(fp_func::F, Angles::Vector{Tuple{Float64,Float64}}, A_matrix::Matrix{Float64}, slab_indices::Vector{Int}, target_indices::Vector{Int}, rotations::AbstractVector{<:AbstractMatrix{Float64}}) where {F<:Function}
+        new{F}(fp_func, Angles, A_matrix, slab_indices, target_indices, rotations)
     end
 end
 
@@ -28,14 +30,20 @@ function init_constants(M::Int)
     results = [fp_func(theta, phi) for (theta, phi) in angles]
     A_matrix = Matrix(hcat(results...)')
     
+    # 4. Compute slab indices
     slab_indices = Int[]
     index_start = 0
     for i in 0:M
         append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
         index_start += size(index(i), 1)
     end
+    target_indices = nidx(M) # What we use for the closure
 
-    return Constants(fp_func, angles, A_matrix, slab_indices)
+    # 5. Precompute rotation matrices
+    size_moments_full = length(mainmomindex(M))
+    rotations = SVector{4}([SMatrix{size_moments_full, size_moments_full}(rot(M, theta, phi)) for (theta, phi) in angles])
+
+    return Constants(fp_func, angles, A_matrix, slab_indices, target_indices, rotations) # What we use for the closure)
 end
 
 
@@ -130,7 +138,7 @@ function closure_transform(u, equations)
     println("Performing closure transformation for u: ", u)
     M = 4 #!length(u)-1
 
-    # 3. Reallocate the moments into the whole geometry with 0 moments for slab
+    # 1. Reallocate the moments into the whole geometry with 0 moments for slab
     moments_full = zeros(Float64, length(mainmomindex(M))) # The full set of moments 
     j = 1
     for i in equations.constants.slab_indices
@@ -138,31 +146,27 @@ function closure_transform(u, equations)
         j += 1
     end
 
-    # 4. Compute rhs b
-    target_indices = nidx(M) # What we use for the closure
+    # 2. Initialize rhs and target_indices
+    target_indices = equations.constants.target_indices
     rhs = Float64[] # To store the rhs
 
-    # println("Moments_full: ", moments_full)
-    for (theta, phi) in equations.constants.Angles
-        # 3. Get Rotation Matrix (Using NEW idx order)
-        # ToDo: Precompute the four rotation matrices and store them in constants for efficiency
-        R = rot(M, theta, phi)
-
-        # println("Rotation matrix R for angle (θ=$(theta), φ=$(phi)): ", R)
-        # 4. Rotate
+    # 3. Loop over angles
+    for (i, (theta, phi)) in enumerate(equations.constants.Angles)
+        # 3.a. Get Rotation Matrix
+        R = equations.constants.rotations[i]
+        # 3.b. Rotate
         rotated_moments_full = R * moments_full
 
-        # 5. Extract (m0, m1, m2, m3, m4)
+        # 3.c. Extract (m0, m1, m2, m3, m4)
         substituted = rotated_moments_full[target_indices]
-        # # ToDo: Handle NaNs properly
-        # substituted[isnan.(substituted)] .= 0.0 # Handle NaNs
 
         println("Substituted moments for angle (θ=$(theta), φ=$(phi)): ", substituted)
+        # 3.d. Apply closure
         val = closure(substituted, equations)
         push!(rhs, val)
     end
 
-    # 5. Solve for weights
+    # 4. Solve for weights
     transformed_moments = equations.constants.A_matrix \ rhs;
     println("Transformed moments: ", transformed_moments)
     return SVector{4, Float64}(transformed_moments)
