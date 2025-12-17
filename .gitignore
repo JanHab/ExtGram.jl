@@ -4,3 +4,5 @@ out/
 .DS_Store
 .vscode/
 __pycache__/
+run_simulation.sh
+slurm/out/
