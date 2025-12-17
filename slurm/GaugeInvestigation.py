@@ -9,8 +9,7 @@ Kn = 1.0
 source = "relaxation_source"
 T_end = 0.3
 base_tree_level = 6
-polydeg = 3
-# chi_value = -0.5 #!"optimal"
+polydeg = 1
 chi_vector = [-1.0, 0.0, 1.0, 1.5, "optimal", 2.0, 3.0]
 
 # Initial condition parameters for the Riemann problem
