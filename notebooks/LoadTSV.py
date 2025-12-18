@@ -106,7 +106,17 @@ def plot_solution_time(data, time_query, times, timesteps):
     plt.tight_layout()
     plt.show()
 
+def sol_final(filename, time_query=21):
+    data = read_solution_file(filename)
 
+    # Build time → timestep mapping
+    times = np.array([data[ts]["t"] for ts in sorted(data.keys())])
+    timesteps = np.array(sorted(data.keys()))
+
+    sol = interpolate_solution(data, time_query, times, timesteps)
+    x, u, t = sol["x"], sol["u"], sol["t"]
+
+    return x, u, t
 
 
 def read_solution_file_bgk(filename):
