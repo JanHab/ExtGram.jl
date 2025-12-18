@@ -1,5 +1,8 @@
 
 struct Maxwellian
+    """
+        Maxwellian distribution function in 1D velocity space
+    """
     ρ::Real
     v::Real
     θ::Real # defined here as ∫ C^2 f dc (no factor 1/2)
@@ -14,9 +17,10 @@ end
 
 # Gauss-Hermite quadrature
 function convective_moments(f::Maxwellian, ::Val{N}) where {N}
+    """
+        Compute the integral using the coordinate transform ξ = C/sqrt(2*f.θ) and divide out the exp(-c^2) contained in the gauss hermite quadrature rule (note: quite the inefficient implementation here)
+    """
     ξ, w = gausshermite(N+1) # +1 for good measure, should not be necessary
-    # compute the integral using the coordinate transform ξ = C/sqrt(2*f.θ)
-    # and divide out the exp(-c^2) contained in the gauss hermite quadrature rule (note: quite the inefficient implementation here)
     C = sqrt(2*f.θ) .* ξ; c = C .+ f.v
     fw = f.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*f.θ)
     return SVector{N,Float64}(ntuple(n->sum(c .^(n-1) .* fw), N))
@@ -26,6 +30,10 @@ end
 
 
 function primitive_moments(f::Maxwellian, ::Val{N}) where {N}
+    """
+        Compute the convective moments ∫ C^{n-1} f dc where C = c - v
+        and return the primitive moments [ρ, v, C^2, C^3, ..., C^{N-1}]
+    """
     ξ, w = gausshermite(N+1)
     C = sqrt(2*f.θ) .* ξ; c = C .+ f.v
     fw = f.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*f.θ)
@@ -43,6 +51,9 @@ end
 
 
 struct InitialConditionsShockTube{N}
+    """
+        Shock tube initial conditions with left and right distribution functions
+    """
     left::SVector{N}
     right::SVector{N}
 
@@ -61,33 +72,10 @@ end
 
 
 
-struct InitialConditionsShockTubeNormalized{N}
-    left::SVector{N}
-    right::SVector{N}
-
-    function InitialConditionsShockTubeNormalized(f_left, f_right, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
-        left = convective_moments(f_left, Val(Mp1))
-        right = convective_moments(f_right, Val(Mp1))
-        # Normalize moments
-        # W_n = 1/ρ (1/θ)^{(n)/2} u_n with u_n the n-th convective moment
-        # W_n = [1, 0, 1, W_3, …, W_n]'
-        left_n = similar(left); right_n = similar(right);
-        for i in eachindex(left)
-            left_n[i] = 1 / left[1] * (1 / left[3])^((i-1)/2) * left[i]
-            right_n[i] = 1 / right[1] * (1 / right[3])^((i-1)/2) * right[i] # same size
-        end
-        # ToDo: verbose=false
-        @assert check_realizability(left_n, verbose=false) && check_realizability(right_n, verbose=false)
-        return new{Mp1}(left_n, right_n)
-    end
-end
-
-function (ic::InitialConditionsShockTubeNormalized)(coords, t, equations::GramianMomentEquations1D)
-    if coords[1] < 0.0; return ic.left; else; return ic.right; end
-end
-
-
 struct InitialConditionsTwoShocks{N}
+    """
+        Two-shock initial conditions with inner and outer distribution functions
+    """
     outer::SVector{N}
     inner::SVector{N}
 
@@ -109,6 +97,9 @@ end
 ########### 1D3D Maxwellian ###########
 #######################################
 struct Maxwellian1D3D
+    """
+        Maxwellian distribution function in 3D velocity space (1D spatial)
+    """
     ρ::Real
     v::NTuple{3,Real}
     θ::Real # defined here as ∫ C^2 f dc (no factor 1/2)
@@ -117,13 +108,13 @@ end
 
 (f::Maxwellian1D3D)(cx::Real, cy::Real, cz::Real) = f.ρ/(2*π*f.θ)^(3/2) * exp(-((cx-f.v[1])^2 + (cy-f.v[2])^2 + (cz-f.v[3])^2) / (2*f.θ)) # note: normalized in 1D velocity space 
 
-"""
-    index3D(total_degree)
-
-Return a vector of multi-indices (i,j,k) with i+j+k == total_degree.
-Ordering matches a lexicographic-style ordering and is intended for moment lists.
-"""
 function index3D(n::Integer)
+    """
+        index3D(total_degree)
+
+    Return a vector of multi-indices (i,j,k) with i+j+k == total_degree.
+    Ordering matches a lexicographic-style ordering and is intended for moment lists.
+    """
     tuples = collect(Iterators.product(0:n, 0:n, 0:n))
     vecs = [collect(t) for t in tuples]
     selected = filter(v -> sum(v) == n, vecs)
@@ -131,23 +122,23 @@ function index3D(n::Integer)
     return reverse(selected)
 end
 
-"""
-    multi_index_list(M)
-
-Return a flattened list of multi-indices for all shells 0..M.
-"""
 function multi_index_list(M::Integer)
+    """
+        multi_index_list(M)
+
+    Return a flattened list of multi-indices for all shells 0..M.
+    """
     return vcat([index3D(n) for n in 0:M]...)
 end
 
-"""
-    convective_moments_1D3D(M; rho=1.0, u=(0,0,0), theta=1.0, q=8)
-
-Compute the velocity moments up to `M` (all multi-indices with i+j+k <= M)
-using tensor-product Gauss–Hermite with `q` nodes per dimension. Returns a Vector{Float64}
-with the same ordering as `multi_index_list(M)`.
-"""
 function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0.0,0.0,0.0), theta::Real=1.0; q::Integer=35+1)
+    """
+        convective_moments_1D3D(M; rho=1.0, u=(0,0,0), theta=1.0, q=8)
+
+    Compute the velocity moments up to `M` (all multi-indices with i+j+k <= M)
+    using tensor-product Gauss–Hermite with `q` nodes per dimension. Returns a Vector{Float64}
+    with the same ordering as `multi_index_list(M)`.
+    """
     # 35+1 is max degree in the test cases for M=4 (hard-coded)
     # quadrature nodes and weights for ∫ e^{-x^2} g(x) dx
     ξ, w = gausshermite(q)
@@ -187,88 +178,26 @@ function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0
 end
 
 struct InitialConditionsShockTube1D3D{N}
+    """
+        Shock tube initial conditions with left and right distribution functions in 1D3D
+    """
     left::SVector{N}
     right::SVector{N}
 
-    # ToDo: This is not the efficient way to do this
     function InitialConditionsShockTube1D3D(f_left, f_right, M, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1}
+
+        # Compute full convective moments
         left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
         right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
-        # ToDo: Adapt to 3D velocity case
-        # @assert check_realizability(left, verbose=false) && check_realizability(right, verbose=false)
+
+        # Reduce to slab indices only
         slab_indices = get_valid_indices(M)
-        # left_reduced = []
-        # for i in eachindex(slab_indices)
-        #     push!(left_reduced, left[i])
-        # end
         left_reduced = SVector{length(slab_indices)}(left[slab_indices])
-        # left_reduced = SVector{length(left_reduced)}(left_reduced)
         right_reduced = SVector{length(slab_indices)}(right[slab_indices])
-        # right_reduced = []
-        # for i in eachindex(slab_indices)
-        #     push!(right_reduced, right[i])
-        # end
-        # right_reduced = SVector{length(right_reduced)}(right_reduced)
+
         return new{length(slab_indices)}(left_reduced, right_reduced)
     end
 end
-
-# # Important for IC
-# const PARAMS = (
-#     rho1 = 0.4,
-#     v1 = 0.0,
-#     theta1 = 0.6,
-#     rho2 = 0.6,
-#     theta2 = 0.6,
-#     theta3 = 0.6
-# )
-
-# # Helper: Calculate E[Z^k] for Standard Normal Z ~ N(0,1)
-# function std_normal_moment(k::Int)
-#     if isodd(k)
-#         return 0.0
-#     else
-#         # E[Z^k] = (k-1)!! which is equivalent to factorial(k) / (2^(k/2) * factorial(k/2))
-#         return factorial(k) / (2^(k/2) * factorial(div(k, 2)))
-#     end
-# end
-
-# # Helper: Calculate E[X^n] for X ~ N(mu, sigma)
-# function raw_moment_normal(mu, sigma, n)
-#     # Expansion of E[(mu + sigma*Z)^n]
-#     total = 0.0
-#     for k in 0:n
-#         # Binomial coefficient: binomial(n, k)
-#         coef = binomial(n, k)
-#         term = coef * (mu^(n - k)) * (sigma^k) * std_normal_moment(k)
-#         total += term
-#     end
-#     return total
-# end
-
-# # REVISED: Moment1D
-# function moment_1d(mu, sigma2, n)
-#     # We pass standard deviation (sqrt of variance) to our helper
-#     return raw_moment_normal(mu, sqrt(sigma2), n)
-# end
-
-# # REVISED: Moment3D (No changes needed here, just calling the fixed moment_1d)
-# function moment_3d(indices, v2)
-#     i, j, k = indices
-#     p = PARAMS
-    
-#     term1 = p.rho1 * moment_1d(p.v1, p.theta1, i) * moment_1d(0.0, p.theta3, j) * moment_1d(0.0, p.theta3, k)
-#     term2 = p.rho2 * moment_1d(v2, p.theta2, i) * moment_1d(0.0, p.theta3, j) * moment_1d(0.0, p.theta3, k)
-            
-#     return term1 + term2
-# end
-
-# # Equivalent to: MomList[v2_, degree_]
-# function mom_list(v2, degree)
-#     # Map the Moment3D function over the generated indices
-#     indices = mainmomindex(degree)
-#     return [moment_3d(idx, v2) for idx in indices]
-# end
 
 function (ic::InitialConditionsShockTube1D3D)(coords, t, equations::GramianMomentEquations1D3D)
     # return ic.left

@@ -1,5 +1,22 @@
-# plot first three moments
 function plot_ρ_v_p(sol, M, x_lower, x_upper)
+    """
+    Calculates discretization, density, velocity and pressure
+
+    Careful: Only works for polydeg=1 (linear basis functions)!
+
+    # Arguments:
+    - `sol`: solution object from Trixi.jl
+    - `M`: maximum moment degree
+    - `x_lower`: lower bound of the spatial domain
+    - `x_upper`: upper bound of the spatial domain
+
+    # Returns:
+    - `x`: spatial discretization points
+    - `ρ`: density values at discretization points
+    - `v`: velocity values at discretization points
+    - `p`: pressure values at discretization points
+    - `p_plot`: Plots.jl plot object containing the plots of ρ, v, and p
+    """
     u_final = sol.u[end]
     L = length(u_final)
     Nloc = L ÷ (M+1)
@@ -40,6 +57,22 @@ end
 
 # Plot maximum eigenvalue (wave-speed) of flux Jacobian over time
 function plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
+    """
+    Plots the maximum eigenvalue (wave-speed) of the flux Jacobian over time.
+
+    Careful: Only works for polydeg=1 (linear basis functions)!
+
+    # Arguments:
+    - `semi`: semi-discretization object from Trixi.jl
+    - `sol`: solution object from Trixi.jl
+    - `M`: maximum moment degree
+    - `n_plots`: number of time levels to plot
+    - `x_lower`: lower bound of the spatial domain
+    - `x_upper`: upper bound of the spatial domain
+
+    # Returns:
+    - `p`: Plots.jl plot object containing the maximum eigenvalue plots
+    """
     L = length(sol.u[end]) # get number of local cells (from last time)
     Nloc = L ÷ (M+1)
 
@@ -72,6 +105,20 @@ end
 
 # Plot total variation in space of density over time
 function conservation(sol, M::Int, semi)
+    """
+    Plots the total variation in space of density, momentum and energy over time.
+
+    # Arguments:
+    - `sol`: solution object from Trixi.jl
+    - `M::Int`: maximum moment degree
+    - `semi`: semi-discretization object from Trixi.jl
+
+    # Returns:
+    - `p`: Plots.jl plot object containing the total variation plots
+    - `mass`: array of total mass over time
+    - `momentum`: array of total momentum over time
+    - `energy`: array of total energy over time
+    """
     solution_variables = cons2cons
 
     mass, momentum, energy = [], [], []
@@ -167,8 +214,17 @@ function conservation(sol, M::Int, semi)
     return p, mass, momentum, energy
 end
 
-# read solutino from tvd file
+# read solution from tvd file
 function readsol(filename)
+    """
+    Reads solution data from a .tvd file (output).
+
+    # Arguments:
+    - `filename`: path to the .tvd file
+
+    # Returns:
+    - `blocks`: Vector of matrices, each matrix corresponds to a time level
+    """
     f = open(filename)
     lines = readlines(f)
     n_vars = length(split(lines[3]))-1 # counts coordinates x as var
@@ -195,6 +251,16 @@ function readsol(filename)
 end
 
 function readfile(filename)
+    """
+    Reads the final time level solution from a .tvd file.
+
+    # Arguments:
+    - `filename`: path to the .tvd file
+
+    # Returns:
+    - `x`: Vector of spatial coordinates
+    - `u_solutions`: Matrix of solution variables (variables × npts)
+    """
     x = Vector{Float64}
     u_solutions = Matrix{Float64}  # (vars × npts) matrix per dataset
 

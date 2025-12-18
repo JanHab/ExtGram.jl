@@ -1,8 +1,19 @@
+"""
+    Implementation of the one-dimensional Gramian moment equations with 3D velocity dependence.
+"""
 
-# (note: replacing all zeroes() calls with corresponding SVector and MVector calls would speed up things at the cost of arbitrary vector input types)
-# * Transformation functions, this is constant for all moments
-# Use {F<:Function} to keep it fast (Type Stability).
 struct Constants{F<:Function}
+    """
+        Struct to hold precomputed constants for Gramian moment equations in 1D with 3D velocity.
+
+        # Fields
+        - `fp_func::F`: Compiled function for evaluating basis functions at given angles.
+        - `Angles::Vector{Tuple{Float64,Float64}}`: List of angles (θ, φ) for quadrature.
+        - `A_matrix::Matrix{Float64}`: Matrix A used in closure transformation (solves the linear system).
+        - `slab_indices::Vector{Int}`: Indices of valid moments in the slab geometry.
+        - `target_indices::Vector{Int}`: Indices of moments used for closure.
+        - `rotations::AbstractVector{<:AbstractMatrix{Float64}}`: Precomputed rotation matrices for each angle.
+    """
     fp_func::F
     Angles::Vector{Tuple{Float64,Float64}}
     A_matrix::Matrix{Float64}
@@ -15,10 +26,19 @@ struct Constants{F<:Function}
 end
 
 function init_constants(M::Int)
-    # 1. Compile the function
+    """
+        Initialize constants for Gramian moment equations in 1D with 3D velocity.
+
+        # Arguments
+        - `M::Int`: Number of moments.
+
+        # Returns
+        - `Constants`: Struct containing precomputed constants.
+    """
+    # Compile the function
     fp_func = compile_fp(M+1)
     
-    # 2. Define Angles
+    # Define Angles - hard-coded for M=4
     angles = [
         (3.14159, 1.5708),
         (0.684719, 4.71239),
@@ -26,21 +46,15 @@ function init_constants(M::Int)
         (2.18628, 0.886077)
     ]
     
-    # 3. Compute Matrix A immediately
+    # Compute Matrix A immediately
     results = [fp_func(theta, phi) for (theta, phi) in angles]
     A_matrix = Matrix(hcat(results...)')
     
-    # 4. Compute slab indices
-    # slab_indices = Int[]
-    # index_start = 0
-    # for i in 0:M
-    #     append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
-    #     index_start += size(index(i), 1)
-    # end
+    # Get valid indices
     slab_indices = get_valid_indices(M)
     target_indices = nidx(M) # What we use for the closure
 
-    # 5. Precompute rotation matrices
+    # Precompute rotation matrices
     size_moments_full = length(mainmomindex(M))
     rotations = SVector{4}([SMatrix{size_moments_full, size_moments_full}(rot(M, theta, phi)) for (theta, phi) in angles])
 
@@ -125,23 +139,32 @@ Trixi.density(u, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1} = u[1]
     Flux function: F(U) = u_{k+1}, k=0,…,M where u_{M+1} = C(u0, u1, …, uM)
 """
 function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D3D{Mp1}) where {Mp1}
-    # First MP1-1 flux components from shifed moments
-    # println("Calculating flux for u: ", u)
-    # known_moments = SVector{6}(ntuple(i->u[i+1], 6))
-    # Account for jump skip in indices, when having ∂_t U_200 + ∂_x U_300 = ...
-    # We have U_200 as index 3, U_300 as index 5, etc.
+    """
+        First flux components from shifed moments
+        Account for jump skip in indices, when having ∂_t U_200 + ∂_x U_300 = ...
+        We have U_200 as index 3, U_300 as index 5, etc.
+    """
     known_moments = SVector{6}(ntuple(i->if i <= 2; u[i+1]; else; u[i+2]; end, 6))
     closure_transformation = closure_transform(u, equations)
     return SVector{10}(known_moments..., closure_transformation...)
 end
 
 
-# This does the transformation
 function closure_transform(u, equations)
-    # ToDo: Make generic for arbitrary M
-    M = 4 #!length(u)-1
+    """
+        Closure transformation for Gramian moment equations in 1D with 3D velocity.
 
-    # 1. Reallocate the moments into the whole geometry with 0 moments for slab
+        # Arguments
+        - `u`: Input moments in slab geometry.
+        - `equations::GramianMomentEquations1D3D`: The equations struct containing constants and closure type.
+
+        # Returns
+        - `SVector{4, Float64}`: Transformed moments after applying closure.
+    """
+    # ToDo: Make generic for arbitrary M
+    M = 4
+
+    # Reallocate the moments into the whole geometry with 0 moments for slab
     moments_full = zeros(Float64, length(mainmomindex(M))) # The full set of moments 
     j = 1
     for i in equations.constants.slab_indices
@@ -149,18 +172,18 @@ function closure_transform(u, equations)
         j += 1
     end
 
-    # 2. Initialize rhs and target_indices
+    # Initialize rhs and target_indices
     target_indices = equations.constants.target_indices
     rhs = Float64[] # To store the rhs
 
-    # 3. Loop over angles
+    # Loop over angles
     for (i, (theta, phi)) in enumerate(equations.constants.Angles)
-        # 3.a. Get Rotation Matrix
+        # Get Rotation Matrix
         R = equations.constants.rotations[i]
-        # 3.b. Rotate
+        # Rotate
         rotated_moments_full = R * moments_full
 
-        # 3.c. Extract (m0, m1, m2, m3, m4)
+        # Extract (m0, m1, m2, m3, m4)
         substituted = rotated_moments_full[target_indices]
 
         # Check realizability
@@ -170,14 +193,13 @@ function closure_transform(u, equations)
         #     println("Closure transformation for u: ", u)
         #     println("Substituted moments: ", substituted)
         # end
-        # 3.d. Apply closure
+        # Apply closure
         val = closure(substituted, equations)
         push!(rhs, val)
     end
 
-    # 4. Solve for weights
+    # Solve for transformed moments
     transformed_moments = equations.constants.A_matrix \ rhs;
-    # println("Transformed moments: ", transformed_moments)
     return SVector{4, Float64}(transformed_moments)
 end
 
@@ -185,7 +207,7 @@ end
 
 # Overloading to determine Gram/ExtGram/Grad and even/odd case
 """
-    closure(u, equations::GramianMomentEquations1D)
+    closure(u, equations::GramianMomentEquations1D3D)
 
     Decides which closure implementation is used based on the equations.closure value
 """
@@ -196,17 +218,17 @@ closure(u, equations::GramianMomentEquations1D3D) = closure(u, equations, Val(eq
 # -------------------------
 # Decides which closure implementation is used based on the number of Moments (even vs. odd)
 # closure(u, equations::GramianMomentEquations1D3D, ::Val{:Gram}) = closure(u, equations, Val(iseven(length(u)-1) ? :GramEven : :GramOdd))
-# # -------------------------
+# -------------------------
 # closure(u, equations::GramianMomentEquations1D3D, ::Val{:ExtGram}) = closure(u, equations, Val(iseven(length(u)-1) ? :ExtGramEven : :ExtGramOdd))
 
 # Even case (classical and extended)
-"""
-    closure(u, equations::GramianMomentEquations1D3D, ::Val{true}; verbose_=false)
-
-    Closure for the even case
-"""
 # ToDo: Nicely rewrite the closures so that they can be used for both 1D and 1D3D cases without code duplication
 function closure(u, equations::GramianMomentEquations1D3D, ::Val{:GramEven})
+    """
+        closure(u, equations::GramianMomentEquations1D3D, ::Val{:GramEven})
+
+        Gramian closure for the even case
+    """
     M = length(u)-1 # u[0, ..., M]
     @assert iseven(M)
     n = equations.n 
@@ -217,9 +239,12 @@ function closure(u, equations::GramianMomentEquations1D3D, ::Val{:GramEven})
 end
 
 function closure(u, equations::GramianMomentEquations1D3D, ::Val{:ExtGramEven})
+    """
+        closure(u, equations::GramianMomentEquations1D3D, ::Val{:ExtGramEven})
+
+        Extended Gramian closure for the even case
+    """
     M = length(u)-1 # u[0, ..., M]
-    # println("Extended Gramian closure called.")
-    # println("u: ", u)
     @assert iseven(M)
     n = equations.n 
     invG_nm1 = inv(gramian(u, n-1))
@@ -235,34 +260,13 @@ function closure(u, equations::GramianMomentEquations1D3D, ::Val{:ExtGramEven})
     )
 end
 
-
-
-# # compute Gramian matrix G_n
-# """
-#     gramian(u, n::Int)
-
-#     Gramian matrix
-#     G_{ij} = u_{i+j}
-# """
-# function gramian(u, n::Int)
-#     G = zeros(eltype(u), n+1,n+1)
-#     for i=1:n+1
-#         for j=1:n+1
-#             G[i,j] = u[i+j-1]
-#         end
-#     end
-#     return G
-# end
-
-
-
-"""
-    relaxation_source(u, x, t, equations::GramianMomentEquations1D3D{Mp1}) where {Mp1}
-
-    RHS = 1/Kn (u - u_eq) (or with -?)
-"""
 # todo: implement equilibrium moments for 3D velocity case
 # function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D{Mp1}) where {Mp1}
+    """
+        relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
+
+        RHS = 1/Kn (u - u_eq)
+    """
 #     #return SVector(ntuple(i->0.0, Mp1)...)
 #     # TODO: the relaxation terms need to be towards the equilibrium moments. Does the following make sense?
 #     prim = cons2prim(u, equations); θ = prim[3]
@@ -336,6 +340,9 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
 #     return ForwardDiff.value(grad)
 # end
 function dCdu(u, equations::GramianMomentEquations1D3D, h::Float64 = 1e-6)
+    """
+        Derivative of the closure function w.r.t. the moments u
+    """
     grad = zeros(eltype(u), 4, length(u))
     u_aux = zeros(eltype(u), length(u)); @. u_aux = u
     for i in eachindex(u)
@@ -348,22 +355,23 @@ end
 
 
 
-# Jacobian of the flux
 function flux_jacobian(u, equations::GramianMomentEquations1D3D)
+    """
+        Jacobian of the flux function
+    """
     m = length(u)
-    # println("eltype(u): $(eltype(u))")
     A = zeros(eltype(u), m, m)
-    # for i=1:m-1 A[i, i+1] = 1 end
-    # A[end, :] .= dCdu(u, equations)
     # ToDo: Make generic
     for i=1:2 A[i, i+1] = 1 end
     for i=3:6 A[i, i+2] = 1 end
-    A[7:10, :] .= dCdu(u, equations) #dCdu(u[7:10], equations)
+    A[7:10, :] .= dCdu(u, equations)
     return A
 end
 
-# Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
 function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D3D)
+    """
+        Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
+    """
     λ_l = Trixi.max_abs_speeds(u_l, equations)
     λ_r = Trixi.max_abs_speeds(u_r, equations)
     λ_max = max(λ_l, λ_r)
@@ -372,12 +380,10 @@ end
 
 
 function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
-    # estimate the flux Jacobian eigenvalues by means of Gerschgorin
-    #return max(1.0, sum(abs.(dCdu(u))))
-    # println("eltype(u) in max_abs_speeds: $(eltype(u))")
-    # println("u in max_abs_speeds: $(u)")
+    """
+        Estimate the flux Jacobian eigenvalues by means of Gerschgorin
+    """
     u = Float64.(u)
-    # println("u converted to Float64: $(u)")
     return maximum(abs.(real.(eigen(flux_jacobian(u, equations)).values)))
 end
 
