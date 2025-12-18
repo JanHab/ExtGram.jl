@@ -127,7 +127,10 @@ Trixi.density(u, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1} = u[1]
 function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D3D{Mp1}) where {Mp1}
     # First MP1-1 flux components from shifed moments
     # println("Calculating flux for u: ", u)
-    known_moments = SVector{6}(ntuple(i->u[i+1], 6))
+    # known_moments = SVector{6}(ntuple(i->u[i+1], 6))
+    # Account for jump skip in indices, when having ∂_t U_200 + ∂_x U_300 = ...
+    # We have U_200 as index 3, U_300 as index 5, etc.
+    known_moments = SVector{6}(ntuple(i->if i <= 2; u[i+1]; else; u[i+2]; end, 6))
     closure_transformation = closure_transform(u, equations)
     return SVector{10}(known_moments..., closure_transformation...)
 end
