@@ -1,4 +1,7 @@
-# Setup ready to create semidiscretizations of the Gramian moment equations in 1D
+""" 
+    Some helper functions for setting up 1D Gramian moment equations with Riemann initial conditions
+"""
+
 function setupGramianMomentEquations1DRiemann(
     M, Kn, closure, 
     f_left, f_right;
@@ -12,6 +15,25 @@ function setupGramianMomentEquations1DRiemann(
     alpha_min = 0.001,
     alpha_smooth = true,
     )
+    """
+        Setup ready to create semidiscretizations of the Gramian moment equations in 1D
+
+    # Arguments
+    - `M`: Number of moments
+    - `Kn`: Knudsen number
+    - `closure`: Closure function
+    - `f_left`: Left distribution function for Riemann initial condition
+    - `f_right`: Right distribution function for Riemann initial condition
+    - `base_tree_level=8`: Base tree level for the mesh
+    - `surface_flux=flux_lax_friedrichs`: Surface flux function
+    - `volume_flux=flux_central`: Volume flux function
+    - `polydeg=1`: Polynomial degree for DG basis
+    - `domain=(-2.0, 2.0)`: Spatial domain
+    - `χ_set="optimal"`: Set of χ values for closure - only relevant for Extended Gramian Closure with even M
+    - `alpha_max=0.5`: Maximum shock capturing parameter
+    - `alpha_min=0.001`: Minimum shock capturing parameter
+    - `alpha_smooth=true`: Smooth shock capturing parameter
+    """
     equations = GramianMomentEquations1D(M, Kn, closure; χ_set=χ_set)
     initial_condition = InitialConditionsShockTube(
         f_left, # Density, velocity, temperature
@@ -23,15 +45,13 @@ function setupGramianMomentEquations1DRiemann(
     basis = LobattoLegendreBasis(polydeg)
 
     # shock capturing
-    # #= crashes for p > 1, i.e. this does not help at all
     indicator_sc = IndicatorHennemannGassner(
         equations, basis,
-        alpha_max = alpha_max, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
+        alpha_max = alpha_max,
         alpha_min = alpha_min,
-        alpha_smooth = alpha_smooth, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
-        variable = (u, eqns)->u[1]*u[3]#! *u[5]
-    ) # ? Seems to restrict to M>=4
-    # `custom variable for smoothness detection?`
+        alpha_smooth = alpha_smooth, # smoothes with all neighboring indicators to remove numerical artifacts
+        variable = (u, eqns)->u[1]*u[3]
+    )
 
     volume_integral = VolumeIntegralShockCapturingHG(
         indicator_sc;
@@ -49,7 +69,6 @@ function setupGramianMomentEquations1DRiemann(
 end
 
 
-# Creates set of callbacks
 function callbacksGramianMomentEquations(
     semi, tspan, basis;
     cfl = 0.45,          # Maximum cfl number
@@ -57,6 +76,18 @@ function callbacksGramianMomentEquations(
     time_interval = 20, # save at 20 time intervals
     name="gram_solution",
 )
+    """
+        Creates set of callbacks
+
+    # Arguments
+    - `semi`: Semidiscretization (Trixi.jl)
+    - `tspan`: Time span of the simulation
+    - `basis`: DG basis
+    - `cfl=0.45`: Maximum CFL number
+    - `plot_interval=20`: Plot every `plot_interval` steps
+    - `time_interval=20`: Save solution `time_interval` often times
+    - `name="gram_solution"`: Name of the output files (*.tsv)
+    """
     alive_callback = AliveCallback(analysis_interval=100)
     summary_callback = SummaryCallback()
     stepsize_callback = StepsizeCallback(cfl=cfl)

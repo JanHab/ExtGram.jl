@@ -76,13 +76,13 @@ Trixi.density(u, eqns::GramianMomentEquations1D{Mp1}) where {Mp1} = u[1]
     Flux function: F(U) = u_{k+1}, k=0,…,M where u_{M+1} = C(u0, u1, …, uM)
 """
 function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    # First MP1-1 flux components from shifed moments
-    # ∂_t u^k + \partial_x u^{k+1} = ... (0)
-    # Last u from closure
-    # return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations))
+    """
+    First MP1-1 flux components from shifed moments
+    ∂_t u^k + ∂_x u^{k+1} = ... (0)
+    Last u from closure
+    """
     return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations, Val(equations.closure)))
 end
-isinvertible(A::Matrix{Float64}) = !isapprox(det(BigFloat.(A)), 0, atol = 1e-18)
 
 
 ########################## Closure ##########################
@@ -100,16 +100,16 @@ closure(u, equations::GramianMomentEquations1D) = closure(u, equations, Val(equa
 # -------------------------
 # Decides which closure implementation is used based on the number of Moments (even vs. odd)
 # closure(u, equations::GramianMomentEquations1D, ::Val{:Gram}) = closure(u, equations, Val(iseven(length(u)-1) ? :GramEven : :GramOdd))
-# # -------------------------
+# -------------------------
 # closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGram}) = closure(u, equations, Val(iseven(length(u)-1) ? :ExtGramEven : :ExtGramOdd))
 
 # Even case (classical and extended)
-"""
-    closure(u, equations::GramianMomentEquations1D, ::Val{true}; verbose_=false)
-
-    Closure for the even case
-"""
 function closure(u, equations::GramianMomentEquations1D, ::Val{:GramEven})
+    """
+    closure(u, equations::GramianMomentEquations1D, ::Val{:GramEven})
+
+    Gramian closure for the even case
+    """
     M = length(u)-1 # u[0, ..., M]
     @assert iseven(M)
     n = equations.n 
@@ -120,6 +120,11 @@ function closure(u, equations::GramianMomentEquations1D, ::Val{:GramEven})
 end
 
 function closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGramEven})
+    """
+    closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGramEven})
+
+    Extended Gramian closure for the even case
+    """
     M = length(u)-1 # u[0, ..., M]
     @assert iseven(M)
     n = equations.n 
@@ -137,12 +142,12 @@ function closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGramEven})
 end
 
 # Odd case (classical and extended)
-"""
-    closure(u, equations::GramianMomentEquations1D, ::Val{false})
-
-    Closure for the odd case
-"""
 function closure(u, equations::GramianMomentEquations1D, ::Val{:GramOdd})
+    """
+    closure(u, equations::GramianMomentEquations1D, ::Val{:GramOdd})
+
+    Gramian closure for the odd case
+    """
     M = length(u)-1 # u[0, ..., M]
     @assert isodd(M)
     n = equations.n
@@ -153,6 +158,11 @@ function closure(u, equations::GramianMomentEquations1D, ::Val{:GramOdd})
 end
 
 function closure(u, equations::GramianMomentEquations1D, ::Val{:ExtGramOdd})
+    """
+    closure(u, equations::GramianMomentEquations1D, ::Val{:GramOdd})
+
+    Extended Gramian closure for the odd case
+    """
     M = length(u)-1 # u[0, ..., M]
     @assert isodd(M)
     n = equations.n
@@ -211,21 +221,21 @@ end
 # -------------------------
 # Grad closure 
 # -------------------------
-"""
+function closure(u::AbstractVector, equations::GramianMomentEquations1D, ::Val{:Grad})
+    """
     closure(u::AbstractVector, equations::GramianMomentEquations1D)
 
-Given convective moments u[1..N] (N = M+1), compute the closure u_{N+1}
-using Grad's closure.
+    Given convective moments u[1..N] (N = M+1), compute the closure u_{N+1}
+    using Grad's closure.
 
-Procedure:
-    - Construct Grad's distribution function with unknowns α_k:
-        f_G(c) = f_M(c; ρ,v,θ) * (1 + Σ_{k=0..M} α_k c^k)
-    - Compute α by solving the linear system arising from moment matching:
-        ∫ f_G(c) c^i dc = u_i, i=0..M
-    - Compute closure moment:
-        u_{M+1}^G = ∫ f_G(c) c^{M+1} dc
-"""
-function closure(u::AbstractVector, equations::GramianMomentEquations1D, ::Val{:Grad})
+    Procedure:
+        - Construct Grad's distribution function with unknowns α_k:
+            f_G(c) = f_M(c; ρ,v,θ) * (1 + Σ_{k=0..M} α_k c^k)
+        - Compute α by solving the linear system arising from moment matching:
+            ∫ f_G(c) c^i dc = u_i, i=0..M
+        - Compute closure moment:
+            u_{M+1}^G = ∫ f_G(c) c^{M+1} dc
+    """
     M = length(u)-1                 # this is M+1 typically
     
     ρ = u[1]
@@ -250,14 +260,14 @@ function closure(u::AbstractVector, equations::GramianMomentEquations1D, ::Val{:
     )
 end
 
-"""
-    solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
-
-    Given convective moments u[1..N], compute the Grad coefficients α_k by solving the linear system arising from moment matching:
-        ∫ f_G(c) c^i dc = u_i, i=0..M
-    where f_G(c) = f_M(c; ρ,v,θ) * (1 + Σ_{k=0..M} α_k c^k)
-"""
 function solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
+    """
+        solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
+
+        Given convective moments u[1..N], compute the Grad coefficients α_k by solving the linear system arising from moment matching:
+            ∫ f_G(c) c^i dc = u_i, i=0..M
+        where f_G(c) = f_M(c; ρ,v,θ) * (1 + Σ_{k=0..M} α_k c^k)
+    """
     # Promote to a common numeric type (supports ForwardDiff.Dual)
     T = promote_type(eltype(u), typeof(ρ), typeof(v), typeof(θ))
     M = length(u)-1
@@ -311,13 +321,13 @@ end
 
 
 # compute Gramian matrix G_n
-"""
-    gramian(u, n::Int)
-
-    Gramian matrix
-    G_{ij} = u_{i+j}
-"""
 function gramian(u, n::Int)
+    """
+        gramian(u, n::Int)
+
+        Gramian matrix
+        G_{ij} = u_{i+j}
+    """
     G = zeros(eltype(u), n+1,n+1)
     for i=1:n+1
         for j=1:n+1
@@ -329,17 +339,12 @@ end
 
 
 
-"""
-    relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-
-    Two implementations, need to check which one is correct
-
-    RHS = -1/τ (u - u_eq)
-    RHS = 1/Kn (u - u_eq) (or with -?)
-"""
 function relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    #return SVector(ntuple(i->0.0, Mp1)...)
-    # TODO: the relaxation terms need to be towards the equilibrium moments. Does the following make sense?
+    """
+        relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
+
+        RHS = 1/Kn (u - u_eq)
+    """
     prim = cons2prim(u, equations); θ = prim[3]
     eq_moments = MVector{Mp1, Float64}(undef); eq_moments[1:3] = prim[1:3]
     # compute equilibrium values for the higher moments
@@ -349,16 +354,19 @@ function relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) wh
         eq_moments[k+1] = val* (2*θ)^(k/2) # gaussian integrals ∫ C^k exp(...)dC
     end
     for k=3:2:Mp1-1 eq_moments[k+1] = 0.0 end
-    # τ = 1/Kn
     return SVector{Mp1}(-equations.inv_Kn .* (u .- prim2cons(eq_moments, equations)))
 end
 
-# Zero source, no RHS
+""" 
+    Zero source, no RHS
+"""
 zero_source(u, x, t, eqns::EqT) where {N, EqT <: Trixi.AbstractEquations{1, N}} = SVector{N}(ntuple(i->0.0, N))
 
 
-# computes c^n = v^n + 0 + (n over 2) v^(n-2)C^2 + ... + (n over 1) vC^(n-1) + C^n, where u[k] is the primitive moment arising from C^(k-1) 
 function binomial_moment_sum(u, n::Integer=length(u)-1)
+    """
+        computes c^n = v^n + 0 + (n over 2) v^(n-2)C^2 + ... + (n over 1) vC^(n-1) + C^n, where u[k] is the primitive moment arising from C^(k-1) 
+    """
     @assert length(u) > n > 1
     ρ = u[1]; v = u[2]
     res = v^n
@@ -370,8 +378,10 @@ end
 
 
 
-# convert primitive [1, v, C^2, ...] variables to conservative [1, c, c^2, ....] variables
 function moment_prim2cons(u_prim)
+    """
+        convert primitive [1, v, C^2, ...] variables to conservative [1, c, c^2, ....] variables
+    """
     m = length(u_prim)
     @assert m > 2
     cons = zeros(eltype(u_prim), m)
@@ -383,8 +393,11 @@ function moment_prim2cons(u_prim)
     return cons
 end
 
-# convert conservative to primitive variables
+
 function moment_cons2prim(u_cons)
+    """
+        convert conservative to primitive variables
+    """
     m = length(u_cons)
     @assert m > 2
     prim = zeros(eltype(u_cons), m)
@@ -402,8 +415,10 @@ Trixi.cons2prim(u, eqns::GramianMomentEquations1D) = moment_cons2prim(u)
 Trixi.cons2entropy(u, equations::GramianMomentEquations1D) = u
 
 
-# Derivative of closure
 function dCdu(u, equations::GramianMomentEquations1D)
+    """
+        Derivative of the closure function w.r.t. the moments u
+    """
     # automatic differentiation
     closure_wrapped(x) = closure(x, equations)
     grad = ForwardDiff.gradient(closure_wrapped, u)
@@ -411,8 +426,10 @@ function dCdu(u, equations::GramianMomentEquations1D)
 end
 
 
-# Jacobian of the flux
 function flux_jacobian(u, equations::GramianMomentEquations1D)
+    """
+        Jacobian of the flux function
+    """
     m = length(u)
     A = zeros(eltype(u), m, m)
     for i=1:m-1 A[i, i+1] = 1 end
@@ -421,8 +438,10 @@ function flux_jacobian(u, equations::GramianMomentEquations1D)
     return A
 end
 
-# Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
 function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D)
+    """
+        Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
+    """
     λ_l = Trixi.max_abs_speeds(u_l, equations)
     λ_r = Trixi.max_abs_speeds(u_r, equations)
     λ_max = max(λ_l, λ_r)
@@ -431,7 +450,8 @@ end
 
 
 function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D)
-    # estimate the flux Jacobian eigenvalues by means of Gerschgorin
-    #return max(1.0, sum(abs.(dCdu(u))))
+    """
+        Estimate the flux Jacobian eigenvalues by means of Gerschgorin
+    """
     return maximum(abs.(real.(eigen(flux_jacobian(u, equations)).values)))
 end
