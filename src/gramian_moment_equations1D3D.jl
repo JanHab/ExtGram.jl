@@ -127,8 +127,7 @@ end
 
 # * Conservative to Primitive variables and vice versa
 Trixi.varnames(::typeof(cons2cons), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = ["U_(000)", "U_(100)", "U_(200)", "U_(020)", "U_(300)", "U_(120)", "U_(400)", "U_(220)", "U_(040)", "U_(022)"]
-# ToDo: Change for 3D velocity case
-Trixi.varnames(::typeof(cons2prim), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = ntuple(i->"w^($(i-1))", Mp1)
+Trixi.varnames(::typeof(cons2prim), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = ["W_(000)", "W_(100)", "W_(200)", "W_(020)", "W_(300)", "W_(120)", "W_(400)", "W_(220)", "W_(040)", "W_(022)"]
 
 # * basic variable definitions to be used as e.g. sc indicator variable
 Trixi.density(u, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1} = u[1]
@@ -260,73 +259,161 @@ function closure(u, equations::GramianMomentEquations1D3D, ::Val{:ExtGramEven})
     )
 end
 
-# todo: implement equilibrium moments for 3D velocity case
-# function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D{Mp1}) where {Mp1}
-    """
-        relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
 
-        RHS = 1/Kn (u - u_eq)
+##########################################################
+##################### Source term ########################
+##########################################################
+
+"""
+    relaxation_source(u, x, t, equations)
+
+RHS = -1/Kn * (U - U_eq) for the 1D3D 10-moment system.
+"""
+function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
     """
-#     #return SVector(ntuple(i->0.0, Mp1)...)
-#     # TODO: the relaxation terms need to be towards the equilibrium moments. Does the following make sense?
-#     prim = cons2prim(u, equations); θ = prim[3]
-#     eq_moments = MVector{Mp1, Float64}(undef); eq_moments[1:3] = prim[1:3]
-#     # compute equilibrium values for the higher moments
-#     val = 0.5
-#     for k=4:2:Mp1-1
-#         val = val*0.5*(k-1)
-#         eq_moments[k+1] = val* (2*θ)^(k/2) # gaussian integrals ∫ C^k exp(...)dC
-#     end
-#     for k=3:2:Mp1-1 eq_moments[k+1] = 0.0 end
-#     # τ = 1/Kn
-#     return SVector{Mp1}(-equations.inv_Kn .* (u .- prim2cons(eq_moments, equations)))
-# end
+        relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
+
+        RHS = -1/Kn (u - u_eq)
+    """
+    # 1. Calculate Physical Properties
+    rho = u[1]
+    v = u[2] / rho
+    
+    # Calculate Central Moments P (needed for Temperature)
+    # We strictly only need P_200 and P_020 for Temperature, 
+    # but calculating the whole vector is cleaner for the general structure.
+    p_central = cons2prim(u, equations)
+    
+    P_200 = p_central[3] # P_xx
+    P_020 = p_central[4] # P_yy
+    
+    # Assumption: Transverse symmetry P_zz = P_yy (P_002 = P_020)
+    P_002 = P_020 
+    
+    # Temperature theta = Tr(P) / (3 * rho)
+    theta = (P_200 + P_020 + P_002) / (3 * rho)
+    
+    # 2. Compute Equilibrium Central Moments P_eq
+    # P_eq_{ijk} = rho * Gauss(i) * Gauss(j) * Gauss(k)
+    p_eq = SVector{10, Float64}(ntuple(idx -> begin
+        i, j, k = MOMENT_INDICES_1D3D[idx]
+        
+        # If any power is odd, central moment equilibrium is 0
+        if isodd(i) || isodd(j) || isodd(k)
+            return 0.0
+        end
+        
+        # Gaussian moments: (n-1)!! * theta^(n/2)
+        # Note: double_factorial(n-1) is used because for n=2, we need 1!! = 1.
+        val_i = double_factorial(i-1) * theta^(i/2)
+        val_j = double_factorial(j-1) * theta^(j/2)
+        val_k = double_factorial(k-1) * theta^(k/2)
+        
+        return rho * val_i * val_j * val_k
+    end, 10))
+    
+    # 3. Transform P_eq back to Conservative U_eq
+    u_eq = prim2cons(p_eq, equations)
+    
+    # 4. Return BGK source
+    return -equations.inv_Kn .* (u .- u_eq)
+end
+
 
 # Zero source, no RHS
-# zero_source(u, x, t, eqns::EqT) where {N, EqT <: Trixi.AbstractEquations{1, N}} = SVector{N}(ntuple(i->0.0, N))
+zero_source(u, x, t, eqns::EqT) where {N, EqT <: Trixi.AbstractEquations{1, N}} = SVector{N}(ntuple(i->0.0, N))
 
+# 1. Define the moment structure for the 10-moment system
+# Mapping indices 1..10 to (i, j, k) powers
+const MOMENT_INDICES_1D3D = (
+    (0,0,0), # 1: rho
+    (1,0,0), # 2: rho * v
+    (2,0,0), # 3: P_xx
+    (0,2,0), # 4: P_yy
+    (3,0,0), # 5
+    (1,2,0), # 6
+    (4,0,0), # 7
+    (2,2,0), # 8
+    (0,4,0), # 9
+    (0,2,2)  # 10: P_yyzz (mixed transverse)
+)
 
-# computes c^n = v^n + 0 + (n over 2) v^(n-2)C^2 + ... + (n over 1) vC^(n-1) + C^n, where u[k] is the primitive moment arising from C^(k-1) 
-# function binomial_moment_sum(u, n::Integer=length(u)-1)
-#     @assert length(u) > n > 1
-#     ρ = u[1]; v = u[2]
-#     res = v^n
-#     for k=2:n
-#         res += binomial(n, k)*v^(n-k)*u[k+1]
-#     end
-#     return res
-# end
+# Helper for double factorial (n-1)!!
+function double_factorial(n::Int)
+    n <= 0 && return 1.0
+    val = 1.0
+    for k in 1:2:n
+        val *= k
+    end
+    return val
+end
+# double_factorial(n) = prod((n):-2:1)
 
+"""
+    get_moment_val(u, i, j, k)
 
+Helper to retrieve U_{ijk} from the state vector `u` based on the defined 
+MOMENT_INDICES_1D3D. Returns 0.0 if the moment is not in the system.
+"""
+@inline function get_moment_val(u, i_req, j_req, k_req)
+    # Search for the tuple in the index list (constant folding should optimize this)
+    for (idx, (i, j, k)) in enumerate(MOMENT_INDICES_1D3D)
+        if i == i_req && j == j_req && k == k_req
+            return u[idx]
+        end
+    end
+    return 0.0 # Return 0 if moment not tracked (or handle error)
+end
 
-# convert primitive [1, v, C^2, ...] variables to conservative [1, c, c^2, ....] variables
-# function moment_prim2cons(u_prim)
-#     m = length(u_prim)
-#     @assert m > 2
-#     cons = zeros(eltype(u_prim), m)
-#     # u_prim[1] is rho and u_prim[2] is v
-#     cons[1] = u_prim[1]; cons[2] = u_prim[1]*u_prim[2]
-#     for k=3:m
-#         cons[k] = u_prim[1]*binomial_moment_sum(u_prim, k-1)
-#     end
-#     return cons
-# end
+"""
+    moment_cons2prim(u_cons)
 
-# convert conservative to primitive variables
-# function moment_cons2prim(u_cons)
-#     m = length(u_cons)
-#     @assert m > 2
-#     prim = zeros(eltype(u_cons), m)
-#     prim[1] = u_cons[1]; prim[2] = u_cons[2]/prim[1]
-#     for k=3:m
-#         prim[k] = u_cons[k]/prim[1]- binomial_moment_sum(prim, k-1)
-#     end
-#     return prim
-# end
+Converts conservative moments U_{ijk} to primitive moments P_{ijk}.
+Uses the binomial shift only on the x-index (i).
+"""
+function moment_cons2prim(u_cons::SVector{10, T}) where T
+    rho = u_cons[1]
+    v = u_cons[2] / rho
+    
+    # We construct the primitive vector by iterating over the 10 equations
+    # Formula: P_{ijk} = sum_{m=0}^i binomial(i, m) * (-v)^(i-m) * U_{mjk}
+    
+    return SVector{10, T}(ntuple(idx -> begin
+        i, j, k = MOMENT_INDICES_1D3D[idx]
+        val = zero(T)
+        for m in 0:i
+            # We need to look up U_{mjk} in the provided vector u_cons
+            u_mjk = get_moment_val(u_cons, m, j, k)
+            val += binomial(i, m) * (-v)^(i-m) * u_mjk
+        end
+        return val
+    end, 10))
+end
 
-# ToDo: Need to check for 3D velocity case
-# Trixi.prim2cons(u, eqns::GramianMomentEquations1D3D) = moment_prim2cons(u)
-# Trixi.cons2prim(u, eqns::GramianMomentEquations1D3D) = moment_cons2prim(u)
+"""
+    moment_prim2cons(u_prim, rho, v)
+
+Converts primitive moments P_{ijk} back to conservative moments U_{ijk}.
+Formula: U_{ijk} = sum_{m=0}^i binomial(i, m) * v^(i-m) * P_{mjk}
+"""
+function moment_prim2cons(u_prim)
+    T = eltype(u_prim)
+    v = u_prim[2] # u_prim[1] is rho, u_prim[2] is v
+    return SVector{10, T}(ntuple(idx -> begin
+        i, j, k = MOMENT_INDICES_1D3D[idx]
+        val = zero(T)
+        for m in 0:i
+            # Look up P_{mjk} from the central moment vector
+            p_mjk = get_moment_val(u_prim, m, j, k)
+            val += binomial(i, m) * v^(i-m) * p_mjk
+        end
+        return val
+    end, 10))
+end
+
+# Link to Trixi
+Trixi.cons2prim(u, eqns::GramianMomentEquations1D3D) = moment_cons2prim(u)
+Trixi.prim2cons(u, eqns::GramianMomentEquations1D3D) = moment_prim2cons(u)
 
 # Convert conservative variables to entropy (necessary dummy)
 Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
