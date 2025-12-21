@@ -21,7 +21,7 @@ export InitialConditionsShockTube, Maxwellian, convective_moments, primitive_mom
 export test_closure, check_realizability
 
 
-export GramianMomentEquations1D3D, gramian, closure, moment_prim2cons, moment_cons2prim, dCdu, flux_jacobian, relaxation_source, zero_source, numerical_flux
+export GramianMomentEquations1D3D
 export InitialConditionsShockTube1D3D, convective_moments_1D3D, Maxwellian1D3D
 
 # Vlasov-Poisson implementation

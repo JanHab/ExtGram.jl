@@ -318,10 +318,7 @@ function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
     # 4. Return BGK source
     return -equations.inv_Kn .* (u .- u_eq)
 end
-
-
-# Zero source, no RHS
-zero_source(u, x, t, eqns::EqT) where {N, EqT <: Trixi.AbstractEquations{1, N}} = SVector{N}(ntuple(i->0.0, N))
+# Not necessary to redefine zero_source, as the default implementation for the 1D1D case suffices.
 
 # 1. Define the moment structure for the 10-moment system
 # Mapping indices 1..10 to (i, j, k) powers
@@ -349,13 +346,13 @@ function double_factorial(n::Int)
 end
 # double_factorial(n) = prod((n):-2:1)
 
-"""
-    get_moment_val(u, i, j, k)
-
-Helper to retrieve U_{ijk} from the state vector `u` based on the defined 
-MOMENT_INDICES_1D3D. Returns 0.0 if the moment is not in the system.
-"""
 @inline function get_moment_val(u, i_req, j_req, k_req)
+    """
+        get_moment_val(u, i, j, k)
+
+    Helper to retrieve U_{ijk} from the state vector `u` based on the defined 
+    MOMENT_INDICES_1D3D. Returns 0.0 if the moment is not in the system.
+    """
     # Search for the tuple in the index list (constant folding should optimize this)
     for (idx, (i, j, k)) in enumerate(MOMENT_INDICES_1D3D)
         if i == i_req && j == j_req && k == k_req
@@ -365,13 +362,14 @@ MOMENT_INDICES_1D3D. Returns 0.0 if the moment is not in the system.
     return 0.0 # Return 0 if moment not tracked (or handle error)
 end
 
-"""
-    moment_cons2prim(u_cons)
 
-Converts conservative moments U_{ijk} to primitive moments P_{ijk}.
-Uses the binomial shift only on the x-index (i).
-"""
-function moment_cons2prim(u_cons::SVector{10, T}) where T
+function moment_cons2prim(u_cons::SVector{10, T}, eqns::GramianMomentEquations1D3D) where T
+    """
+        moment_cons2prim(u_cons, eqns)
+
+    Converts conservative moments U_{ijk} to primitive moments P_{ijk}.
+    Uses the binomial shift only on the x-index (i).
+    """
     rho = u_cons[1]
     v = u_cons[2] / rho
     
@@ -390,13 +388,14 @@ function moment_cons2prim(u_cons::SVector{10, T}) where T
     end, 10))
 end
 
-"""
-    moment_prim2cons(u_prim, rho, v)
 
-Converts primitive moments P_{ijk} back to conservative moments U_{ijk}.
-Formula: U_{ijk} = sum_{m=0}^i binomial(i, m) * v^(i-m) * P_{mjk}
-"""
-function moment_prim2cons(u_prim)
+function moment_prim2cons(u_prim, eqns::GramianMomentEquations1D3D)
+    """
+        moment_prim2cons(u_prim, eqns)
+
+    Converts primitive moments P_{ijk} back to conservative moments U_{ijk}.
+    Formula: U_{ijk} = sum_{m=0}^i binomial(i, m) * v^(i-m) * P_{mjk}
+    """
     T = eltype(u_prim)
     v = u_prim[2] # u_prim[1] is rho, u_prim[2] is v
     return SVector{10, T}(ntuple(idx -> begin
@@ -412,8 +411,8 @@ function moment_prim2cons(u_prim)
 end
 
 # Link to Trixi
-Trixi.cons2prim(u, eqns::GramianMomentEquations1D3D) = moment_cons2prim(u)
-Trixi.prim2cons(u, eqns::GramianMomentEquations1D3D) = moment_prim2cons(u)
+Trixi.cons2prim(u, eqns::GramianMomentEquations1D3D) = moment_cons2prim(u, eqns)
+Trixi.prim2cons(u, eqns::GramianMomentEquations1D3D) = moment_prim2cons(u, eqns)
 
 # Convert conservative variables to entropy (necessary dummy)
 Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u

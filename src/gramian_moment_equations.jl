@@ -378,7 +378,7 @@ end
 
 
 
-function moment_prim2cons(u_prim)
+function moment_prim2cons(u_prim, eqns::GramianMomentEquations1D)
     """
         convert primitive [1, v, C^2, ...] variables to conservative [1, c, c^2, ....] variables
     """
@@ -394,7 +394,7 @@ function moment_prim2cons(u_prim)
 end
 
 
-function moment_cons2prim(u_cons)
+function moment_cons2prim(u_cons, eqns::GramianMomentEquations1D)
     """
         convert conservative to primitive variables
     """
@@ -408,8 +408,8 @@ function moment_cons2prim(u_cons)
     return prim
 end
 
-Trixi.prim2cons(u, eqns::GramianMomentEquations1D) = moment_prim2cons(u)
-Trixi.cons2prim(u, eqns::GramianMomentEquations1D) = moment_cons2prim(u)
+Trixi.prim2cons(u, eqns::GramianMomentEquations1D) = moment_prim2cons(u, eqns)
+Trixi.cons2prim(u, eqns::GramianMomentEquations1D) = moment_cons2prim(u, eqns)
 
 # Convert conservative variables to entropy (necessary dummy)
 Trixi.cons2entropy(u, equations::GramianMomentEquations1D) = u
