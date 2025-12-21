@@ -2,13 +2,13 @@ from clusterrun import createsbatch
 import os
 
 # Solver and simulation parameters
-M = 4
+M = 20
 closure = "ExtGram"
 Kn = 1.0
 source = "zero_source"#!"relaxation_source"
 T_end = 0.3
 base_tree_level = 6
-polydeg = 3
+polydeg = 1
 
 # Initial condition parameters for the Riemann problem
 rho_L = 7.0
@@ -30,5 +30,5 @@ os.system(command)
 #     command, 
 #     nproc=threads, nnodes=nnodes, 
 #     time=time, mem=memory_request, 
-#     output_file=f"out/Riemann1D/Moments/relaxation/slurm_output__M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
+#     output_file=f"out/Riemann1D/Moments/relaxation/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
 # )

@@ -107,7 +107,18 @@ function callbacksGramianMomentEquations(
         append_solution=true,
         solution_variables = cons2cons,
         clear_out_dir=false,
-        name=name,
+        name=name * "_cons",
+        info="basis = $(Base.typename(typeof(basis)).wrapper)"
+    )
+
+    save_solution_prim = SaveTriangulationCallback(
+        time_interval=tspan[2]/time_interval,
+        save_initial_solution=true,
+        file_format="tsv",
+        append_solution=true,
+        solution_variables = cons2prim,
+        clear_out_dir=false,
+        name=name * "_prim",
         info="basis = $(Base.typename(typeof(basis)).wrapper)"
     )
 
@@ -116,6 +127,7 @@ function callbacksGramianMomentEquations(
         stepsize_callback,
         plot_callback,
         save_solution,
+        save_solution_prim,
     )
 
     return callbacks, summary_callback

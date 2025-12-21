@@ -85,24 +85,24 @@ E_L2_history = HyQMOM.ELECTRIC_FIELD.E_L2
 time_callback = HyQMOM.ELECTRIC_FIELD.times  # Use actual times from callback
 
 # You can then plot it or analyze it
-plot(
-    time_callback, E_L2_history ./ E_L2_history[1],
-    xlabel="Time", 
-    label="HyQMOM M=$M (from callback)",
-    ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
-    yaxis=:log
-)
-if k == 0.5
-    γ = -0.1533 # theoretical decay rate for k=1/2
-    γt = exp.(γ .* time_callback)
-    plot!(
-        time_callback, γt,
-        label="Theoretical Decay exp($γ t)", 
-        linestyle=:dash
-    )
-end
-plot!(legend=:bottomleft)
-savefig("out/VlasovPoisson/LandauDamping/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_rho_0$(ρ_0)_v_0$(v_0)_theta_0$(θ_0)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).pdf")
+# plot(
+#     time_callback, E_L2_history ./ E_L2_history[1],
+#     xlabel="Time", 
+#     label="HyQMOM M=$M (from callback)",
+#     ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
+#     yaxis=:log
+# )
+# if k == 0.5
+#     γ = -0.1533 # theoretical decay rate for k=1/2
+#     γt = exp.(γ .* time_callback)
+#     plot!(
+#         time_callback, γt,
+#         label="Theoretical Decay exp($γ t)", 
+#         linestyle=:dash
+#     )
+# end
+# plot!(legend=:bottomleft)
+# savefig("out/VlasovPoisson/LandauDamping/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_rho_0$(ρ_0)_v_0$(v_0)_theta_0$(θ_0)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).pdf")
 # store to csv file
 CSV.write(
     "out/VlasovPoisson/LandauDamping/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_rho_0$(ρ_0)_v_0$(v_0)_theta_0$(θ_0)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).csv",
