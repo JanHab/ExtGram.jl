@@ -6,3 +6,4 @@ out/
 __pycache__/
 run_simulation.sh
 slurm/out/
+docs/build/
