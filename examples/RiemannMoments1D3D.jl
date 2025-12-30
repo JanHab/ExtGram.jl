@@ -9,8 +9,9 @@ M = 4 #parse(Int, ARGS[1])
 closure = "ExtGram" #ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = 1.0 #parse(Float64, ARGS[3])
 # source_string = ARGS[4]
+source_string = "relaxation_source"
 source = relaxation_source #zero_source #relaxation_source
-T_end = 0.1#0.3 #parse(Float64, ARGS[5])
+T_end = 0.3 #parse(Float64, ARGS[5])
 base_tree_level = 7 #!2 #parse(Int, ARGS[6]) # e.g. 8
 polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
 ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
@@ -97,7 +98,8 @@ ode = semidiscretize(semi, tspan)
 
 cfl = 0.99
 time_interval = 20
-name = "gram_solution_1D3D"
+# name = "gram_solution_1D3D"
+name = "1D3D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L1$(v_L1)_v_L2$(v_L2)_v_L3$(v_L3)_v_R1$(v_R1)_v_R2$(v_R2)_v_R3$(v_R3)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)"
 
 alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
@@ -159,7 +161,7 @@ for i in 1:n_equations
 end
 
 # Plot first moments
-pl = plot()
+pl = plot();
 plot!(
     pl,
     title="Riemann Problem Moments 1D3D: M=$(M), closure=$(closure), Kn=$(Kn), source=$(source), T_end=$(T_end)",
