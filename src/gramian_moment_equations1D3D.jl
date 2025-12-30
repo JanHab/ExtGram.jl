@@ -25,12 +25,18 @@ struct Constants{F<:Function}
     end
 end
 
-function init_constants(M::Int)
+function init_constants(M::Int, angles::Vector{Tuple{Float64,Float64}} = [
+        (3.14159, 1.5708),
+        (0.684719, 4.71239),
+        (2.03444, 1.5708),
+        (2.18628, 0.886077)
+    ])
     """
         Initialize constants for Gramian moment equations in 1D with 3D velocity.
 
         # Arguments
         - `M::Int`: Number of moments.
+        - `angles::Vector{Tuple{Float64,Float64}}`: List of angles (θ, φ) for quadrature.
 
         # Returns
         - `Constants`: Struct containing precomputed constants.
@@ -38,13 +44,13 @@ function init_constants(M::Int)
     # Compile the function
     fp_func = compile_fp(M+1)
     
-    # Define Angles - hard-coded for M=4
-    angles = [
-        (3.14159, 1.5708),
-        (0.684719, 4.71239),
-        (2.03444, 1.5708),
-        (2.18628, 0.886077)
-    ]
+    # # Define Angles - hard-coded for M=4
+    # angles = [
+    #     (3.14159, 1.5708),
+    #     (0.684719, 4.71239),
+    #     (2.03444, 1.5708),
+    #     (2.18628, 0.886077)
+    # ]
     
     # Compute Matrix A immediately
     results = [fp_func(theta, phi) for (theta, phi) in angles]
@@ -95,7 +101,12 @@ struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquati
     closure::Symbol
     constants::Constants
 
-    function GramianMomentEquations1D3D(M::Integer, Knudsen::Real, closure::String="ExtGram"; χ_set="optimal")
+    function GramianMomentEquations1D3D(M::Integer, Knudsen::Real, closure::String="ExtGram"; χ_set="optimal", angles::Vector{Tuple{Float64,Float64}} = [
+        (3.14159, 1.5708),
+        (0.684719, 4.71239),
+        (2.03444, 1.5708),
+        (2.18628, 0.886077)
+    ])
         @assert M > 1
         @assert M == 4 "Currently only M=4 is supported."
         if iseven(M)
@@ -119,7 +130,7 @@ struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquati
         end
 
         # Setup the Constants
-        constants = init_constants(M)
+        constants = init_constants(M, angles)
 
         new{10, n, typeof(Knudsen)}(inv(Knudsen), χ, n, closure_value, constants)
     end
@@ -363,7 +374,7 @@ end
 end
 
 
-function moment_cons2prim(u_cons::SVector{10, T}, eqns::GramianMomentEquations1D3D) where T
+function moment_cons2prim(u_cons, eqns::GramianMomentEquations1D3D)
     """
         moment_cons2prim(u_cons, eqns)
 
@@ -376,9 +387,9 @@ function moment_cons2prim(u_cons::SVector{10, T}, eqns::GramianMomentEquations1D
     # We construct the primitive vector by iterating over the 10 equations
     # Formula: P_{ijk} = sum_{m=0}^i binomial(i, m) * (-v)^(i-m) * U_{mjk}
     
-    return SVector{10, T}(ntuple(idx -> begin
+    return SVector(ntuple(idx -> begin
         i, j, k = MOMENT_INDICES_1D3D[idx]
-        val = zero(T)
+        val = 0.0 #zero(T)
         for m in 0:i
             # We need to look up U_{mjk} in the provided vector u_cons
             u_mjk = get_moment_val(u_cons, m, j, k)
