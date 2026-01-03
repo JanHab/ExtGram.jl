@@ -274,12 +274,6 @@ end
 ##########################################################
 ##################### Source term ########################
 ##########################################################
-
-"""
-    relaxation_source(u, x, t, equations)
-
-RHS = -1/Kn * (U - U_eq) for the 1D3D 10-moment system.
-"""
 function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
     """
         relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
@@ -288,26 +282,23 @@ function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
     """
     # 1. Calculate Physical Properties
     rho = u[1]
-    v = u[2] / rho
     
     # Calculate Central Moments P (needed for Temperature)
-    # We strictly only need P_200 and P_020 for Temperature, 
-    # but calculating the whole vector is cleaner for the general structure.
-    p_central = cons2prim(u, equations)
+    p_prim = cons2prim(u, equations)
     
-    P_200 = p_central[3] # P_xx
-    P_020 = p_central[4] # P_yy
+    P_200 = p_prim[3] # P_xx
+    P_020 = p_prim[4] # P_yy
     
-    # Assumption: Transverse symmetry P_zz = P_yy (P_002 = P_020)
+    # Slab Geometry: Transverse symmetry P_zz = P_yy (P_002 = P_020)
     P_002 = P_020 
     
-    # Temperature theta = Tr(P) / (3 * rho)
+    # Temperature theta = (U_200 + U_020 + U_002) / (3 * rho)
     theta = (P_200 + P_020 + P_002) / (3 * rho)
     
     # 2. Compute Equilibrium Central Moments P_eq
     # P_eq_{ijk} = rho * Gauss(i) * Gauss(j) * Gauss(k)
     p_eq = SVector{10, Float64}(ntuple(idx -> begin
-        i, j, k = MOMENT_INDICES_1D3D[idx]
+        i, j, k = MOMENT_INDICES_1D3D[idx] # indices for (i, j, k)
         
         # If any power is odd, central moment equilibrium is 0
         if isodd(i) || isodd(j) || isodd(k)
@@ -315,7 +306,6 @@ function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
         end
         
         # Gaussian moments: (n-1)!! * theta^(n/2)
-        # Note: double_factorial(n-1) is used because for n=2, we need 1!! = 1.
         val_i = double_factorial(i-1) * theta^(i/2)
         val_j = double_factorial(j-1) * theta^(j/2)
         val_k = double_factorial(k-1) * theta^(k/2)
@@ -346,8 +336,12 @@ const MOMENT_INDICES_1D3D = (
     (0,2,2)  # 10: P_yyzz (mixed transverse)
 )
 
-# Helper for double factorial (n-1)!!
 function double_factorial(n::Int)
+    """
+        # Helper for double factorial (n-1)!!
+
+        (n-1)!! = (n-1) * (n-3) * (n-5) * ... until 1 or 2
+    """
     n <= 0 && return 1.0
     val = 1.0
     for k in 1:2:n
@@ -380,6 +374,8 @@ function moment_cons2prim(u_cons, eqns::GramianMomentEquations1D3D)
 
     Converts conservative moments U_{ijk} to primitive moments P_{ijk}.
     Uses the binomial shift only on the x-index (i).
+
+    Formula: P_{ijk} = ∑_{m=0}^i binomial(i, m) * (-v)^(i-m) * U_{mjk}
     """
     rho = u_cons[1]
     v = u_cons[2] / rho
@@ -405,7 +401,7 @@ function moment_prim2cons(u_prim, eqns::GramianMomentEquations1D3D)
         moment_prim2cons(u_prim, eqns)
 
     Converts primitive moments P_{ijk} back to conservative moments U_{ijk}.
-    Formula: U_{ijk} = sum_{m=0}^i binomial(i, m) * v^(i-m) * P_{mjk}
+    Formula: U_{ijk} = ∑_{m=0}^i binomial(i, m) * v^(i-m) * P_{mjk}
     """
     T = eltype(u_prim)
     v = u_prim[2] # u_prim[1] is rho, u_prim[2] is v

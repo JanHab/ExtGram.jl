@@ -346,6 +346,7 @@ function relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) wh
         RHS = 1/Kn (u - u_eq)
     """
     prim = cons2prim(u, equations); θ = prim[3]
+    # Vector for equilibrium moments (primitive); the first three moments are conserved
     eq_moments = MVector{Mp1, Float64}(undef); eq_moments[1:3] = prim[1:3]
     # compute equilibrium values for the higher moments
     val = 0.5
