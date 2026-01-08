@@ -11,17 +11,17 @@ Kn = 1.0 #parse(Float64, ARGS[3])
 # source_string = ARGS[4]
 source_string = "relaxation_source"
 source = relaxation_source #zero_source #relaxation_source
-T_end = 0.3 #parse(Float64, ARGS[5])
+T_end = 0.1 #!0.3 #parse(Float64, ARGS[5])
 base_tree_level = 7 #!2 #parse(Int, ARGS[6]) # e.g. 8
 polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
-ρ_L = 1.0 #parse(Float64, ARGS[8]) # 7.0
+ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
 v_L1 = 0.0 #!1.0 #!1.5 #parse(Float64, ARGS[9]) # 0.0
-v_L2 = 1.0
+v_L2 = 0.0
 v_L3 = 0.0
 θ_L = 1.0 #parse(Float64, ARGS[10]) # 1.0
 ρ_R = 1.0 #parse(Float64, ARGS[11]) # 1.0
 v_R1 = 0.0 #!1.0 #parse(Float64, ARGS[12]) # 0.0
-v_R2 = 1.0
+v_R2 = 0.0
 v_R3 = 0.0
 θ_R = 1.0 #parse(Float64, ARGS[13]) # 1.0
 
@@ -164,9 +164,8 @@ end
 pl = plot();
 plot!(
     pl,
-    title="Riemann Problem Moments 1D3D: M=$(M), closure=$(closure), Kn=$(Kn), source=$(source), T_end=$(T_end)",
     xlabel="x",
-    ylabel="Primitive Variables",
+    ylabel="U_i",
 );
 x = range(x_lower, x_upper, length=Nloc)
 

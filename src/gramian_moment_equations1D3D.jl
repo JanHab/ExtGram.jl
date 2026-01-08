@@ -157,6 +157,42 @@ function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D
     known_moments = SVector{6}(ntuple(i->if i <= 2; u[i+1]; else; u[i+2]; end, 6))
     closure_transformation = closure_transform(u, equations)
     return SVector{10}(known_moments..., closure_transformation...)
+    
+    # # The known moments, which are shifted by index for the flux
+    # known_moments_cons = SVector{6}(ntuple(i->if i <= 2; u[i+1]; else; u[i+2]; end, 6))
+
+    # # Use primitve moments for closure
+    # p_prim = cons2prim(u, equations)
+    # closure_transformation_prim = closure_transform(p_prim, equations)
+    
+    # # Concatenate all primitive moments
+    # extended_moments_prim = SVector{14}(p_prim..., closure_transformation_prim...)
+    
+    # # Define the indices of the moments
+    # MOMENT_INDICES_CLOSURE = (
+    #     (0,0,0), # 1: rho
+    #     (1,0,0), # 2: rho * v
+    #     (2,0,0), # 3: P_xx
+    #     (0,2,0), # 4: P_yy
+    #     (3,0,0), # 5
+    #     (1,2,0), # 6
+    #     (4,0,0), # 7
+    #     (2,2,0), # 8
+    #     (0,4,0), # 9
+    #     (0,2,2),  # 10: P_yyzz (mixed transverse)
+    #     (5,0,0), # 11
+    #     (3,2,0), # 12
+    #     (1,4,0), # 13
+    #     (1,2,2)  # 14
+    # )
+
+    # # Transform back to conservative moments
+    # extended_moments_cons = moment_prim2cons(extended_moments_prim, equations, MOMENT_INDICES_CLOSURE)
+    
+    # # Build flux vector
+    # flux_moments_cons = SVector{10}(known_moments_cons..., extended_moments_cons[11:14]...)
+    
+    # return flux_moments_cons
 end
 
 
@@ -351,15 +387,15 @@ function double_factorial(n::Int)
 end
 # double_factorial(n) = prod((n):-2:1)
 
-@inline function get_moment_val(u, i_req, j_req, k_req)
+@inline function get_moment_val(u, i_req, j_req, k_req, indices_list)
     """
-        get_moment_val(u, i, j, k)
+        get_moment_val(u, i, j, k, indices_list)
 
-    Helper to retrieve U_{ijk} from the state vector `u` based on the defined 
-    MOMENT_INDICES_1D3D. Returns 0.0 if the moment is not in the system.
+    Helper to retrieve U_{ijk} from the state vector `u` based on the provided 
+    indices_list. Returns 0.0 if the moment is not in the system.
     """
     # Search for the tuple in the index list (constant folding should optimize this)
-    for (idx, (i, j, k)) in enumerate(MOMENT_INDICES_1D3D)
+    for (idx, (i, j, k)) in enumerate(indices_list)
         if i == i_req && j == j_req && k == k_req
             return u[idx]
         end
@@ -368,53 +404,67 @@ end
 end
 
 
-function moment_cons2prim(u_cons, eqns::GramianMomentEquations1D3D)
-    """
-        moment_cons2prim(u_cons, eqns)
+function moment_cons2prim(u_cons, eqns::GramianMomentEquations1D3D, moment_indices=MOMENT_INDICES_1D3D)
+    # Type and length of array
+    T = eltype(u_cons)
+    N = length(moment_indices)
 
-    Converts conservative moments U_{ijk} to primitive moments P_{ijk}.
-    Uses the binomial shift only on the x-index (i).
+    # Initialize Mutable Vector
+    prim = MVector{N, T}(undef)
 
-    Formula: P_{ijk} = ∑_{m=0}^i binomial(i, m) * (-v)^(i-m) * U_{mjk}
-    """
-    rho = u_cons[1]
-    v = u_cons[2] / rho
-    
-    # We construct the primitive vector by iterating over the 10 equations
-    # Formula: P_{ijk} = sum_{m=0}^i binomial(i, m) * (-v)^(i-m) * U_{mjk}
-    
-    return SVector(ntuple(idx -> begin
-        i, j, k = MOMENT_INDICES_1D3D[idx]
-        val = 0.0 #zero(T)
+    # Explicitly set the first two moments (Avoiding the if-check)
+    prim[1] = u_cons[1]; prim[2] = u_cons[2] / prim[1] # rho, v
+
+    # Loop for the remaining moments (Indices 3 to N)
+    v = prim[2]
+    for idx in 3:N
+        i, j, k = moment_indices[idx]
+        val = zero(T)
+        
+        # Calculate P_{ijk} = sum Binomial * (-v)^... * U
         for m in 0:i
-            # We need to look up U_{mjk} in the provided vector u_cons
-            u_mjk = get_moment_val(u_cons, m, j, k)
+            u_mjk = get_moment_val(u_cons, m, j, k, moment_indices)
             val += binomial(i, m) * (-v)^(i-m) * u_mjk
         end
-        return val
-    end, 10))
+        
+        prim[idx] = val
+    end
+
+    # Convert back to SVector (Free operation)
+    return SVector(prim)
 end
 
 
-function moment_prim2cons(u_prim, eqns::GramianMomentEquations1D3D)
-    """
-        moment_prim2cons(u_prim, eqns)
-
-    Converts primitive moments P_{ijk} back to conservative moments U_{ijk}.
-    Formula: U_{ijk} = ∑_{m=0}^i binomial(i, m) * v^(i-m) * P_{mjk}
-    """
+function moment_prim2cons(u_prim, eqns::GramianMomentEquations1D3D, moment_indices=MOMENT_INDICES_1D3D)
     T = eltype(u_prim)
-    v = u_prim[2] # u_prim[1] is rho, u_prim[2] is v
-    return SVector{10, T}(ntuple(idx -> begin
-        i, j, k = MOMENT_INDICES_1D3D[idx]
+    N = length(moment_indices)
+
+    # Use MVector
+    cons = MVector{N, T}(undef)
+
+    # Explicitly set the first two conservative moments
+    cons[1] = u_prim[1]; cons[2] = u_prim[1]*u_prim[2]  # rho, rho*v
+
+    # Loop for the rest
+    v = u_prim[2]
+    for idx in 3:N
+        i, j, k = moment_indices[idx]
         val = zero(T)
         for m in 0:i
-            # Look up P_{mjk} from the central moment vector
-            p_mjk = get_moment_val(u_prim, m, j, k)
+            # Inner check: ensure we use 0.0 for P_{100}, not 'v'
+            # ? Is this necessary? Do we even get here? Is it correct?
+            if m == 1 && j == 0 && k == 0
+                p_mjk = 0.0
+            else
+                p_mjk = get_moment_val(u_prim, m, j, k, moment_indices)
+            end
+            
             val += binomial(i, m) * v^(i-m) * p_mjk
         end
-        return val
-    end, 10))
+        cons[idx] = val
+    end
+
+    return SVector(cons)
 end
 
 # Link to Trixi
