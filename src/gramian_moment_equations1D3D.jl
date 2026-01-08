@@ -222,6 +222,15 @@ function closure_transform(u, equations)
     target_indices = equations.constants.target_indices
     rhs = Float64[] # To store the rhs
 
+    # closure_string = "ExtGram" # default option
+    # if equations.closure == :GramEven || equations.closure == :GramOdd
+    #     closure_string = "Gram"
+    # end
+    # Grad not implemented yet
+    # elseif equations.closure == :Grad
+    #     closure = "Grad"
+    # end
+    # equations_1D1D = GramianMomentEquations1D(4, 1/equations.inv_Kn, closure_string)
     # Loop over angles
     for (i, (theta, phi)) in enumerate(equations.constants.Angles)
         # Get Rotation Matrix
@@ -241,6 +250,18 @@ function closure_transform(u, equations)
         # end
         # Apply closure
         val = closure(substituted, equations)
+        # println("Substituted moments for angle (θ=$(theta), φ=$(phi)): ", substituted)
+        # substituted_prim = cons2prim(substituted, equations_1D1D)
+        # # println("Substituted primitive moments: ", substituted_prim)
+        # val_prim = closure(substituted_prim, equations_1D1D)
+        # # println("Closure result in primitive variables: ", val_prim)
+        # moments_prim = [substituted_prim; val_prim]
+        # # println("Extended primitive moments: ", moments_prim)
+        # moments_cons = moment_prim2cons(moments_prim, equations_1D1D)
+        # # println("Extended conservative moments: ", moments_cons)
+        # val = moments_cons[end]
+        # # println("Closure result in conservative variables: ", val)
+        # # val = prim2cons(val_prim, equations_1D1D)
         push!(rhs, val)
     end
 
