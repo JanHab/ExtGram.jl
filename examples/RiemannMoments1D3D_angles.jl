@@ -36,20 +36,40 @@ angles1 = [ # maximizing angles
     (2.03444, 1.5708),
     (2.18628, 0.886077)
 ]
-angles2 = [
+angles2 = [ # maximizing angles / 2
+    (3.14159/2, 1.5708/2),
+    (0.684719/2, 4.71239/2),
+    (2.03444/2, 1.5708/2),
+    (2.18628/2, 0.886077/2)
+]
+angles3 = [
     (2.4, 0.3),
     (0.3, 3.314159),
     (1.3, 1.5),
     (2.9, 0.7)
 ]
-angles3 = [
+angles4 = [
     (2.8, 1.1),
     (0.9, 4.3),
     (2.5, 1.1),
     (2.7, 0.6)
 ]
+angles5 = [
+    (2.3, 3.7),
+    (1.3, 2.7),
+    (2.9, 0.1),
+    (0.7, 0.1)
+]
 
-angle_pairs = [angles1, angles2, angles3]
+angle_pairs = [angles1, angles2, angles3, angles4, angles5]
+# angle_pairs = [
+#     [ # maximizing angles * 2
+#     (2.3, 3.7),
+#     (1.3, 2.7),
+#     (2.9, 0.1),
+#     (0.7, 0.1)#(2.18628, 0.886077)
+# ]
+# ]
 
 for (anglepair, angles) in enumerate(angle_pairs)
     # Setting up everything
