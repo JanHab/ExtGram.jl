@@ -5,26 +5,54 @@ end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-M = 12    # number of moments
+M = 8    # number of moments
 closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
-T_end = 0.3
+T_end = 1.0 #!0.3
 source = zero_source # * relaxation_source
 
 # Domain and discretization parameters
-x_lower = -2.0; x_upper = 2.0
+# !x_lower = -2.0; x_upper = 2.0
+x_lower = -15.0; x_upper = 15.0
+# x_lower = -50; x_upper = 50
 domain = (x_lower, x_upper)
 polydeg = 1  # polynomial degree
-base_tree_level = 8  # initial mesh refinement level
+base_tree_level = 7 #!8  # initial mesh refinement level
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
 
-ρ_L = 7.0
-v_L = 1.0
+# ρ_L = 7.0
+# v_L = 0.0
+# θ_L = 1.0
+# ρ_R = 1.0
+# v_R = 0.0
+# θ_R = 1.0
+
+
+# left state
+# ρ_L = 1.0 #0.445 #1.0
+# v_L = 7.2 #0.698 #0.0
+# θ_L = 1.0 #7.928 #1.0
+# p_L = ρ_L * θ_L
+# # @assert p_L == 3.528 #1.0
+# # right state
+# ρ_R = 3.857 #0.5 #0.125
+# v_R = 1.9 #0.920 #0.0
+# θ_R = 21 #2.679 #1.142 #0.8
+# p_R = ρ_R * θ_R
+# # @assert p_R == 0.571 #0.1
+
+ρ_L = 1.0
 θ_L = 1.0
-ρ_R = 1.0
-v_R = 1.0
-θ_R = 1.0
+p_L = ρ_L * θ_L
+Ma = 8.0
+γ = 5.0/3.0
+ρ_R = ρ_L * (Ma^2 * (γ+1)) / (2 + Ma^2 * (γ - 1))
+p_R = p_L * (1 - γ + 2 * γ * Ma^2) / (1 + γ)
+θ_R = p_R / ρ_R
+c_L = sqrt(γ * p_L / ρ_L) # speed of sound left
+v_L = Ma * c_L
+v_R = v_L * ρ_L / ρ_R
 
 # Setting up everything
 equations = GramianMomentEquations1D(M, Kn, closure)
@@ -103,6 +131,14 @@ summary_callback()
 
 # Post Processing
 x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
+
+θ = p ./ ρ
+# Plot primitive variables at final time
+plot(x, ρ[:, end], label="ρ", lw=2)
+plot(x, v[:, end], label="v", lw=2)
+plot(x, p[:, end], label="p", lw=2)
+plot(x, θ[:, end], label="θ", lw=2)
+
 display(p1)
 savefig(p1, "out/Riemann1D/ρ_v_p.pdf")
 
