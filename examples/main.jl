@@ -28,20 +28,7 @@ volume_flux = flux_central
 # v_R = 0.0
 # θ_R = 1.0
 
-
-# left state
-# ρ_L = 1.0 #0.445 #1.0
-# v_L = 7.2 #0.698 #0.0
-# θ_L = 1.0 #7.928 #1.0
-# p_L = ρ_L * θ_L
-# # @assert p_L == 3.528 #1.0
-# # right state
-# ρ_R = 3.857 #0.5 #0.125
-# v_R = 1.9 #0.920 #0.0
-# θ_R = 21 #2.679 #1.142 #0.8
-# p_R = ρ_R * θ_R
-# # @assert p_R == 0.571 #0.1
-
+# Rankine-Hugoniot conditions for shock tube
 ρ_L = 1.0
 θ_L = 1.0
 p_L = ρ_L * θ_L
