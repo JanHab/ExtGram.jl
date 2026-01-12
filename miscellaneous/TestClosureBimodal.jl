@@ -24,7 +24,7 @@ for i in 1:n
 end
 for (i, M) in enumerate(M_vector)
     for closure in closures
-        L2 = Float64[]
+        ϵ_rel = Float64[]
         for v2 in v2_vector
             equations = GramianMomentEquations1D(M, Kn, closure)
 
@@ -33,12 +33,12 @@ for (i, M) in enumerate(M_vector)
             momentList = convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
 
             nextMoment = HyQMOM.closure(momentList[1:end-1], equations)
-            push!(L2, abs((nextMoment - momentList[end]) / momentList[end]))
+            push!(ϵ_rel, abs((nextMoment - momentList[end]) / momentList[end]))
         end
 
         scatter!(
             pl[i],
-            v2_vector, L2, 
+            v2_vector, ϵ_rel, 
             yscale=:log10, 
             label="",
             # label=closure, 
@@ -50,7 +50,7 @@ for (i, M) in enumerate(M_vector)
         CSV.write(
             "out/CompareClosure/Accuracy_over_v2_closure_$(closure)_M$(M).csv",
             Tables.columntable((
-                v2_vector=v2_vector, L2=L2
+                v2_vector=v2_vector, rel_err=ϵ_rel
             ))
         )
     end
@@ -84,7 +84,7 @@ for i in 1:n
 end
 for (i, v2) in enumerate(v2_vector)
     for closure in closures
-        L2 = Float64[]
+        ϵ_rel = Float64[]
         for M in M_vector
             equations = GramianMomentEquations1D(M, Kn, closure)
 
@@ -93,12 +93,12 @@ for (i, v2) in enumerate(v2_vector)
             momentList = convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
 
             nextMoment = HyQMOM.closure(momentList[1:end-1], equations)
-            push!(L2, abs((nextMoment - momentList[end]) / momentList[end]))
+            push!(ϵ_rel, abs((nextMoment - momentList[end]) / momentList[end]))
         end
 
         plot!(
             pl[i],
-            M_vector, L2, 
+            M_vector, ϵ_rel, 
             yscale=:log10, 
             label="",
             marker=:o,
@@ -111,14 +111,14 @@ for (i, v2) in enumerate(v2_vector)
         CSV.write(
             "out/CompareClosure/Accuracy_over_OddMoments_closure_$(closure)_v2$(v2).csv",
             Tables.columntable((
-                M_vector=M_vector, L2=L2
+                M_vector=M_vector, rel_err=ϵ_rel
             ))
         )
     end
 end
 # display(pl)
-l = @layout  [grid(2,2) a{0.2w}]
-plot(pl..., p0, layout=l, size=(800,500))
+# l = @layout  [grid(2,2) a{0.2w}]
+# plot(pl..., p0, layout=l, size=(800,500))
 # savefig("out/Figures/CompareClosure/ErrorVsM.pdf")
 
 M_vector = 4:2:24
@@ -130,7 +130,7 @@ for i in 1:n
 end
 for (i, v2) in enumerate(v2_vector)
     for closure in closures
-        L2 = Float64[]
+        ϵ_rel = Float64[]
         for M in M_vector
             equations = GramianMomentEquations1D(M, Kn, closure)
 
@@ -139,12 +139,12 @@ for (i, v2) in enumerate(v2_vector)
             momentList = convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
 
             nextMoment = HyQMOM.closure(momentList[1:end-1], equations)
-            push!(L2, abs((nextMoment - momentList[end]) / momentList[end]))
+            push!(ϵ_rel, abs((nextMoment - momentList[end]) / momentList[end]))
         end
 
         plot!(
             pl[i],
-            M_vector, L2, 
+            M_vector, ϵ_rel, 
             yscale=:log10, 
             label="",
             marker=:o,
@@ -157,14 +157,14 @@ for (i, v2) in enumerate(v2_vector)
         CSV.write(
             "out/CompareClosure/Accuracy_over_EvenMoments_closure_$(closure)_v2$(v2).csv",
             Tables.columntable((
-                M_vector=M_vector, L2=L2
+                M_vector=M_vector, rel_err=ϵ_rel
             ))
         )
     end
 end
 # display(pl)
-l = @layout  [grid(2,2) a{0.2w}]
-plot(pl..., p0, layout=l, size=(800,500))
+# l = @layout  [grid(2,2) a{0.2w}]
+# plot(pl..., p0, layout=l, size=(800,500))
 # savefig("out/Figures/CompareClosure/ErrorVsM.pdf")
 
 ######################################################
@@ -175,18 +175,18 @@ M_vector = 3:2:101
 
 pl = plot()
 for (i, closure) in enumerate(closures)
-    L2 = Float64[]
+    ϵ_rel = Float64[]
     for M in M_vector
         equations = GramianMomentEquations1D(M, Kn, closure)
         f = Maxwellian(ρ, v, θ)
         momentList = convective_moments(f, Val(M+2))
         nextMoment = HyQMOM.closure(momentList[1:end-1], equations)
-        push!(L2, abs((nextMoment - momentList[end]) / momentList[end]))
+        push!(ϵ_rel, abs((nextMoment - momentList[end]) / momentList[end]))
     end
 
     plot!(
         pl,
-        M_vector, L2, 
+        M_vector, ϵ_rel, 
         yscale=:log10, 
         label=closure,
         marker=:o,
