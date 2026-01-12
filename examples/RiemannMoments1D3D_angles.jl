@@ -133,6 +133,15 @@ for (anglepair, angles) in enumerate(angle_pairs)
     summary_callback = SummaryCallback()
     stepsize_callback = StepsizeCallback(cfl=cfl)
 
+    plot_interval = 20  # plot every 20 steps
+    plot_callback = VisualizationCallback(
+        semi;
+        interval=plot_interval,
+        solution_variables=cons2cons,
+        plot_data_creator=PlotData1D,
+        plot_creator=Trixi.show_plot,
+    )
+
     save_solution_cons = SaveTriangulationCallback(
         time_interval=tspan[2]/time_interval,
         save_initial_solution=true,
@@ -157,7 +166,7 @@ for (anglepair, angles) in enumerate(angle_pairs)
     callbacks = CallbackSet(
         alive_callback,
         stepsize_callback,
-        # plot_callback,
+        plot_callback,
         save_solution_cons,
         save_solution_prim,
     )

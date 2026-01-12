@@ -3,15 +3,15 @@ if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
 using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
+using StaticArrays
 
 # Access arguments by index
 M = 4 #parse(Int, ARGS[1])
 closure = "ExtGram" #ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = 1.0 #parse(Float64, ARGS[3])
 # source_string = ARGS[4]
-source_string = "relaxation_source"
 source = relaxation_source #zero_source #relaxation_source
-T_end = 0.3 #parse(Float64, ARGS[5])
+T_end = 0.2#!0.3 #parse(Float64, ARGS[5])
 base_tree_level = 7 #!2 #parse(Int, ARGS[6]) # e.g. 8
 polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
 ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
@@ -30,15 +30,16 @@ v_R3 = 0.0
 x_lower = -2.0; x_upper = 2.0
 domain = (x_lower, x_upper)
 
-
+angles = [ # maximizing angles / 2
+    (3.14159/2, 1.5708/2),
+    (0.684719/2, 4.71239/2),
+    (2.03444/2, 1.5708/2),
+    (2.18628/2, 0.886077/2)
+]
 
 # Setting up everything
-equations = GramianMomentEquations1D3D(M, Kn, closure)
-# Mp1 = 35
-# f_left = Maxwellian1D3D(ρ_L, (v_L1, v_L2, v_L3), θ_L)
-# left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
-# f_right = Maxwellian1D3D(ρ_R, (v_R1, v_R2, v_R3), θ_R)
-# right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
+equations = GramianMomentEquations1D3D(M, Kn, closure, angles=angles)
+
 initial_condition = InitialConditionsShockTube1D3D(
     Maxwellian1D3D(ρ_L, (v_L1, v_L2, v_L3), θ_L), # Density, velocity, temperature
     Maxwellian1D3D(ρ_R, (v_R1, v_R2, v_R3), θ_R), # Shock in density, but not velocity, temperature initially
@@ -89,21 +90,34 @@ semi = SemidiscretizationHyperbolic(
 tspan = (0.0, T_end)
 ode = semidiscretize(semi, tspan)
 
-# callbacks, summary_callback = callbacksGramianMomentEquations(
-#     semi, tspan, basis; 
-#     cfl = 0.9,          # Maximum cfl number
-#     plot_interval = 20,  # plot every 20 steps
-#     name="gram_solution",
-# )
-
 cfl = 0.99
 time_interval = 20
-# name = "gram_solution_1D3D"
-name = "1D3D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L1$(v_L1)_v_L2$(v_L2)_v_L3$(v_L3)_v_R1$(v_R1)_v_R2$(v_R2)_v_R3$(v_R3)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)"
+# name = "1D3D/1D3D_angles/gram_solution_1D3D_closure$(closure)_Kn$(Kn)_anglepairnumber$(anglepair)_Tend$(T_end)"
 
 alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
 stepsize_callback = StepsizeCallback(cfl=cfl)
+
+# save_solution_cons = SaveTriangulationCallback(
+    # time_interval=tspan[2]/time_interval,
+    # save_initial_solution=true,
+    # file_format="tsv",
+    # append_solution=true,
+    # solution_variables = cons2cons,
+    # clear_out_dir=false,
+    # name=name * "_cons",
+    # info="basis = $(Base.typename(typeof(basis)).wrapper)"
+# )
+# save_solution_prim = SaveTriangulationCallback(
+#     time_interval=tspan[2]/time_interval,
+#     save_initial_solution=true,
+#     file_format="tsv",
+#     append_solution=true,
+#     solution_variables = cons2prim,
+#     clear_out_dir=false,
+#     name=name * "_prim",
+#     info="basis = $(Base.typename(typeof(basis)).wrapper)"
+# )
 
 plot_interval = 20  # plot every 20 steps
 plot_callback = VisualizationCallback(
@@ -112,35 +126,15 @@ plot_callback = VisualizationCallback(
     solution_variables=cons2cons,
     plot_data_creator=PlotData1D,
     plot_creator=Trixi.show_plot,
-)
-
-save_solution_cons = SaveTriangulationCallback(
-    time_interval=tspan[2]/time_interval,
-    save_initial_solution=true,
-    file_format="tsv",
-    append_solution=true,
-    solution_variables = cons2cons,
-    clear_out_dir=false,
-    name=name * "_cons",
-    info="basis = $(Base.typename(typeof(basis)).wrapper)"
-)
-save_solution_prim = SaveTriangulationCallback(
-    time_interval=tspan[2]/time_interval,
-    save_initial_solution=true,
-    file_format="tsv",
-    append_solution=true,
-    solution_variables = cons2prim,
-    clear_out_dir=false,
-    name=name * "_prim",
-    info="basis = $(Base.typename(typeof(basis)).wrapper)"
+    show_mesh=true,
 )
 
 callbacks = CallbackSet(
     alive_callback,
     stepsize_callback,
     plot_callback,
-    save_solution_cons,
-    save_solution_prim,
+    #! save_solution_cons,
+    #! save_solution_prim,
 )
 
 #= solve =#
@@ -174,9 +168,9 @@ pl = plot();
 plot!(
     pl,
     xlabel="x",
-    ylabel="U_i",
+    ylabel="Moments (x-direction only)",
 );
-x = range(x_lower, x_upper, length=Nloc)
+x = range(x_lower, x_upper, length=Nloc);
 
 plot!(
     pl,
@@ -208,7 +202,7 @@ plot!(
 plot!(
     pl,
     x, u[5, :], 
-    label="U300",
+    label="300",
     color=:purple,
 );
 
