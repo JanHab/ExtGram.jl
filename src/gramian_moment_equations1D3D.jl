@@ -137,8 +137,14 @@ struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquati
 end
 
 # * Conservative to Primitive variables and vice versa
-Trixi.varnames(::typeof(cons2cons), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = ["U_(000)", "U_(100)", "U_(200)", "U_(020)", "U_(300)", "U_(120)", "U_(400)", "U_(220)", "U_(040)", "U_(022)"]
-Trixi.varnames(::typeof(cons2prim), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = ["W_(000)", "W_(100)", "W_(200)", "W_(020)", "W_(300)", "W_(120)", "W_(400)", "W_(220)", "W_(040)", "W_(022)"]
+Trixi.varnames(::typeof(cons2cons), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = (
+    "U_(000)", "U_(100)", "U_(200)", "U_(020)", "U_(300)", 
+    "U_(120)", "U_(400)", "U_(220)", "U_(040)", "U_(022)"
+)
+Trixi.varnames(::typeof(cons2prim), ::GramianMomentEquations1D3D{Mp1}) where {Mp1} = (
+    "W_(000)", "W_(100)", "W_(200)", "W_(020)", "W_(300)", 
+    "W_(120)", "W_(400)", "W_(220)", "W_(040)", "W_(022)"
+)
 
 # * basic variable definitions to be used as e.g. sc indicator variable
 Trixi.density(u, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1} = u[1]
@@ -374,7 +380,7 @@ function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
     u_eq = prim2cons(p_eq, equations)
     
     # 4. Return BGK source
-    return -equations.inv_Kn .* (u .- u_eq)
+    return SVector{10}(-equations.inv_Kn .* (u .- u_eq))
 end
 # Not necessary to redefine zero_source, as the default implementation for the 1D1D case suffices.
 
@@ -451,7 +457,6 @@ function moment_cons2prim(u_cons, eqns::GramianMomentEquations1D3D, moment_indic
         prim[idx] = val
     end
 
-    # Convert back to SVector (Free operation)
     return SVector(prim)
 end
 
@@ -503,53 +508,58 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
 #     grad = ForwardDiff.gradient(closure_wrapped, u)
 #     return ForwardDiff.value(grad)
 # end
-# function dCdu(u, equations::GramianMomentEquations1D3D, h::Float64 = 1e-6)
-#     """
-#         Derivative of the closure function w.r.t. the moments u
-#     """
-#     grad = zeros(eltype(u), 4, length(u))
-#     u_aux = zeros(eltype(u), length(u)); @. u_aux = u
-#     for i in eachindex(u)
-#         u_aux[i] += h
-#         grad[:,i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
-#         u_aux[i] = u[i]
-#     end
-#     return grad
-# end
+function dCdu(u, equations::GramianMomentEquations1D3D, h::Float64 = 1e-6)
+    """
+        Derivative of the closure function w.r.t. the moments u
+    """
+    grad = zeros(eltype(u), 4, length(u))
+    u_aux = zeros(eltype(u), length(u)); @. u_aux = u
+    for i in eachindex(u)
+        u_aux[i] += h
+        grad[:,i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
+        u_aux[i] = u[i]
+    end
+    return grad
+end
 
 
 
-# function flux_jacobian(u, equations::GramianMomentEquations1D3D)
-#     """
-#         Jacobian of the flux function
-#     """
-#     m = length(u)
-#     A = zeros(eltype(u), m, m)
-#     # ToDo: Make generic
-#     for i=1:2 A[i, i+1] = 1 end
-#     for i=3:6 A[i, i+2] = 1 end
-#     A[7:10, :] .= dCdu(u, equations)
-#     return A
-# end
+function flux_jacobian(u, equations::GramianMomentEquations1D3D)
+    """
+        Jacobian of the flux function
+    """
+    m = length(u)
+    A = zeros(eltype(u), m, m)
+    # ToDo: Make generic
+    for i=1:2 A[i, i+1] = 1 end
+    for i=3:6 A[i, i+2] = 1 end
+    A[7:10, :] .= dCdu(u, equations)
+    return A
+end
 
-# function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D3D)
-#     """
-#         Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
-#     """
-#     λ_l = Trixi.max_abs_speeds(u_l, equations)
-#     λ_r = Trixi.max_abs_speeds(u_r, equations)
-#     λ_max = max(λ_l, λ_r)
-#     return λ_max
-# end
+function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D3D)
+    """
+        Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
+    """
+    λ_l = Trixi.max_abs_speeds(u_l, equations)
+    λ_r = Trixi.max_abs_speeds(u_r, equations)
+    λ_max = max(λ_l, λ_r)
+    # verbose
+    # println("Max wave speed: λ_max = $λ_max")
+    if λ_max >= 5.0
+        @warn "High maximum wave speed detected: λ_max = $λ_max."
+    end
+    return λ_max
+end
 
 
-# function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
-#     """
-#         Estimate the flux Jacobian eigenvalues by means of Gerschgorin
-#     """
-#     u = Float64.(u)
-#     return maximum(abs.(real.(eigen(flux_jacobian(u, equations)).values)))
-# end
+function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
+    """
+        Estimate the flux Jacobian eigenvalues by means of Gerschgorin
+    """
+    u = Float64.(u)
+    return maximum(abs.(real.(eigen(flux_jacobian(u, equations)).values)))
+end
 
 
 
@@ -558,36 +568,36 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
 #################### Maximum speeds ######################
 ##########################################################
 
-# * For now, we assume a constant maximum speed (should be changed later)
-# ? What is the optimal maximum speed? We want to avoid calculating the flux Jacobian eigenvalues every time step if possible.
-function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
-    # REPLACE 1.0 with the maximum microscopic velocity of your model.
-    # For example:
-    # - If your basis is defined on [-1, 1], return 1.0.
-    # - If this is a gas dynamics code, this might need to be higher.
-    # ? What valud to choose here?
-    return 10.0 
-end
+# # * For now, we assume a constant maximum speed (should be changed later)
+# # ? What is the optimal maximum speed? We want to avoid calculating the flux Jacobian eigenvalues every time step if possible.
+# function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
+#     # REPLACE 1.0 with the maximum microscopic velocity of your model.
+#     # For example:
+#     # - If your basis is defined on [-1, 1], return 1.0.
+#     # - If this is a gas dynamics code, this might need to be higher.
+#     # ? What valud to choose here?
+#     return 10.0 
+# end
 
-# This remains the same, but now calls the faster constant version above.
-function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D3D)
-    ρ_l = u_l[1]; ρ_r = u_r[1]
+# # This remains the same, but now calls the faster constant version above.
+# function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D3D)
+#     ρ_l = u_l[1]; ρ_r = u_r[1]
 
-    # Calculate Central Moments P (needed for Temperature)
-    p_prim_l = cons2prim(u_l, equations); p_prim_r = cons2prim(u_r, equations);
+#     # Calculate Central Moments P (needed for Temperature)
+#     p_prim_l = cons2prim(u_l, equations); p_prim_r = cons2prim(u_r, equations);
     
-    P_200_l = p_prim_l[3]; P_200_r = p_prim_r[3] # P_xx
-    P_020_l = p_prim_l[4]; P_020_r = p_prim_r[4] # P_yy
+#     P_200_l = p_prim_l[3]; P_200_r = p_prim_r[3] # P_xx
+#     P_020_l = p_prim_l[4]; P_020_r = p_prim_r[4] # P_yy
     
-    # Slab Geometry: Transverse symmetry P_zz = P_yy (P_002 = P_020)
-    P_002_l = P_020_l; P_002_r = P_020_r 
+#     # Slab Geometry: Transverse symmetry P_zz = P_yy (P_002 = P_020)
+#     P_002_l = P_020_l; P_002_r = P_020_r 
     
-    # Temperature theta = (U_200 + U_020 + U_002) / (3 * rho)
-    θ_l = (P_200_l + P_020_l + P_002_l) / (3 * ρ_l)
-    θ_r = (P_200_r + P_020_r + P_002_r) / (3 * ρ_r)
+#     # Temperature theta = (U_200 + U_020 + U_002) / (3 * rho)
+#     θ_l = (P_200_l + P_020_l + P_002_l) / (3 * ρ_l)
+#     θ_r = (P_200_r + P_020_r + P_002_r) / (3 * ρ_r)
     
-    γ = 5.0
-    λ_l = ρ_l + γ * sqrt(θ_l) #!Trixi.max_abs_speeds(u_l, equations)
-    λ_r = ρ_r + γ * sqrt(θ_r) #!Trixi.max_abs_speeds(u_r, equations)
-    return max(λ_l, λ_r)
-end
+#     γ = 5.0
+#     λ_l = ρ_l + γ * sqrt(θ_l) #!Trixi.max_abs_speeds(u_l, equations)
+#     λ_r = ρ_r + γ * sqrt(θ_r) #!Trixi.max_abs_speeds(u_r, equations)
+#     return max(λ_l, λ_r)
+# end
