@@ -32,6 +32,7 @@ basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGr
     M, Kn, closure,
     Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
     Maxwellian(ρ_R, v_R, θ_R);
+    base_tree_level = base_tree_level,
     domain = domain,
     polydeg = polydeg,
     # alpha_max = 1.0 # ! to be removed again
