@@ -60,7 +60,7 @@ def read_solution_file(filename):
     return data
 
 def interpolate_solution(data, time_query, times, timesteps):
-    """Linear interpolation in time for all w's"""
+    """Linear interpolation in time for all u's"""
     # Clamp outside range
     if time_query <= times.min():
         return data[timesteps[0]]
@@ -76,9 +76,9 @@ def interpolate_solution(data, time_query, times, timesteps):
 
     # linear interpolation in time
     alpha = (time_query - t0) / (t1 - t0)
-    w_interp = (1 - alpha) * u0 + alpha * u1
+    u_interp = (1 - alpha) * u0 + alpha * u1
 
-    return {"t": time_query, "x": x0, "w": w_interp}
+    return {"t": time_query, "x": x0, "u": u_interp}
 
 def plot_solution_time(data, time_query, times, timesteps):
     sol = interpolate_solution(data, time_query, times, timesteps)
@@ -126,7 +126,7 @@ def read_solution_file_bgk(filename):
         timestep: {
             't': float,
             'x': np.ndarray,
-            'w': np.ndarray  # shape (n_points, n_vars)
+            'u': np.ndarray  # shape (n_points, n_vars)
         },
         ...
     }
@@ -176,7 +176,7 @@ def read_solution_file_bgk(filename):
     return data
 
 def interpolate_solution_bgk(data, time_query, times, timesteps):
-    """Linear interpolation in time for all w's"""
+    """Linear interpolation in time for all u's"""
     # Clamp outside range
     if time_query <= times.min():
         return data[timesteps[0]]

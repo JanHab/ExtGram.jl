@@ -19,6 +19,9 @@ rho_R = 1.0
 v_R = 0.0
 theta_R = 1.0
 
+x_lower = -2.0
+x_upper = 2.0
+
 # SLURM job parameters
 threads = 1
 nnodes = 1
@@ -27,7 +30,7 @@ memory_request = '16G'
 
 # # Even
 # for M in M_vector_even:
-#         command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R}"
+#         command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
 #         os.system(command)
 #         # createsbatch(
 #         #     command, 
@@ -38,7 +41,7 @@ memory_request = '16G'
 
 # odd
 for M in M_vector_odd:
-        command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R}"
+        command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
         # os.system(command)
         createsbatch(
             command, 

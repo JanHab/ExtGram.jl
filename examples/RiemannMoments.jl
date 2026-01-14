@@ -19,10 +19,12 @@ v_L = parse(Float64, ARGS[9]) # 0.0
 ρ_R = parse(Float64, ARGS[11]) # 1.0
 v_R = parse(Float64, ARGS[12]) # 0.0
 θ_R = parse(Float64, ARGS[13]) # 1.0
+x_lower = parse(Float64, ARGS[14]) # -20.0
+x_upper = parse(Float64, ARGS[15]) # 100.0
 
 
 # Fixed settings
-x_lower = -2.0; x_upper = 2.0
+# x_lower = -20.0; x_upper = 100.0
 domain = (x_lower, x_upper)
 
 
