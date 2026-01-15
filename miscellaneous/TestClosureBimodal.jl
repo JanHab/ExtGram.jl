@@ -210,3 +210,132 @@ plot!(
 
 display(pl)
 # savefig("out/CompareClosure/EquilibriumPreservation.pdf")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using Revise
+if !endswith(Base.active_project(), "../Project.toml")
+    import Pkg; Pkg.activate(".")
+end 
+using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, QuadGK
+
+######################################################
+################## Distribution Helpers ##############
+######################################################
+
+# 1. Mott-Smith Moments
+function get_mott_smith_moments(M, x, Ma, gamma=5/3)
+    # Rankine-Hugoniot downstream values
+    rho_star = (Ma^2 * (gamma + 1)) / (2 + Ma^2 * (gamma - 1))
+    v_star = Ma / rho_star
+    theta_star = (1 - gamma + 2*gamma*Ma^2) / ((1 + gamma) * rho_star)
+    v_scale = sqrt(gamma)
+    
+    z = 1 / (1 + exp(x))
+    
+    # Components as Maxwellians
+    f1 = Maxwellian(z, Ma * v_scale, 1.0)
+    f2 = Maxwellian((1-z)*rho_star, v_star * v_scale, theta_star)
+    
+    # Return moments up to order M+1
+    return convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
+end
+
+# 2. Electron-Hole Moments (requires numerical integration for the trapped part)
+function get_eh_moments(M, phi, v0, beta)
+    moments = zeros(M+2)
+    const_factor = (2*pi)^(-0.5)
+    
+    for k in 0:(M+1)
+        f_eh = v -> begin
+            v2 = v^2
+            threshold = 2*phi
+            if v2 > threshold
+                # Untrapped
+                return const_factor * exp(-0.5 * (sign(v)*sqrt(v2 - threshold) - v0)^2)
+            else
+                # Trapped
+                return const_factor * exp(-0.5 * (beta*(v2 - threshold) + v0^2))
+            end
+        end
+        val, _ = quadgk(v -> (v^k) * f_eh(v), -Inf, Inf, rtol=1e-10)
+        moments[k+1] = val
+    end
+    return moments
+end
+
+######################################################
+################## Global Parameters #################
+######################################################
+M_vector = [3, 4, 5, 8] # Small sample for quick testing
+closures = ["Gram", "ExtGram", "Grad"]
+colors = [:blue, :red, :green]
+Kn = 1.0
+
+# Legend Placeholder
+# p_legend = scatter(
+#     (1:3)', (1:3)'#, mc=colors'#, label=permutedims(closures), 
+#     # frame=:none, grid=false, showaxis=false
+# )
+
+######################################################
+################## Mott-Smith Analysis ###############
+######################################################
+println("Running Mott-Smith Analysis...")
+Ma = 3.0
+x_range = range(-5.0, 5.0, length=100)
+pl_ms = [plot(title="M=$M", xlabel="x", ylabel="ϵᵣ", yscale=:log10) for M in M_vector]
+
+for (i, M) in enumerate(M_vector)
+    for (c_idx, closure) in enumerate(closures)
+        eqs = GramianMomentEquations1D(M, Kn, closure)
+        errs = Float64[]
+        for x in x_range
+            m_list = get_mott_smith_moments(M, x, Ma)
+            next_m = HyQMOM.closure(m_list[1:end-1], eqs)
+            push!(errs, abs((next_m - m_list[end]) / m_list[end]))
+        end
+        plot!(pl_ms[i], x_range, errs, color=colors[c_idx], label="")
+    end
+end
+l_ms = @layout [grid(2,2) a{0.15w}]
+plot(pl_ms..., layout=l_ms, size=(900, 500)) |> display
+# savefig("Accuracy_MottSmith_Ma$(Ma).pdf")
+
+######################################################
+################## Electron-Hole Analysis ############
+######################################################
+println("Running Electron-Hole Analysis...")
+phi_range = range(0.1, 2.0, length=50)
+v0_eh, beta_eh = 1.5, -0.05
+pl_eh = [plot(title="M=$M", xlabel="ϕ", ylabel="ϵᵣ", yscale=:log10) for M in M_vector]
+
+for (i, M) in enumerate(M_vector)
+    for (c_idx, closure) in enumerate(closures)
+        eqs = GramianMomentEquations1D(M, Kn, closure)
+        errs = Float64[]
+        for phi in phi_range
+            m_list = get_eh_moments(M, phi, v0_eh, beta_eh)
+            next_m = HyQMOM.closure(m_list[1:end-1], eqs)
+            push!(errs, abs((next_m - m_list[end]) / m_list[end]))
+        end
+        plot!(pl_eh[i], phi_range, errs, color=colors[c_idx], label="")
+    end
+end
+l_eh = @layout [grid(2,2) a{0.15w}]
+plot(pl_eh..., layout=l_eh, size=(900, 500)) |> display
+# savefig("Accuracy_ElectronHole_beta$(beta_eh).pdf")
