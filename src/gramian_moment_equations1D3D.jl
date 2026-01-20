@@ -546,9 +546,9 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
 #     λ_max = max(λ_l, λ_r)
 #     # verbose
 #     # println("Max wave speed: λ_max = $λ_max")
-#     if λ_max >= 5.0
-#         @warn "High maximum wave speed detected: λ_max = $λ_max."
-#     end
+#     # if λ_max >= 5.0
+#     #     @warn "High maximum wave speed detected: λ_max = $λ_max."
+#     # end
 #     return λ_max
 # end
 
