@@ -6,8 +6,8 @@ M = 8
 # "ExtGram" already calculated from GridConvergence.py
 # BGK already calculated from BGK.py
 closure_vec = ["Gram", "ExtGram", "Grad"]
-Knudsen = [1.0, 10.0, 1.0] # last one doesn't matter, as zero_source
-sources = ["relaxation_source", "relaxation_source", "zero_source"]
+Knudsen = [10.0, 1.0]#![1.0, 10.0, 1.0] # last one doesn't matter, as zero_source
+sources = ["relaxation_source", "zero_source"]#!["relaxation_source", "relaxation_source", "zero_source"]
 T_end = 0.3
 base_tree_level = 8
 polydeg = 1
@@ -23,21 +23,39 @@ theta_R = 1.0
 x_lower = -2.0
 x_upper = 2.0
 
+# BGK
+N = 200
+c_l = -6.0
+c_u = 6.0
+x_left_BGK = -5.0
+x_right_BGK = 5.0
+base_tree_level_BGK = 6
+
 # SLURM job parameters
 threads = 1
 nnodes = 1
 time = '08:00:00'
 memory_request = '16G'
 
-for closure in closure_vec:
-    for i in range(len(Knudsen)):
-        Kn = Knudsen[i]
-        source = sources[i]
+for i in range(len(Knudsen)):
+    Kn = Knudsen[i]
+    source = sources[i]
+    for closure in closure_vec:
         command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
-        os.system(command)
-        # createsbatch(
-        #     command, 
-        #     nproc=threads, nnodes=nnodes, 
-        #     time=time, mem=memory_request, 
-        #     output_file=f"out/Riemann1D/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
-        # )
+        # os.system(command)
+        createsbatch(
+            command, 
+            nproc=threads, nnodes=nnodes, 
+            time=time, mem=memory_request, 
+            output_file=f"out/Riemann1D/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
+        )
+
+    # BGK
+    command = f"julia examples/RiemannBGK.jl {N} {c_l} {c_u} {Kn} {source} {T_end} {base_tree_level_BGK} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left_BGK} {x_right_BGK}"
+    # os.system(command)
+    createsbatch(
+        command, 
+        nproc=threads, nnodes=nnodes, 
+        time=time, mem=memory_request, 
+        output_file=f"out/Riemann1D/BGK/slurm_output_N{N}_c_l{c_l}_c_u{c_u}_Kn{Kn}_source{source}_T{T_end}_base_tree_level{base_tree_level}_polydeg{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}_x_left{x_left}_x_right{x_right}.out"
+        )
