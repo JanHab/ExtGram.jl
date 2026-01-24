@@ -9,25 +9,48 @@ M = 4 #parse(Int, ARGS[1])
 closure = "ExtGram" #ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = 1.0 #parse(Float64, ARGS[3])
 # source_string = ARGS[4]
-source_string = "relaxation_source"
-source = relaxation_source #zero_source #relaxation_source
-T_end = 0.3 #parse(Float64, ARGS[5])
-base_tree_level = 7 #!2 #parse(Int, ARGS[6]) # e.g. 8
+source_string = "zero_source"#!"relaxation_source"
+source = zero_source #!relaxation_source #zero_source #relaxation_source
+T_end = 25 #parse(Float64, ARGS[5])
+base_tree_level = 8 #!2 #parse(Int, ARGS[6]) # e.g. 8
 polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
-ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
-v_L1 = 0.0 #!1.0 #!1.5 #parse(Float64, ARGS[9]) # 0.0
+
+# Riemann
+# ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
+# v_L1 = 0.0 #!1.0 #!1.5 #parse(Float64, ARGS[9]) # 0.0
+# v_L2 = 0.0
+# v_L3 = 0.0
+# θ_L = 1.0 #parse(Float64, ARGS[10]) # 1.0
+# ρ_R = 1.0 #parse(Float64, ARGS[11]) # 1.0
+# v_R1 = 0.0 #!1.0 #parse(Float64, ARGS[12]) # 0.0
+# v_R2 = 0.0
+# v_R3 = 0.0
+# θ_R = 1.0 #parse(Float64, ARGS[13]) # 1.0
+
+# x_lower = -2.0; x_upper = 2.0
+
+# Rankine-Hugoniot
+Ma = 1.4#!3.8
+
+ρ_L = 1.0
+ρ_R = (4*Ma^2) / (Ma^2 + 3)
+
+v_L1 = sqrt(5/3) * Ma
 v_L2 = 0.0
 v_L3 = 0.0
-θ_L = 1.0 #parse(Float64, ARGS[10]) # 1.0
-ρ_R = 1.0 #parse(Float64, ARGS[11]) # 1.0
-v_R1 = 0.0 #!1.0 #parse(Float64, ARGS[12]) # 0.0
+v_R1 = sqrt(5/3) * (Ma^2 + 3.0) / (4.0 * Ma)
 v_R2 = 0.0
 v_R3 = 0.0
-θ_R = 1.0 #parse(Float64, ARGS[13]) # 1.0
+
+θ_L = 1.0
+θ_R = ( (5*Ma^2 - 1) * (Ma^2 + 3) ) / (16 * Ma^2)
+
+# x_lower = -30; x_upper = 30
+x_lower = -50; x_upper = 50
 
 
-# Fixed settings
-x_lower = -2.0; x_upper = 2.0
+
+
 domain = (x_lower, x_upper)
 
 
@@ -56,7 +79,7 @@ indicator_sc = IndicatorHennemannGassner(
     alpha_max = 0.5, #!1.0,#*0.5,#0.1, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
     alpha_min = 0.001, #!0.01,#0.01,
     alpha_smooth = true, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
-    variable = (u, eqns)->u[1]*u[5]#! *u[5]
+    variable = (u, eqns)->u[1]*u[3]#! *u[5]
 ) # ? Seems to restrict to M>=4
 
 surface_flux = flux_lax_friedrichs
@@ -139,8 +162,8 @@ callbacks = CallbackSet(
     alive_callback,
     stepsize_callback,
     plot_callback,
-    save_solution_cons,
-    save_solution_prim,
+    #! save_solution_cons,
+    #! save_solution_prim,
 )
 
 #= solve =#
@@ -168,6 +191,25 @@ u = []
 for i in 1:n_equations
     push!(u, Fmat[i, :])
 end
+
+x = range(x_lower, x_upper, length=Nloc)
+ρ = vec(u[1, :])[1]
+v = vec(u[2, :])[1] ./ ρ
+θ = (vec(u[3, :])[1] + vec(u[4, :])[1] + vec(u[4, :])[1]) ./ (3.0 .* ρ)
+# p = ρ .* θ
+# θ = p ./ ρ
+# Plot primitive variables at final time
+plot(x, (ρ .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2, xlim=(-10, 10))
+plot(x, (v .- v_R1) ./ (v_L1 - v_R1), label="v", lw=2, xlim=(-10, 10))
+# plot(x, (p .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2, xlim=(-10, 10))
+plot(x, (θ .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2, xlim=(-10, 10))
+
+pl = plot(xlim=(-10, 10), title="T=$(T_end)", size=(500,500), yticks=0:0.1:1);
+plot!(pl, x, (ρ .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2);
+plot!(pl, x, (v .- v_R1) ./ (v_L1 - v_R1), label="v", lw=2);
+# plot!(pl, x, (p .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2)
+plot!(pl, x, (θ .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2);
+display(pl)
 
 # Plot first moments
 pl = plot();

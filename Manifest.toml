@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.5"
+julia_version = "1.12.4"
 manifest_format = "2.0"
 project_hash = "592a855c52d6881efb51ade00672c9972644ba29"
 
@@ -873,7 +873,7 @@ uuid = "e33a78d0-f292-5ffc-b300-72abe9b543c8"
 version = "2.12.2+0"
 
 [[deps.HyQMOM]]
-deps = ["CSV", "DiffEqCallbacks", "Distributions", "FFTW", "FastGaussQuadrature", "ForwardDiff", "HDF5", "Interpolations", "LaTeXStrings", "LinearAlgebra", "OrdinaryDiffEq", "Plots", "Printf", "StaticArrays", "Statistics", "Tables", "Trapz", "Trixi", "WriteVTK"]
+deps = ["CSV", "DiffEqCallbacks", "Distributions", "FFTW", "FastGaussQuadrature", "ForwardDiff", "HDF5", "Interpolations", "LaTeXStrings", "LinearAlgebra", "OrdinaryDiffEq", "Plots", "Printf", "Revise", "StaticArrays", "Statistics", "Tables", "Trapz", "Trixi", "WriteVTK"]
 path = "."
 uuid = "0cb60d4b-4940-4046-8815-06717d8a5008"
 version = "0.1.0"
@@ -1406,7 +1406,7 @@ version = "0.3.7"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2025.5.20"
+version = "2025.11.4"
 
 [[deps.MuladdMacro]]
 git-tree-sha1 = "cac9cc5499c25554cba55cd3c30543cff5ca4fab"

@@ -2,80 +2,64 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, Trixi
+using HyQMOM, Trixi, Plots
 
-M = 4
+M = 8
 closure = "ExtGram"
 Kn = 1.0
 source = relaxation_source
 
 # IC
-ρ_L = 7.0
-v_L1 = 0.0
-v_L2 = 0.0
-v_L3 = 0.0
-θ_L = 1.0
-ρ_R = 1.0
-v_R1 = 0.0
-v_R2 = 0.0
-v_R3 = 0.0
-θ_R = 1.0
+ρ1 = 0.4
+v1 = 0.0
+θ1 = 1.0
+ρ2 = 0.6
+# ρ2_vector = range(0.1, 4.0, length=200)
+v2 = 0.0
+v2_vector = range(0.5, 4.0, length=200)
+θ2 = 1.0
 
-equations = GramianMomentEquations1D3D(M, Kn, closure)
+equations = GramianMomentEquations1D(M, Kn, closure)
 
-initial_condition = InitialConditionsShockTube1D3D(
-    Maxwellian1D3D(ρ_L, (v_L1, v_L2, v_L3), θ_L), # Density, velocity, temperature
-    Maxwellian1D3D(ρ_R, (v_R1, v_R2, v_R3), θ_R), # Shock in density, but not velocity, temperature initially
-    M,
-    equations
-)
+f1 = Maxwellian(ρ1, v1, θ1); # Density, velocity, temperature
 
-left_full = convective_moments_1D3D(M, ρ_L, (v_L1, v_L2, v_L3), θ_L)
-slab_indices = HyQMOM.get_valid_indices(M)
-u_cons = SVector{length(slab_indices)}(left_full[slab_indices])
+ϵ_cons = Float64[]
+ϵ_prim = Float64[]
+# for v2 in v2_vector
+# for ρ2 in ρ2_vector
+for v2_shift in v2_vector
+    f2 = Maxwellian(ρ2, v2, θ2); # Shock in density, but not velocity, temperature initially
+    conservative_moments_full = convective_moments(f1, Val(M+2)) .+ convective_moments(f2, Val(M+2))
+    conservative_moments_full = conservative_moments_full .+ SVector{M+2}(0.0, v2_shift, zeros(M)...)
+    conservative_moments = conservative_moments_full[1:end-1] # Remove hidden truth
+    conservative_closure = HyQMOM.closure(conservative_moments, equations)
 
-w_prim = cons2prim(u_cons, equations)
+    # Print accuracy
+    # println("Conservative closure accuracy: ")
+    # println("Closure value: ", conservative_closure)
+    # println("Hidden truth: ", conservative_moments_full[end])
+    # println("Relative error: ", abs(conservative_closure - conservative_moments_full[end]) / abs(conservative_moments_full[end]))
+    push!(ϵ_cons, abs((conservative_closure - conservative_moments_full[end]) / conservative_moments_full[end]))
 
-# closure_transformation_prim = HyQMOM.closure_transform(w_prim, equations)
-closure_transformation_cons = HyQMOM.closure_transform(u_cons, equations)
-extended_moments_cons = SVector{length(slab_indices)+length(closure_transformation_cons)}(u_cons..., closure_transformation_cons...)
 
-extended_moments_prim = HyQMOM.moment_cons2prim(extended_moments_cons, equations, MOMENT_INDICES_CLOSURE)
+    primitive_moments_full = HyQMOM.moment_cons2prim(conservative_moments_full, equations)
+    primitive_moments = primitive_moments_full[1:end-1] # Remove hidden truth
+    primitive_closure = HyQMOM.closure(primitive_moments, equations)
+    primitive_moments_full_with_closure = SVector{M+2}(primitive_moments..., primitive_closure)
+    conservative_moments_full_with_closure = HyQMOM.moment_prim2cons(primitive_moments_full_with_closure, equations)
 
-# extended_moments_prim = SVector{14}(w_prim..., closure_transformation_prim...)
+    # Print accuracy
+    # println("Primitive closure accuracy: ")
+    # println("Closure value: ", conservative_moments_full_with_closure[end])
+    # println("Hidden truth: ", conservative_moments_full[end])
+    # println("Relative error: ", abs(conservative_moments_full_with_closure[end] - conservative_moments_full[end]) / abs(conservative_moments_full[end]))
+    push!(ϵ_prim, abs((conservative_moments_full_with_closure[end] - conservative_moments_full[end]) / conservative_moments_full[end]))
+end
 
-MOMENT_INDICES_CLOSURE = (
-    (0,0,0), # 1: rho
-    (1,0,0), # 2: rho * v
-    (2,0,0), # 3: P_xx
-    (0,2,0), # 4: P_yy
-    (3,0,0), # 5
-    (1,2,0), # 6
-    (4,0,0), # 7
-    (2,2,0), # 8
-    (0,4,0), # 9
-    (0,2,2),  # 10: P_yyzz (mixed transverse)
-    (5,0,0), # 11
-    (3,2,0), # 12
-    (1,4,0), # 13
-    (1,2,2)  # 14
-)
-
-# T = eltype(extended_moments_prim)
-# v = w_prim[2]
-# closure_transformation_cons = SVector{14, T}(ntuple(idx -> begin
-#     i, j, k = MOMENT_INDICES_CLOSURE[idx]
-#     val = zero(T)
-#     for m in 0:i
-#         # Look up P_{mjk} from the central moment vector
-#         p_mjk = HyQMOM.get_moment_val(extended_moments_prim, m, j, k)
-#         val += binomial(i, m) * v^(i-m) * p_mjk
-#     end
-#     return val
-# end, 14))
-
-# known_moments_cons = SVector{6}(ntuple(i->if i <= 2; u_cons[i+1]; else; u_cons[i+2]; end, 6))
-# flux_moments_cons = SVector{10}(known_moments_cons..., closure_transformation_cons[11:14]...)
-
-# u_cons
-# flux_moments_cons
+plt = scatter(
+    xlabel="ρ2", ylabel="ϵᵣ", yscale=:log10,
+    title="M=$M, Closure=$(closure)",
+);
+scatter!(plt, v2_vector, ϵ_cons, label="Conservative", color=:blue);
+scatter!(plt, v2_vector, ϵ_prim, label="Primitive", color=:red);
+display(plt);
