@@ -3,9 +3,9 @@ import os
 import numpy as np
 
 # Solver and simulation parameters
-Moments = [4]#![4, 8]
-closure_vec = ["Gram", "ExtGram"]#!["Gram", "ExtGram", "Grad"]
-Kn = 10.0#!1.0
+Moments = [6]#![4, 8]
+closure_vec = ["Grad"]#!["Gram", "ExtGram", "Grad"]
+Kn = 1.0
 source = "relaxation_source"
 T_end = 25.0
 base_tree_level = 8#!10
