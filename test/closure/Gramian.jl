@@ -8,7 +8,7 @@ Kn = 0.5    # irrelevant
     
     u = SVector{M+1,Float64}(rand(M+1)...).*10
 
-    trixi_closure = HyQMOM.closure(u, equations)
+    trixi_closure = ExtGram.closure(u, equations)
     correct_closure = test_closure(u, equations)
     @test trixi_closure ≈ correct_closure
 end
@@ -20,7 +20,7 @@ end
     
     u = SVector{M+1,Float64}(rand(M+1)...).*10
 
-    trixi_closure = HyQMOM.closure(u, equations)
+    trixi_closure = ExtGram.closure(u, equations)
     correct_closure = test_closure(u, equations)
     @test trixi_closure ≈ correct_closure
 end
@@ -32,7 +32,7 @@ end
     
     u = SVector{M+1,Float64}(rand(M+1)...).*10
 
-    trixi_closure = HyQMOM.closure(u, equations)
+    trixi_closure = ExtGram.closure(u, equations)
     correct_closure = test_closure(u, equations)
     @test trixi_closure ≈ correct_closure
 end
@@ -44,7 +44,7 @@ end
     
     u = SVector{M+1,Float64}(rand(M+1)...).*10
 
-    trixi_closure = HyQMOM.closure(u, equations)
+    trixi_closure = ExtGram.closure(u, equations)
     correct_closure = test_closure(u, equations)
     @test trixi_closure ≈ correct_closure
 end

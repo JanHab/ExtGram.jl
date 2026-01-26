@@ -2,7 +2,7 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, Trixi
+using ExtGram, Trixi
 using LinearAlgebra
 
 closure = "ExtGram"
@@ -19,13 +19,13 @@ for M in 2:2:24
         momentList = convective_moments(f1, Val(M+1)) .+ convective_moments(f2, Val(M+1))
 
         # Check realizability
-        gramian = HyQMOM.gramian(momentList, equations.n-1)
+        gramian = ExtGram.gramian(momentList, equations.n-1)
         # @assert isposdef(gramian) "Gramian is not positive definite for M = $M with moments $momentList"
-        spd = all(eigen(HyQMOM.gramian(momentList, equations.n)).values .>= 0.0)
-        println("eigen(HyQMOM.gramian(momentList, equations.n)).values = ", eigen(HyQMOM.gramian(momentList, equations.n)).values)
+        spd = all(eigen(ExtGram.gramian(momentList, equations.n)).values .>= 0.0)
+        println("eigen(ExtGram.gramian(momentList, equations.n)).values = ", eigen(ExtGram.gramian(momentList, equations.n)).values)
         @assert spd "Gramian is not positive semi-definite for M = $M with moments $momentList"
 
-        DF = HyQMOM.flux_jacobian(momentList, equations)
+        DF = ExtGram.flux_jacobian(momentList, equations)
         eigenvalues = eigvals(DF)
 
         number_distinct_eigenvalues = length(unique(eigenvalues))

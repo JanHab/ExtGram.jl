@@ -15,7 +15,7 @@ idx4_true = [
     [2, 3, 3, 3],
     [3, 3, 3, 3]
 ]
-@test HyQMOM.idx(4) == idx4_true
+@test ExtGram.idx(4) == idx4_true
 
 index4_true = [
     [4, 0, 0],
@@ -35,10 +35,10 @@ index4_true = [
     [0, 0, 4]
 ]
 
-@test HyQMOM.index(4) == index4_true
+@test ExtGram.index(4) == index4_true
 
 index_1d_4_true = [1, 4, 11, 13]
-@test HyQMOM.index_1d(4) == index_1d_4_true
+@test ExtGram.index_1d(4) == index_1d_4_true
 
 mainmomindex4_true = [
     [0, 0, 0], # U
@@ -77,7 +77,7 @@ mainmomindex4_true = [
     [0, 1, 3],
     [0, 0, 4]
 ]
-@test HyQMOM.mainmomindex(4) == mainmomindex4_true
+@test ExtGram.mainmomindex(4) == mainmomindex4_true
 
 # Symbolic variables
 rotation_matrix = [
@@ -85,7 +85,7 @@ rotation_matrix = [
     [0.14168, -0.259343, 0.0],
     [-0.838387, -0.458013, -0.29552]
 ]
-# @test HyQMOM.get_rotation_matrix(0.5, 0.3) .≈ rotation_matrix atol=1e-5
+# @test ExtGram.get_rotation_matrix(0.5, 0.3) .≈ rotation_matrix atol=1e-5
 
 tensor_transformation4_true = [
     0.067259 0.0734875 -0.49552 0.0200732 -0.270704 0.912668;
@@ -96,7 +96,7 @@ tensor_transformation4_true = [
     0.702892 0.767983 0.49552 0.209776 0.270704 0.0873322
 ]
 
-@test isapprox(HyQMOM.tensor_transformation(2, 0.5, 0.3), tensor_transformation4_true; atol=1e-5, rtol=1e-5)
+@test isapprox(ExtGram.tensor_transformation(2, 0.5, 0.3), tensor_transformation4_true; atol=1e-5, rtol=1e-5)
 
 rotation2_true = [
     1 0 0 0 0 0 0 0 0 0;
@@ -111,15 +111,15 @@ rotation2_true = [
     0 0 0 0 0.702892 0.767983 0.49552 0.209776 0.270704 0.0873322
 ]
 
-@test isapprox(HyQMOM.rot(2, 0.5, 0.3), rotation2_true; atol=1e-5, rtol=1e-5)
+@test isapprox(ExtGram.rot(2, 0.5, 0.3), rotation2_true; atol=1e-5, rtol=1e-5)
 
 
 nidx4_true = [1, 2, 5, 11, 21]
-@test HyQMOM.nidx(4) == nidx4_true
+@test ExtGram.nidx(4) == nidx4_true
 
 # Test case
 M = 4
-FPM4_FUNC = HyQMOM.compile_fp(M+1);
+FPM4_FUNC = ExtGram.compile_fp(M+1);
 
 ANGLES_M4 = [
     (3.14159, 1.5708),
@@ -143,15 +143,15 @@ A_matrix_true = [
 
 let # Start a local scope
     v2 = 1.5; # Example velocity
-    moments_init = [1., 0.9, 0, 0, 1.95, 0., 0., 0.6, 0, 0.6, 3.645, 0, 0, 0.54, 0., 0.54, 0, 0, 0, 0, 8.9775, 0., 0., 1.17, 0, 1.17, 0., 0., 0., 0., 1.08, 0, 0.36, 0, 1.08]#HyQMOM.mom_list(v2, M) # Init moments of degree 4
+    moments_init = [1., 0.9, 0, 0, 1.95, 0., 0., 0.6, 0, 0.6, 3.645, 0, 0, 0.54, 0., 0.54, 0, 0, 0, 0, 8.9775, 0., 0., 1.17, 0, 1.17, 0., 0., 0., 0., 1.08, 0, 0.36, 0, 1.08]#ExtGram.mom_list(v2, M) # Init moments of degree 4
     slab_indices = []
     index_start = 0
     for i in 0:M
-        append!(slab_indices, HyQMOM.index_1d(i) .+ index_start) # Offset by shell start
-        index_start += size(HyQMOM.index(i), 1)
+        append!(slab_indices, ExtGram.index_1d(i) .+ index_start) # Offset by shell start
+        index_start += size(ExtGram.index(i), 1)
     end
     moments_init = [i in slab_indices ? moments_init[i] : 0.0 for i in 1:length(moments_init)]
-    target_indices = HyQMOM.nidx(M) # What we use for the closure
+    target_indices = ExtGram.nidx(M) # What we use for the closure
     rhs = Float64[] # To store the rhs
 
     Kn = 1.0
@@ -160,7 +160,7 @@ let # Start a local scope
 
     for (theta, phi) in ANGLES_M4
         # 3. Get Rotation Matrix (Using NEW idx order)
-        R = HyQMOM.rot(M, theta, phi)
+        R = ExtGram.rot(M, theta, phi)
 
         # 4. Rotate
         rotated_moments_full = R * moments_init
@@ -168,7 +168,7 @@ let # Start a local scope
         # 5. Extract (m0, m1, m2, m3, m4)
         substituted = rotated_moments_full[target_indices]
 
-        val = HyQMOM.closure(substituted, equations)
+        val = ExtGram.closure(substituted, equations)
             
         push!(rhs, val)
     end
@@ -184,5 +184,5 @@ let # Start a local scope
 
     # Test the closure_transform implementation
     moments_init_reduced = moments_init[slab_indices]
-    @test isapprox(approx_moments4_true, HyQMOM.closure_transform(moments_init_reduced, equations); atol=1e-5, rtol=1e-5)
+    @test isapprox(approx_moments4_true, ExtGram.closure_transform(moments_init_reduced, equations); atol=1e-5, rtol=1e-5)
 end

@@ -901,9 +901,9 @@ git-tree-sha1 = "3d468106a05408f9f7b6f161d9e7715159af247b"
 uuid = "e33a78d0-f292-5ffc-b300-72abe9b543c8"
 version = "2.12.2+0"
 
-[[deps.HyQMOM]]
+[[deps.ExtGram]]
 deps = ["CSV", "DiffEqCallbacks", "Distributions", "Documenter", "FFTW", "FastGaussQuadrature", "ForwardDiff", "HDF5", "Interpolations", "LaTeXStrings", "LinearAlgebra", "OrdinaryDiffEq", "Plots", "Printf", "StaticArrays", "Statistics", "Tables", "Trapz", "Trixi", "WriteVTK"]
-path = "/Users/janhabscheid/Documents/git/trixihyqmom/docs/.."
+path = "/Users/janhabscheid/Documents/git/ExtGram/docs/.."
 uuid = "0cb60d4b-4940-4046-8815-06717d8a5008"
 version = "0.1.0"
 

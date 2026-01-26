@@ -6,6 +6,6 @@ Depth = 2
 ```
 
 ```@autodocs
-Modules = [HyQMOM]
+Modules = [ExtGram]
 Order = [:type, :macro, :function]
 ```

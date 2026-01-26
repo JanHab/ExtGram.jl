@@ -1,4 +1,4 @@
-module HyQMOM
+module ExtGram
 
 # External dependencies
 using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, OrdinaryDiffEq, Plots, Interpolations, Statistics
@@ -57,4 +57,4 @@ export plot_ρ_v_p, plot_λ_max, conservation, readsol, readfile
 include("bgk_equation.jl")
 export setupBGK1DRiemann, InitialConditionsBGK, ρ_v_θ_p_BGK, setupBGK1DRiemann, plot_ρ_v_p_bgk
 
-end # module HyQMOM
+end # module ExtGram

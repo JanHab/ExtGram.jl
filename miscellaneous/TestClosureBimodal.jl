@@ -2,7 +2,7 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 ######################################################
 ################## Velocity Variation ################
@@ -32,7 +32,7 @@ for (i, M) in enumerate(M_vector)
             f2 = Maxwellian(ρ2, v2, θ2)
             momentList = convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
 
-            nextMoment = HyQMOM.closure(momentList[1:end-1], equations)
+            nextMoment = ExtGram.closure(momentList[1:end-1], equations)
             push!(ϵ_rel, abs((nextMoment - momentList[end]) / momentList[end]))
         end
 
@@ -92,7 +92,7 @@ for (i, v2) in enumerate(v2_vector)
             f2 = Maxwellian(ρ2, v2, θ2)
             momentList = convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
 
-            nextMoment = HyQMOM.closure(momentList[1:end-1], equations)
+            nextMoment = ExtGram.closure(momentList[1:end-1], equations)
             push!(ϵ_rel, abs((nextMoment - momentList[end]) / momentList[end]))
         end
 
@@ -138,7 +138,7 @@ for (i, v2) in enumerate(v2_vector)
             f2 = Maxwellian(ρ2, v2, θ2)
             momentList = convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
 
-            nextMoment = HyQMOM.closure(momentList[1:end-1], equations)
+            nextMoment = ExtGram.closure(momentList[1:end-1], equations)
             push!(ϵ_rel, abs((nextMoment - momentList[end]) / momentList[end]))
         end
 
@@ -180,7 +180,7 @@ for (i, closure) in enumerate(closures)
         equations = GramianMomentEquations1D(M, Kn, closure)
         f = Maxwellian(ρ, v, θ)
         momentList = convective_moments(f, Val(M+2))
-        nextMoment = HyQMOM.closure(momentList[1:end-1], equations)
+        nextMoment = ExtGram.closure(momentList[1:end-1], equations)
         push!(ϵ_rel, abs((nextMoment - momentList[end]) / momentList[end]))
     end
 
@@ -231,7 +231,7 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end 
-using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, QuadGK
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, QuadGK
 
 ######################################################
 ################## Distribution Helpers ##############
@@ -306,7 +306,7 @@ for (i, M) in enumerate(M_vector)
         errs = Float64[]
         for x in x_range
             m_list = get_mott_smith_moments(M, x, Ma)
-            next_m = HyQMOM.closure(m_list[1:end-1], eqs)
+            next_m = ExtGram.closure(m_list[1:end-1], eqs)
             push!(errs, abs((next_m - m_list[end]) / m_list[end]))
         end
         plot!(pl_ms[i], x_range, errs, color=colors[c_idx], label="")
@@ -330,7 +330,7 @@ for (i, M) in enumerate(M_vector)
         errs = Float64[]
         for phi in phi_range
             m_list = get_eh_moments(M, phi, v0_eh, beta_eh)
-            next_m = HyQMOM.closure(m_list[1:end-1], eqs)
+            next_m = ExtGram.closure(m_list[1:end-1], eqs)
             push!(errs, abs((next_m - m_list[end]) / m_list[end]))
         end
         plot!(pl_eh[i], phi_range, errs, color=colors[c_idx], label="")

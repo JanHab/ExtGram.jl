@@ -2,7 +2,7 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
 M = 8
@@ -22,12 +22,12 @@ f2 = Maxwellian(ρ2, v2, θ2)
 
 # conservative
 momentListConservative = convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
-nextMomentConservative = HyQMOM.closure(momentListConservative[1:end-1], equations)
+nextMomentConservative = ExtGram.closure(momentListConservative[1:end-1], equations)
 
 # primitive
-momentListPrimitive = HyQMOM.moment_cons2prim(momentListConservative, equations)
-nextMomentPrimitive = HyQMOM.closure(momentListPrimitive[1:end-1], equations)
-primtive_to_conservative = HyQMOM.moment_prim2cons(SVector{M+2,Float64}(momentListPrimitive[1:end-1]..., nextMomentPrimitive), equations)
+momentListPrimitive = ExtGram.moment_cons2prim(momentListConservative, equations)
+nextMomentPrimitive = ExtGram.closure(momentListPrimitive[1:end-1], equations)
+primtive_to_conservative = ExtGram.moment_prim2cons(SVector{M+2,Float64}(momentListPrimitive[1:end-1]..., nextMomentPrimitive), equations)
 
 # Check conversations
 println("moments(conservative): $momentListConservative")
@@ -53,13 +53,13 @@ for v2 in v2_vector
 
     # conservative
     momentListConservative = convective_moments(f1, Val(M+2)) + convective_moments(f2, Val(M+2))
-    nextMomentConservative = HyQMOM.closure(momentListConservative[1:end-1], equations)
+    nextMomentConservative = ExtGram.closure(momentListConservative[1:end-1], equations)
     push!(ϵ_rel_conservative, abs((nextMomentConservative - momentListConservative[end]) / momentListConservative[end]))
 
     # primitive
-    momentListPrimitive = HyQMOM.moment_cons2prim(momentListConservative, equations)
-    nextMomentPrimitive = HyQMOM.closure(momentListPrimitive[1:end-1], equations)
-    primtive_to_conservative = HyQMOM.moment_prim2cons(SVector{M+2,Float64}(momentListPrimitive[1:end-1]..., nextMomentPrimitive), equations)
+    momentListPrimitive = ExtGram.moment_cons2prim(momentListConservative, equations)
+    nextMomentPrimitive = ExtGram.closure(momentListPrimitive[1:end-1], equations)
+    primtive_to_conservative = ExtGram.moment_prim2cons(SVector{M+2,Float64}(momentListPrimitive[1:end-1]..., nextMomentPrimitive), equations)
     nextMomentTransformation = primtive_to_conservative[end]
     push!(ϵ_rel_transformation, abs((nextMomentTransformation - momentListConservative[end]) / momentListConservative[end]))
 end

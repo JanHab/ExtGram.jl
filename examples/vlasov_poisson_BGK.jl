@@ -2,7 +2,7 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Parameter
@@ -18,12 +18,12 @@ domain = (x_lower, x_upper)
 base_tree_level = 5
 
 # todo: need to export BGKEquations1D
-equations = HyQMOM.BGKEquations1D(N, c_l, c_u, Kn)
+equations = ExtGram.BGKEquations1D(N, c_l, c_u, Kn)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
 ϵ = 0.001
 k = 0.5
 # todo: need to export InitialConditionsLandauDamping_BGK
-initial_condition = HyQMOM.InitialConditionsLandauDamping_BGK(
+initial_condition = ExtGram.InitialConditionsLandauDamping_BGK(
     ρ0,
     ϵ,
     v0,
@@ -82,7 +82,7 @@ ode = semidiscretize(semi, tspan)
 # # Add Vlasov-Poisson callback
 # callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, mesh, domain))
 # todo: need to export vlasov_poisson_callback_BGK
-callbacks = CallbackSet(HyQMOM.vlasov_poisson_callback_BGK(;N=N, mesh, domain, equations))
+callbacks = CallbackSet(ExtGram.vlasov_poisson_callback_BGK(;N=N, mesh, domain, equations))
 
 #= solve =#
 sol = solve(
@@ -107,8 +107,8 @@ display(p1)
 # savefig(p1, "out/Riemann1D/bgk_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.pdf")
 
 # Access the energy history
-E_L2_history = HyQMOM.ELECTRIC_FIELD_BGK.E_L2
-time_callback = HyQMOM.ELECTRIC_FIELD_BGK.times  # Use actual times from callback
+E_L2_history = ExtGram.ELECTRIC_FIELD_BGK.E_L2
+time_callback = ExtGram.ELECTRIC_FIELD_BGK.times  # Use actual times from callback
 
 # You can then plot it or analyze it
 γ = -0.1533 # theoretical decay rate for k=1/2

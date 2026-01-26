@@ -2,7 +2,7 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 using Trapz
 
@@ -93,7 +93,7 @@ x_coords = LinRange(x_lower, x_upper, 500)
 # display(plt)
 
 # Plot initial moments
-_, coords, vars = HyQMOM.collect1DTreeArrays_local(semi, ode.u0, cons2cons)
+_, coords, vars = ExtGram.collect1DTreeArrays_local(semi, ode.u0, cons2cons)
 x = coords[2:end-1]  # exclude ghost cells
 ρ = vars[2:end-1, 1]
 v = vars[2:end-1, 2] ./ ρ

@@ -8,7 +8,7 @@ end # Runs in environment setup
 # using Symbolics
 using LinearAlgebra
 using Distributions
-using HyQMOM, Trixi
+using ExtGram, Trixi
 
 # --- 1. Index Generation Functions ---
 
@@ -249,7 +249,7 @@ function fp_optimized(degree, theta_val, phi_val)
     return f(theta_val, phi_val)
 end
 
-# Just some wrapper for HyQMOM closure call
+# Just some wrapper for ExtGram closure call
 function run_gramian_closure(mom_list)
     # 1. Setup Configuration
     M = length(mom_list)-1 # Or specific logic for M
@@ -261,7 +261,7 @@ function run_gramian_closure(mom_list)
     
     # 3. Call the external library
     # 'u' in your snippet corresponds to 'mom_list'
-    trixi_closure = HyQMOM.closure(mom_list, equations)
+    trixi_closure = ExtGram.closure(mom_list, equations)
     
     return trixi_closure
 end
@@ -397,7 +397,7 @@ for (theta, phi) in ANGLES_M4
 
     # 6. Closure
     # equations = GramianMomentEquations1D(M, 1.0, "ExtGram") # Kn and ExtGram currently "placeholder"
-    # trixi_closure = HyQMOM.closure(substituted, equations)
+    # trixi_closure = ExtGram.closure(substituted, equations)
     
     # push!(rhs, trixi_closure)
 end

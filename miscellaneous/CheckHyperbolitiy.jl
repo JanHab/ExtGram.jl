@@ -2,7 +2,7 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 M = 4
 closure = "ExtGram" # "Gram", "ExtGram" or "Grad"
@@ -45,12 +45,12 @@ for v2 in v_R2_vec
     # moments_init = [i in slab_indices ? moments_init[i] : 0.0 for i in 1:length(moments_init)]
     moments_init = moments_init[slab_indices]
 
-    HyQMOM.closure_transform(moments_init, equations)
+    ExtGram.closure_transform(moments_init, equations)
 
     ####################################
     # Check Hyperbolicity of the system #
     ####################################
-    flux_jac = HyQMOM.flux_jacobian(moments_init, equations)
+    flux_jac = ExtGram.flux_jacobian(moments_init, equations)
     eigenvals = eigvals(flux_jac)
     # println("Eigenvalues of the flux Jacobian:")
     # println(eigenvals)

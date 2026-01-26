@@ -21,7 +21,7 @@ function trixi_closure(f1, f2, M, Kn, closure)
     u = convective_moments(f1, Val(M+1)) .+ convective_moments(f2, Val(M+1))
     equations = GramianMomentEquations1D(M, Kn, closure)
 
-    return HyQMOM.closure(u, equations) # todo: remove HyQMOM prefix
+    return ExtGram.closure(u, equations) # todo: remove ExtGram prefix
 end
 
 @testset "M4" begin

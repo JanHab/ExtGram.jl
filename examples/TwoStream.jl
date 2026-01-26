@@ -2,7 +2,7 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 using LaTeXStrings
 
 # Access arguments by index
@@ -79,8 +79,8 @@ sol = solve(
 summary_callback()
 
 # Access the energy history
-E_L2_history = HyQMOM.ELECTRIC_FIELD.E_L2;
-time_callback = HyQMOM.ELECTRIC_FIELD.times;  # Use actual times from callback
+E_L2_history = ExtGram.ELECTRIC_FIELD.E_L2;
+time_callback = ExtGram.ELECTRIC_FIELD.times;  # Use actual times from callback
 
 # You can then plot it or analyze it
 γ = -0.1533; # theoretical decay rate for k=1/2
@@ -88,7 +88,7 @@ time_callback = HyQMOM.ELECTRIC_FIELD.times;  # Use actual times from callback
 # plot(
 #     time_callback, E_L2_history ./ E_L2_history[1],
 #     xlabel="Time", 
-#     label="HyQMOM M=$M (from callback)",
+#     label="ExtGram M=$M (from callback)",
 #     ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
 #     yaxis=:log,
 #     legend=:bottomleft

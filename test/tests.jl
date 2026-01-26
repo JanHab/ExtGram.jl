@@ -1,7 +1,7 @@
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, StaticArrays
+using ExtGram, StaticArrays
 
 using Test
 

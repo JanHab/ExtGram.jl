@@ -17,13 +17,13 @@ Pkg.instantiate()
 ENV["GKSwstype"] = "100"
 
 using Documenter
-using HyQMOM
+using ExtGram
 
-DocMeta.setdocmeta!(HyQMOM, :DocTestSetup, :(using HyQMOM); recursive=true)
+DocMeta.setdocmeta!(ExtGram, :DocTestSetup, :(using ExtGram); recursive=true)
 
 makedocs(
-    modules = [HyQMOM],
-    sitename = "HyQMOM.jl",
+    modules = [ExtGram],
+    sitename = "ExtGram.jl",
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", "false") == "true"),
     remotes = nothing,

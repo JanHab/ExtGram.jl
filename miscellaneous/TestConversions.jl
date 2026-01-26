@@ -2,7 +2,7 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using HyQMOM, Trixi, Plots
+using ExtGram, Trixi, Plots
 
 M = 8
 closure = "ExtGram"
@@ -32,7 +32,7 @@ for v2_shift in v2_vector
     conservative_moments_full = convective_moments(f1, Val(M+2)) .+ convective_moments(f2, Val(M+2))
     conservative_moments_full = conservative_moments_full .+ SVector{M+2}(0.0, v2_shift, zeros(M)...)
     conservative_moments = conservative_moments_full[1:end-1] # Remove hidden truth
-    conservative_closure = HyQMOM.closure(conservative_moments, equations)
+    conservative_closure = ExtGram.closure(conservative_moments, equations)
 
     # Print accuracy
     # println("Conservative closure accuracy: ")
@@ -42,11 +42,11 @@ for v2_shift in v2_vector
     push!(ϵ_cons, abs((conservative_closure - conservative_moments_full[end]) / conservative_moments_full[end]))
 
 
-    primitive_moments_full = HyQMOM.moment_cons2prim(conservative_moments_full, equations)
+    primitive_moments_full = ExtGram.moment_cons2prim(conservative_moments_full, equations)
     primitive_moments = primitive_moments_full[1:end-1] # Remove hidden truth
-    primitive_closure = HyQMOM.closure(primitive_moments, equations)
+    primitive_closure = ExtGram.closure(primitive_moments, equations)
     primitive_moments_full_with_closure = SVector{M+2}(primitive_moments..., primitive_closure)
-    conservative_moments_full_with_closure = HyQMOM.moment_prim2cons(primitive_moments_full_with_closure, equations)
+    conservative_moments_full_with_closure = ExtGram.moment_prim2cons(primitive_moments_full_with_closure, equations)
 
     # Print accuracy
     # println("Primitive closure accuracy: ")
