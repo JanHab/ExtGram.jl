@@ -2,11 +2,9 @@ from clusterrun import createsbatch
 import os
 
 # Solver and simulation parameters
-M = 4
-closure = "ExtGram"
 T_end = 25.0
-base_tree_level = 6
-polydeg = 1 #!3
+base_tree_level = 10
+polydeg = 1
 
 # Initial condition parameters for distribution function
 rho_0 = 1.0
@@ -21,11 +19,35 @@ nnodes = 1
 time = '04:00:00'
 memory_request = '16G'
 
-command = f"julia examples/LandauDamping.jl {M} {closure} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k}"
-os.system(command)
-# createsbatch(
-#     command, 
-#     nproc=threads, nnodes=nnodes, 
-#     time=time, mem=memory_request, 
-#     output_file=f"out/VlasovPoisson/LandauDamping/slurm_output_M{M}_closure{closure}_T_end{T_end}_rho_0{rho_0}_v_0{v_0}_theta_0{theta_0}_epsilon{epsilon}_k{k}_p{polydeg}_level{base_tree_level}.out"
-# )
+# Varying closures for M=6
+M = 6
+closures = [
+    "Gram",
+    "ExtGram",
+    "Grad"
+]
+for closure in closures:
+    command = f"julia examples/LandauDamping.jl {M} {closure} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k}"
+    os.system(command)
+    # createsbatch(
+    #     command, 
+    #     nproc=threads, nnodes=nnodes, 
+    #     time=time, mem=memory_request, 
+    #     output_file=f"out/VlasovPoisson/LandauDamping/slurm_output_M{M}_closure{closure}_T_end{T_end}_rho_0{rho_0}_v_0{v_0}_theta_0{theta_0}_epsilon{epsilon}_k{k}_p{polydeg}_level{base_tree_level}.out"
+    # )
+
+
+
+# Varying M with fixed closure "ExtGram"
+Moments = [4, 8, 12, 24]
+closure = 'ExtGram'
+
+for M in Moments:
+    command = f"julia examples/LandauDamping.jl {M} {closure} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k}"
+    os.system(command)
+    # createsbatch(
+    #     command, 
+    #     nproc=threads, nnodes=nnodes, 
+    #     time=time, mem=memory_request, 
+    #     output_file=f"out/VlasovPoisson/LandauDamping/slurm_output_M{M}_closure{closure}_T_end{T_end}_rho_0{rho_0}_v_0{v_0}_theta_0{theta_0}_epsilon{epsilon}_k{k}_p{polydeg}_level{base_tree_level}.out"
+    # )
