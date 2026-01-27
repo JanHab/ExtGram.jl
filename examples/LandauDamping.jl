@@ -109,6 +109,5 @@ CSV.write(
     Tables.columntable((
         time=time_callback, E_L2=E_L2_history, 
         E_L2_normalized=E_L2_history ./ E_L2_history[1], 
-        theoretical_decay=γt
     ))
 )

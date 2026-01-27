@@ -31,21 +31,21 @@ memory_request = '16G'
 # Even
 for M in M_vector_even:
         command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
-        os.system(command)
-        # createsbatch(
-        #     command, 
-        #     nproc=threads, nnodes=nnodes, 
-        #     time=time, mem=memory_request, 
-        #     output_file=f"out/Riemann1D/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
-        # )
+        # os.system(command)
+        createsbatch(
+                command, 
+                nproc=threads, nnodes=nnodes, 
+                time=time, mem=memory_request, 
+                output_file=f"out/Riemann1D/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
+        )
 
 # odd
 for M in M_vector_odd:
         command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
         # os.system(command)
         createsbatch(
-            command, 
-            nproc=threads, nnodes=nnodes, 
-            time=time, mem=memory_request, 
-            output_file=f"out/Riemann1D/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
+                command, 
+                nproc=threads, nnodes=nnodes, 
+                time=time, mem=memory_request, 
+                output_file=f"out/Riemann1D/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
         )

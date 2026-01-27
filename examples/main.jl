@@ -51,7 +51,7 @@ v_L = sqrt(3) * Ma
 v_R = sqrt(3) / 2 * (Ma^2 + 1) / Ma
 
 θ_L = 1.0
-# θ_R = (3*Ma^2 - 1) * (Ma^2 + 1) / (4 * Ma^2)
+θ_R = (3*Ma^2 - 1) * (Ma^2 + 1) / (4 * Ma^2)
 
 
 # Setting up everything
