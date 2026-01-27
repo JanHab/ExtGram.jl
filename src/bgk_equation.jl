@@ -68,8 +68,10 @@ function relaxation_source(f, x, t, equations::BGKEquations1D{N}) where {N}
     θ = max.(θ, 1e-12)
     f_Maxwellian = Maxwellian(ρ, v, θ).(equations.c_vec)
     # @assert all(f_Maxwellian .>= 0.0)
-    # return (-1.0 / equations.Kn) * (f .- f_Maxwellian)
+    return (-1.0 / equations.Kn) * (f .- f_Maxwellian)
 
+    # * Some attempt to stabilize the BGK solution, which seems to make it bad for small Knudsen numbers
+    # ? Where is the problem here???
     # Assemble weight matrix A
     A = zeros(3, N)
     A[1, :] .= dc(equations) # ρ = Σ w_i f_i -> A[1, :] = w_i = dc
