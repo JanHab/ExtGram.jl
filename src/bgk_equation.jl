@@ -70,41 +70,41 @@ function relaxation_source(f, x, t, equations::BGKEquations1D{N}) where {N}
     # @assert all(f_Maxwellian .>= 0.0)
     return (-1.0 / equations.Kn) * (f .- f_Maxwellian)
 
-    # * Some attempt to stabilize the BGK solution, which seems to make it bad for small Knudsen numbers
-    # ? Where is the problem here???
-    # Assemble weight matrix A
-    A = zeros(3, N)
-    A[1, :] .= dc(equations) # ρ = Σ w_i f_i -> A[1, :] = w_i = dc
-    A[2, :] .= dc(equations) .* equations.c_vec # ρ v = Σ w_i c_i f_i -> A[2, :] = w_i * c_i
-    A[3, :] .= dc(equations) .* equations.c_vec.^2 # ρ e = Σ w_i c_i^2 f_i -> A[3, :] = w_i * c_i^2
+    # # * Some attempt to stabilize the BGK solution, which seems to make it bad for small Knudsen numbers
+    # # ? Where is the problem here???
+    # # Assemble weight matrix A
+    # A = zeros(3, N)
+    # A[1, :] .= dc(equations) # ρ = Σ w_i f_i -> A[1, :] = w_i = dc
+    # A[2, :] .= dc(equations) .* equations.c_vec # ρ v = Σ w_i c_i f_i -> A[2, :] = w_i * c_i
+    # A[3, :] .= dc(equations) .* equations.c_vec.^2 # ρ e = Σ w_i c_i^2 f_i -> A[3, :] = w_i * c_i^2
 
-    # Assemble left-hand side of Lagrange-multiplier system
-    Ã = zeros(N+3, N+3)
-    Ã[1:N, 1:N] .= I(N) # identity matrix
-    Ã[N+1:N+3, 1:N] .= A
-    Ã[1:N, N+1:N+3] .= A'
-    # Ã[N+1:N+3, N+1:N+3] .= # zeros
+    # # Assemble left-hand side of Lagrange-multiplier system
+    # Ã = zeros(N+3, N+3)
+    # Ã[1:N, 1:N] .= I(N) # identity matrix
+    # Ã[N+1:N+3, 1:N] .= A
+    # Ã[1:N, N+1:N+3] .= A'
+    # # Ã[N+1:N+3, N+1:N+3] .= # zeros
 
-    # Assemble right hand side vector b
-    b = zeros(N+3)
-    # b[1:N] = 0
-    r = SVector{3}(ρ, ρ .* v, ρ .* θ)
-    Δr = r - A * f_Maxwellian
-    b[N+1:N+3] .= Δr - A * f_Maxwellian
+    # # Assemble right hand side vector b
+    # b = zeros(N+3)
+    # # b[1:N] = 0
+    # r = SVector{3}(ρ, ρ .* v, ρ .* θ)
+    # Δr = r - A * f_Maxwellian
+    # b[N+1:N+3] .= Δr - A * f_Maxwellian
 
-    # Solve for Δf
-    Δf_full = Ã \ b
-    Δf = similar(f)
-    Δf .= Δf_full[1:N] # updates for distribution function
-    λ = Δf_full[N+1:N+3] # Lagrange multipliers
+    # # Solve for Δf
+    # Δf_full = Ã \ b
+    # Δf = similar(f)
+    # Δf .= Δf_full[1:N] # updates for distribution function
+    # λ = Δf_full[N+1:N+3] # Lagrange multipliers
 
-    Δf = A' * inv(A * A') * Δr
+    # Δf = A' * inv(A * A') * Δr
 
-    f̃ = f_Maxwellian + Δf
+    # f̃ = f_Maxwellian + Δf
 
-    ρ̃ = trapz(equations.c_vec, f̃)
+    # ρ̃ = trapz(equations.c_vec, f̃)
 
-    return (-1.0 / equations.Kn) * (f .- f̃)
+    # return (-1.0 / equations.Kn) * (f .- f̃)
 end
 
 # Zero source term (collisionless case)
