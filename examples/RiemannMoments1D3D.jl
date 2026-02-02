@@ -7,11 +7,11 @@ using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 # Access arguments by index
 M = 4 #parse(Int, ARGS[1])
 closure = "ExtGram" #ARGS[2] # String # "Gram", "ExtGram" or "Grad"
-Kn = 1.0 #parse(Float64, ARGS[3])
+Kn = 0.1#!1.0 #parse(Float64, ARGS[3])
 # source_string = ARGS[4]
-source_string = "zero_source"#!"relaxation_source"
-source = zero_source #!relaxation_source #zero_source #relaxation_source
-T_end = 25 #parse(Float64, ARGS[5])
+source_string = "relaxation_source"#! "zero_source"#!"relaxation_source"
+source = relaxation_source #!zero_source #!relaxation_source #zero_source #relaxation_source
+T_end = 50 #parse(Float64, ARGS[5])
 base_tree_level = 8 #!2 #parse(Int, ARGS[6]) # e.g. 8
 polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
 
@@ -30,7 +30,7 @@ polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
 # x_lower = -2.0; x_upper = 2.0
 
 # Rankine-Hugoniot
-Ma = 1.4#!3.8
+Ma = 3.8#!1.4#!3.8
 
 ρ_L = 1.0
 ρ_R = (4*Ma^2) / (Ma^2 + 3)
@@ -53,7 +53,13 @@ x_lower = -50; x_upper = 50
 
 domain = (x_lower, x_upper)
 
+# # Check IC with Mathematica
+# f_left = Maxwellian1D3D(0.4, (0.0, 0.0, 0.0), 0.6)
+# left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
+# f_right = Maxwellian1D3D(0.6, (1.5, 0.0, 0.0), 0.6)
+# right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
 
+# ic = left .+ right
 
 # Setting up everything
 equations = GramianMomentEquations1D3D(M, Kn, closure)
@@ -202,7 +208,7 @@ v = vec(u[2, :])[1] ./ ρ
 plot(x, (ρ .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2, xlim=(-10, 10))
 plot(x, (v .- v_R1) ./ (v_L1 - v_R1), label="v", lw=2, xlim=(-10, 10))
 # plot(x, (p .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2, xlim=(-10, 10))
-plot(x, (θ .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2, xlim=(-10, 10))
+plot(x, (θ .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2)#!, xlim=(-10, 10))
 
 pl = plot(xlim=(-10, 10), title="T=$(T_end)", size=(500,500), yticks=0:0.1:1);
 plot!(pl, x, (ρ .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2);

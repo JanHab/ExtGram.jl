@@ -200,15 +200,6 @@ struct InitialConditionsShockTube1D3D{N}
 end
 
 function (ic::InitialConditionsShockTube1D3D)(coords, t, equations::GramianMomentEquations1D3D)
-    # return ic.left
-    # M = 4
-    # slab_indices = Int[]
-    # index_start = 0
-    # for i in 0:M
-    #     append!(slab_indices, index_1d(i) .+ index_start) # Offset by shell start
-    #     index_start += size(index(i), 1)
-    # end
-    # if coords[1] < 0.0; return mom_list(1.5, 4)[slab_indices]; else; return mom_list(1.4, 4)[slab_indices]; end
     if coords[1] < 0.0; return ic.left; else; return ic.right; end
 end
 
