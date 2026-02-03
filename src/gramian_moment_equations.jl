@@ -421,9 +421,20 @@ function dCdu(u, equations::GramianMomentEquations1D)
         Derivative of the closure function w.r.t. the moments u
     """
     # automatic differentiation
-    closure_wrapped(x) = closure(x, equations)
-    grad = ForwardDiff.gradient(closure_wrapped, u)
-    return ForwardDiff.value(grad)
+    # closure_wrapped(x) = closure(x, equations)
+    # grad = ForwardDiff.gradient(closure_wrapped, u)
+    # return ForwardDiff.value(grad)
+
+    grad = zeros(length(u))
+    u_aux = zeros(eltype(u), length(u)); @. u_aux = u
+    h = 1e-6 # step size
+    for i in eachindex(u)
+        u_aux[i] += h
+        grad[i] = (closure(u_aux, equations) - closure(u, equations))/h
+        u_aux[i] = u[i]
+    end
+
+    return grad
 end
 
 
