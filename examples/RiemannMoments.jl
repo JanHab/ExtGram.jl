@@ -92,13 +92,12 @@ if polydeg == 1 # only implemented for polydeg=1 (linear basis functions)
     λ_vector = [];
     u_vector = [];
     for x_index in 1:Nloc
-        println("At x = $(x[x_index]):")
         u = SVector{M+1}(Fmat[:, x_index]...)
         jacobian = flux_jacobian(u, equations)
         λ = real.(eigen(jacobian).values)
         
         push!(x_vector, x[x_index])
-        push!(λ_vector, λ...)
+        push!(λ_vector, λ)
         push!(u_vector, u)
     end
 
