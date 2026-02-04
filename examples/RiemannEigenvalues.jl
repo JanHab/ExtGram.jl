@@ -125,7 +125,7 @@ x_vector = [];
 λ_vector = [];
 u_vector = [];
 for x_index in 1:Nloc
-    println("At x = $(x[x_index]):")
+    # println("At x = $(x[x_index]):")
     u = SVector{M+1}(Fmat[:, x_index]...)
     jacobian = flux_jacobian(u, equations)
     λ = real.(eigen(jacobian).values)
