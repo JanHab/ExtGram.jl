@@ -2,7 +2,7 @@ from clusterrun import createsbatch
 import os
 
 # Solver and simulation parameters
-M_vector = [4, 5]
+M_vector = [4, 5, 8, 9]
 closure_vec = ["Gram", "ExtGram"]#!["Gram", "ExtGram", "Grad"]
 Knudsen = [0.1, 1.0, 10.0]
 sources = ["relaxation_source", "relaxation_source", "relaxation_source"]
