@@ -2,10 +2,10 @@ from clusterrun import createsbatch
 import os
 
 # Solver and simulation parameters
-M_vector = [4, 5]#!, 6, 7, 8, 9, 10, 12]
+M_vector = [3, 4, 5]#!, 6, 7, 8, 9, 10, 12]
 closure_vec = ["Gram", "ExtGram", "Grad"]
-Knudsen = [10.0]#![0.1, 1.0]#!, 10.0]
-sources = ["zero_source"] #!"relaxation_source", "relaxation_source"]#!, "zero_source"]
+Knudsen = [0.1, 1.0, 10.0]
+sources = ["relaxation_source", "relaxation_source", "zero_source"]
 T_end = 0.3
 base_tree_level = 10
 polydeg = 1
