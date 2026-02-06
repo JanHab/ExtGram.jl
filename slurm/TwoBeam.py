@@ -4,10 +4,10 @@ import os
 # Solver and simulation parameters
 M_vector = [4, 5]
 closure_vec = ["Gram", "ExtGram"]#!["Gram", "ExtGram", "Grad"]
-Knudsen = [0.1, 1.0, 1.0]
-sources = ["relaxation_source", "relaxation_source", "zero_source"]
+Knudsen = [0.1, 1.0, 10.0]
+sources = ["relaxation_source", "relaxation_source", "relaxation_source"]
 T_end = 0.3
-base_tree_level = 11
+base_tree_level = 10 #!11
 polydeg = 1
 
 # Initial condition parameters for the Riemann problem
