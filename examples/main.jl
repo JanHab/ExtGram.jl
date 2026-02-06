@@ -5,8 +5,8 @@ end # Runs in environment setup
 using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
-M = 8    # number of moments
-closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
+M = 4    # number of moments
+closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
 T_end = 0.3 #!25.0 #!0.3
 source = relaxation_source
