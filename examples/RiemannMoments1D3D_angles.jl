@@ -34,10 +34,14 @@ x_lower = parse(Float64, ARGS[18]) # -2.0
 x_upper = parse(Float64, ARGS[19]) # 2.0
 domain = (x_lower, x_upper)
 
-angles = parse(String, ARGS[20]) # e.g. "[(3.14159, 1.5708), (0.684719, 4.71239), (2.03444, 1.5708), (2.18628, 0.886077)]"
-angle_pairs = eval(Meta.parse(angles)) # convert string to actual array of tuples
-angle_pairs = [SVector{2}(angle...) for angle in angle_pairs] # convert tuples to vectors
-anglepairnumber = parse(Int, ARGS[21]) # e.g. 1, 2, 3, 4, 5 to select one of the pre-defined angle pairs
+angles = [ # maximizing angles
+    (parse(Float64, ARGS[20]), parse(Float64, ARGS[21])),
+    (parse(Float64, ARGS[22]), parse(Float64, ARGS[23])),
+    (parse(Float64, ARGS[24]), parse(Float64, ARGS[25])),
+    (parse(Float64, ARGS[26]), parse(Float64, ARGS[27]))
+]
+
+anglepairnumber = parse(Int, ARGS[28]) # e.g. 1, 2, 3, 4, 5 to select one of the pre-defined angle pairs
 # # pre-defined angles for testing
 # angles1 = [ # maximizing angles
 #     (3.14159, 1.5708),
