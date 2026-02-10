@@ -263,3 +263,36 @@ sol = solve(
 
 # display(pl)
 # end
+
+# Eigenvalues
+if polydeg == 1 # only implemented for polydeg=1 (linear basis functions)
+    n_equations = 10
+    u_final = sol.u[end]
+    L = length(u_final)
+    Nloc = L ÷ (n_equations)
+    Fmat = reshape(u_final, n_equations, Nloc)
+    x = range(x_lower, x_upper, length=Nloc)
+
+    u = []
+    for i in 1:n_equations
+        push!(u, Fmat[i, :])
+    end
+
+    x_vector = [];
+    λ_vector = [];
+    u_vector = [];
+    for x_index in 1:Nloc
+        u = SVector{n_equations}(Fmat[:, x_index]...)
+        jacobian = flux_jacobian(u, equations)
+        λ = real.(eigen(jacobian).values)
+        
+        push!(x_vector, x[x_index])
+        push!(λ_vector, λ)
+        push!(u_vector, u)
+    end
+
+    CSV.write(
+        "out/1D3D/1D3D_angles/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L1$(v_L1)_v_L2$(v_L2)_v_L3$(v_L3)_v_R1$(v_R1)_v_R2$(v_R2)_v_R3$(v_R3)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_anglepairnumber$(anglepairnumber)_eigenvalues.csv",
+        Tables.columntable((x_vector=x_vector, eigenvalue=λ_vector, moments=u_vector))
+    )
+end

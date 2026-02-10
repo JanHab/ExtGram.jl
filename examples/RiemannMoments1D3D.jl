@@ -189,84 +189,119 @@ sol = solve(
 # # summary_callback()
 
 # Post Processing
-n_equations = 10
-u_final = sol.u[end] #!ode.u0 #!sol.u[end]
-L = length(u_final)
-Nloc = L ÷ (n_equations)
-Fmat = reshape(u_final, n_equations, Nloc)
+# n_equations = 10
+# u_final = sol.u[end] #!ode.u0 #!sol.u[end]
+# L = length(u_final)
+# Nloc = L ÷ (n_equations)
+# Fmat = reshape(u_final, n_equations, Nloc)
 
-u = []
-for i in 1:n_equations
-    push!(u, Fmat[i, :])
-end
+# u = []
+# for i in 1:n_equations
+#     push!(u, Fmat[i, :])
+# end
 
-x = range(x_lower, x_upper, length=Nloc)
-ρ = vec(u[1, :])[1]
-v = vec(u[2, :])[1] ./ ρ
-θ = (vec(u[3, :])[1] + vec(u[4, :])[1] + vec(u[4, :])[1]) ./ (3.0 .* ρ)
-# p = ρ .* θ
-# θ = p ./ ρ
-# Plot primitive variables at final time
-plot(x, (ρ .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2, xlim=(-10, 10))
-plot(x, (v .- v_R1) ./ (v_L1 - v_R1), label="v", lw=2, xlim=(-10, 10))
-# plot(x, (p .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2, xlim=(-10, 10))
-plot(x, (θ .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2)#!, xlim=(-10, 10))
+# x = range(x_lower, x_upper, length=Nloc)
+# ρ = vec(u[1, :])[1]
+# v = vec(u[2, :])[1] ./ ρ
+# θ = (vec(u[3, :])[1] + vec(u[4, :])[1] + vec(u[4, :])[1]) ./ (3.0 .* ρ)
+# # p = ρ .* θ
+# # θ = p ./ ρ
+# # Plot primitive variables at final time
+# plot(x, (ρ .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2, xlim=(-10, 10))
+# plot(x, (v .- v_R1) ./ (v_L1 - v_R1), label="v", lw=2, xlim=(-10, 10))
+# # plot(x, (p .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2, xlim=(-10, 10))
+# plot(x, (θ .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2)#!, xlim=(-10, 10))
 
-pl = plot(xlim=(-10, 10), title="T=$(T_end)", size=(500,500), yticks=0:0.1:1);
-plot!(pl, x, (ρ .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2);
-plot!(pl, x, (v .- v_R1) ./ (v_L1 - v_R1), label="v", lw=2);
-# plot!(pl, x, (p .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2)
-plot!(pl, x, (θ .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2);
-display(pl)
+# pl = plot(xlim=(-10, 10), title="T=$(T_end)", size=(500,500), yticks=0:0.1:1);
+# plot!(pl, x, (ρ .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2);
+# plot!(pl, x, (v .- v_R1) ./ (v_L1 - v_R1), label="v", lw=2);
+# # plot!(pl, x, (p .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2)
+# plot!(pl, x, (θ .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2);
+# display(pl)
 
-# Plot first moments
-pl = plot();
-plot!(
-    pl,
-    xlabel="x",
-    ylabel="U_i",
-);
-x = range(x_lower, x_upper, length=Nloc)
-
-plot!(
-    pl,
-    x, u[1, :], 
-    label="U000",
-    color=:blue,
-);
-
-plot!(
-    pl,
-    x, u[2, :], 
-    label="U100",
-    color=:red,
-);
-
-plot!(
-    pl,
-    x, u[3, :], 
-    label="U200",
-    color=:green,
-);
+# # Plot first moments
+# pl = plot();
+# plot!(
+#     pl,
+#     xlabel="x",
+#     ylabel="U_i",
+# );
+# x = range(x_lower, x_upper, length=Nloc)
 
 # plot!(
 #     pl,
-#     x, u[4, :], 
-#     label="U020",
-#     color=:orange,
-# )
-plot!(
-    pl,
-    x, u[5, :], 
-    label="U300",
-    color=:purple,
-);
+#     x, u[1, :], 
+#     label="U000",
+#     color=:blue,
+# );
 
-plot!(
-    pl,
-    x, u[7, :], 
-    label="U400",
-    color=:brown,
-);
+# plot!(
+#     pl,
+#     x, u[2, :], 
+#     label="U100",
+#     color=:red,
+# );
 
-display(pl)
+# plot!(
+#     pl,
+#     x, u[3, :], 
+#     label="U200",
+#     color=:green,
+# );
+
+# # plot!(
+# #     pl,
+# #     x, u[4, :], 
+# #     label="U020",
+# #     color=:orange,
+# # )
+# plot!(
+#     pl,
+#     x, u[5, :], 
+#     label="U300",
+#     color=:purple,
+# );
+
+# plot!(
+#     pl,
+#     x, u[7, :], 
+#     label="U400",
+#     color=:brown,
+# );
+
+# display(pl)
+
+
+
+# Eigenvalues
+if polydeg == 1 # only implemented for polydeg=1 (linear basis functions)
+    n_equations = 10
+    u_final = sol.u[end]
+    L = length(u_final)
+    Nloc = L ÷ (n_equations)
+    Fmat = reshape(u_final, n_equations, Nloc)
+    x = range(x_lower, x_upper, length=Nloc)
+
+    u = []
+    for i in 1:n_equations
+        push!(u, Fmat[i, :])
+    end
+
+    x_vector = [];
+    λ_vector = [];
+    u_vector = [];
+    for x_index in 1:Nloc
+        u = SVector{n_equations}(Fmat[:, x_index]...)
+        jacobian = flux_jacobian(u, equations)
+        λ = real.(eigen(jacobian).values)
+        
+        push!(x_vector, x[x_index])
+        push!(λ_vector, λ)
+        push!(u_vector, u)
+    end
+
+    CSV.write(
+        "out/1D3D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L1$(v_L1)_v_L2$(v_L2)_v_L3$(v_L3)_v_R1$(v_R1)_v_R2$(v_R2)_v_R3$(v_R3)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_eigenvalues.csv",
+        Tables.columntable((x_vector=x_vector, eigenvalue=λ_vector, moments=u_vector))
+    )
+end

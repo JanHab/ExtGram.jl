@@ -31,8 +31,8 @@ nnodes = 1
 time = '08:00:00'
 memory_request = '16G'
 
-# command = f"julia examples/RiemannMoments1D3D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {v_L2} {v_L3} {theta_L} {rho_R} {v_R1} {v_R2} {v_R3} {theta_R} {x_lower} {x_upper}"
-# # os.system(command)
+command = f"julia examples/RiemannMoments1D3D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {v_L2} {v_L3} {theta_L} {rho_R} {v_R1} {v_R2} {v_R3} {theta_R} {x_lower} {x_upper}"
+os.system(command)
 # createsbatch(
 #     command, 
 #     nproc=threads, nnodes=nnodes, 

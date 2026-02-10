@@ -508,34 +508,35 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D3D) = u
 #     grad = ForwardDiff.gradient(closure_wrapped, u)
 #     return ForwardDiff.value(grad)
 # end
-# function dCdu(u, equations::GramianMomentEquations1D3D, h::Float64 = 1e-6)
-#     """
-#         Derivative of the closure function w.r.t. the moments u
-#     """
-#     grad = zeros(eltype(u), 4, length(u))
-#     u_aux = zeros(eltype(u), length(u)); @. u_aux = u
-#     for i in eachindex(u)
-#         u_aux[i] += h
-#         grad[:,i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
-#         u_aux[i] = u[i]
-#     end
-#     return grad
-# end
+function dCdu(u, equations::GramianMomentEquations1D3D, h::Float64 = 1e-6)
+    """
+        Derivative of the closure function w.r.t. the moments u
+    """
+    grad = zeros(eltype(u), 4, length(u))
+    u_aux = zeros(eltype(u), length(u)); @. u_aux = u
+    for i in eachindex(u)
+        u_aux[i] += h
+        grad[:,i] = (closure_transform(u_aux, equations) - closure_transform(u, equations))/h
+        u_aux[i] = u[i]
+    end
+    return grad
+end
 
 
 
-# function flux_jacobian(u, equations::GramianMomentEquations1D3D)
-#     """
-#         Jacobian of the flux function
-#     """
-#     m = length(u)
-#     A = zeros(eltype(u), m, m)
-#     # ToDo: Make generic
-#     for i=1:2 A[i, i+1] = 1 end
-#     for i=3:6 A[i, i+2] = 1 end
-#     A[7:10, :] .= dCdu(u, equations)
-#     return A
-# end
+
+function flux_jacobian(u, equations::GramianMomentEquations1D3D)
+    """
+        Jacobian of the flux function
+    """
+    m = length(u)
+    A = zeros(eltype(u), m, m)
+    # ToDo: Make generic
+    for i=1:2 A[i, i+1] = 1 end
+    for i=3:6 A[i, i+2] = 1 end
+    A[7:10, :] .= dCdu(u, equations)
+    return A
+end
 
 # function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D3D)
 #     """
