@@ -4,10 +4,10 @@ import os
 # Solver and simulation parameters
 M_vector = [4, 5, 8, 9]
 closure_vec = ["Gram", "ExtGram"]#!["Gram", "ExtGram", "Grad"]
-Knudsen = [10.0]#![0.1, 1.0, 10.0] # to run
-sources = ["zero_source"]#!["relaxation_source", "relaxation_source", "zero_source"] # to run
+Knudsen = [0.1, 1.0, 10.0] # to run
+sources = ["relaxation_source", "relaxation_source", "zero_source"] # to run
 T_end = 0.3
-base_tree_level = 10 #!11
+base_tree_level = 10
 polydeg = 1
 
 # Initial condition parameters for the Riemann problem
@@ -50,13 +50,13 @@ for i in range(len(Knudsen)):
             )
 
     # BGK
-    # if source == "zero_source": # semi-analytic solution available, no need to run BGK
-    #     continue
-    # command = f"julia examples/RiemannBGK.jl {N} {c_l} {c_u} {Kn} {source} {T_end} {base_tree_level_BGK} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left_BGK} {x_right_BGK}"
-    # # os.system(command)
-    # createsbatch(
-    #     command, 
-    #     nproc=threads, nnodes=nnodes, 
-    #     time=time, mem=memory_request, 
-    #     output_file=f"out/Riemann1D/BGK/slurm_output_N{N}_c_l{c_l}_c_u{c_u}_Kn{Kn}_source{source}_T{T_end}_base_tree_level{base_tree_level_BGK}_polydeg{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}_x_left{x_left_BGK}_x_right{x_right_BGK}.out"
-    #     )
+    if source == "zero_source": # semi-analytic solution available, no need to run BGK
+        continue
+    command = f"julia examples/RiemannBGK.jl {N} {c_l} {c_u} {Kn} {source} {T_end} {base_tree_level_BGK} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left_BGK} {x_right_BGK}"
+    # os.system(command)
+    createsbatch(
+        command, 
+        nproc=threads, nnodes=nnodes, 
+        time=time, mem=memory_request, 
+        output_file=f"out/Riemann1D/BGK/slurm_output_N{N}_c_l{c_l}_c_u{c_u}_Kn{Kn}_source{source}_T{T_end}_base_tree_level{base_tree_level_BGK}_polydeg{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}_x_left{x_left_BGK}_x_right{x_right_BGK}.out"
+        )
