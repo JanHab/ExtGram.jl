@@ -100,7 +100,7 @@ sol = solve(
 summary_callback()
 
 x = LinRange(domain[1], domain[2], length(sol.u[end]) ÷ N)
-ρ, v, θ, p = ρ_v_θ_p_BGK(sol.u[end], equations)
+ρ, v, θ, p, q = ρ_v_θ_p_BGK(sol.u[end], equations)
 
 p1 = plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(domain[1], domain[2]))
 display(p1)

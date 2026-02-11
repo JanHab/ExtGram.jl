@@ -190,7 +190,8 @@ function ρ_v_θ_p_BGK(semi, sol, equations::BGKEquations1D)
     v = dc(equations) * sum(Fmat .* equations.c_vec, dims=1) ./ ρ
     Θ = dc(equations) * sum(Fmat .* (equations.c_vec .- v).^ 2, dims=1) ./ ρ
     p = ρ .* Θ
-    return vec(x), vec(ρ), vec(v), vec(Θ), vec(p)
+    q = dc(equations) * sum(Fmat .* (equations.c_vec .- v).^ 3, dims=1)
+    return vec(x), vec(ρ), vec(v), vec(Θ), vec(p), vec(q)
 end
 
 function plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))

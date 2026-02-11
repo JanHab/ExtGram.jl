@@ -96,7 +96,7 @@ sol = solve(
 
 summary_callback()
 
-x, ρ, v, θ, p = ρ_v_θ_p_BGK(semi, sol, equations)
+x, ρ, v, θ, p, q = ρ_v_θ_p_BGK(semi, sol, equations)
 
 p1 = plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))
 # display(p1)
@@ -105,5 +105,5 @@ p1 = plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))
 # Store primitive variables in CSV file
 CSV.write(
     "out/Riemann1D/BGK/bgk_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)_rho_v_p.csv",
-    Tables.columntable((x=x, rho=ρ, v=v, p=p))
+    Tables.columntable((x=x, rho=ρ, v=v, p=p, q=q))
 )
