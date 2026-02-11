@@ -6,7 +6,7 @@ using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 # Access arguments by index
 N = parse(Int, ARGS[1])
-c_l = parse(Float64, ARGS[2]) # String # "Gram", "ExtGram" or "Grad"
+c_l = parse(Float64, ARGS[2])
 c_u = parse(Float64, ARGS[3])
 Kn = parse(Float64, ARGS[4])
 source_string = ARGS[5]
