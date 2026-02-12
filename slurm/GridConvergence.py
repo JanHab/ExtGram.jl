@@ -2,12 +2,12 @@ from clusterrun import createsbatch
 import os
 
 # Solver and simulation parameters
-M_vector = [4, 5, 8, 12]
+M_vector = [4, 5]
 closure = "ExtGram"
 Kn = 1.0
 source = "relaxation_source"
 T_end = 0.3
-base_tree_level_vec = [3, 4, 5, 6, 7, 8, 9, 10]#!, 11, 12, 13, 14]
+base_tree_level_vec = [11, 12, 13, 14]#![3, 4, 5, 6, 7, 8, 9, 10]#!, 11, 12, 13, 14]
 polydeg = 1
 
 # Initial condition parameters for the Riemann problem
@@ -24,7 +24,7 @@ x_upper = 2.0
 # SLURM job parameters
 threads = 1
 nnodes = 1
-time = '08:00:00'
+time = '16:00:00'
 memory_request = '16G'
 
 for M in M_vector:
