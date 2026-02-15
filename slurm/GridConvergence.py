@@ -7,7 +7,7 @@ closure = "ExtGram"
 Kn = 1.0
 source = "relaxation_source"
 T_end = 0.3
-base_tree_level_vec = [11, 12, 13, 14]#![3, 4, 5, 6, 7, 8, 9, 10]#!, 11, 12, 13, 14]
+base_tree_level_vec = [13]#!, 14]#![3, 4, 5, 6, 7, 8, 9, 10, 11, 12]#!, 11, 12, 13, 14]
 polydeg = 1
 
 # Initial condition parameters for the Riemann problem

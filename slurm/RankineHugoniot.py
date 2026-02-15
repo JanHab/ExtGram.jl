@@ -3,22 +3,22 @@ import os
 import numpy as np
 
 # Solver and simulation parameters
-Moments = [6]#![4, 8]
-closure_vec = ["Grad"]#!["Gram", "ExtGram", "Grad"]
+Moments = [4, 8]
+closure_vec = ["Gram", "ExtGram", "Grad"]
 Kn = 1.0
 source = "relaxation_source"
 T_end = 25.0
-base_tree_level = 8#!10
+base_tree_level = 9#!10
 polydeg = 1
 
 # Initial condition parameters for the RH problem
-Mach_numbers = [1.4]#![1.4, 2.0]
+Mach_numbers = [1.4]#!, 2.0]
 
 x_left = -20.0
 x_right = 100.0
 
 # BGK
-N = 200
+N = 500
 c_l = -6.0
 c_u = 6.0
 
@@ -36,20 +36,20 @@ for Ma in Mach_numbers:
     theta_L = 1.0
     theta_R = (3*Ma**2 - 1) * (Ma**2 + 1) / (4 * Ma**2)
     # Moment Methods
-    for closure in closure_vec:
-        for M in Moments:
-            command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
-            os.system(command)
-            # createsbatch(
-            #     command, 
-            #     nproc=threads, nnodes=nnodes, 
-            #     time=time, mem=memory_request, 
-            #     output_file=f"out/Riemann1D/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
-            # )
+    # for closure in closure_vec:
+    #     for M in Moments:
+    #         command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
+    #         # os.system(command)
+    #         createsbatch(
+    #             command, 
+    #             nproc=threads, nnodes=nnodes, 
+    #             time=time, mem=memory_request, 
+    #             output_file=f"out/Riemann1D/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
+    #         )
 
-    # # BGK
-    # command = f"julia examples/RiemannBGK.jl {N} {c_l} {c_u} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
-    # # os.system(command)
+    # BGK
+    command = f"julia examples/RiemannBGK.jl {N} {c_l} {c_u} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
+    os.system(command)
     # createsbatch(
     #     command, 
     #     nproc=threads, nnodes=nnodes, 
