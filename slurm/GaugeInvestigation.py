@@ -8,7 +8,7 @@ closure = "ExtGram"
 Kn = 1.0
 source = "relaxation_source"
 T_end = 0.3
-base_tree_level = 6
+base_tree_level = 10
 polydeg = 1
 chi_vector = [-1.0, 0.0, 1.0, 1.5, "optimal", 2.0, 3.0]
 
