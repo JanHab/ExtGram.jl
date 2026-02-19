@@ -140,7 +140,7 @@ ode = semidiscretize(semi, tspan)
 
 cfl = 0.99
 time_interval = 20
-name = "1D3D/1D3D_angles/gram_solution_1D3D_closure$(closure)_Kn$(Kn)_anglepairnumber$(anglepairnumber)_Tend$(T_end)"
+name = "1D3D/1D3D_angles/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L1$(v_L1)_v_L2$(v_L2)_v_L3$(v_L3)_v_R1$(v_R1)_v_R2$(v_R2)_v_R3$(v_R3)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_anglepairnumber$(anglepairnumber)"
 
 alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
