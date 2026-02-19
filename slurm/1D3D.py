@@ -4,8 +4,8 @@ import os
 # Solver and simulation parameters
 M = 4
 closure = "ExtGram"
-Kn = 1.0
-source = "relaxation_source"
+Knudsen = [10.0]#![0.1, 1.0, 10.0]
+sources = ["zero_source"]#!["relaxation_source", "relaxation_source", "zero_source"]
 T_end = 0.3
 base_tree_level = 10
 polydeg = 1
@@ -70,12 +70,15 @@ angles4 = [ # maximizing angles / 2
 
 angle_pairs = [angles1, angles2, angles3, angles4]
 
-for i, angle_pair in enumerate(angle_pairs):
-    command = f"julia examples/RiemannMoments1D3D_angles.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {v_L2} {v_L3} {theta_L} {rho_R} {v_R1} {v_R2} {v_R3} {theta_R} {x_lower} {x_upper} {angle_pair[0]} {angle_pair[1]} {angle_pair[2]} {angle_pair[3]} {angle_pair[4]} {angle_pair[5]} {angle_pair[6]} {angle_pair[7]} {i}"
-    # os.system(command)
-    createsbatch(
-        command, 
-        nproc=threads, nnodes=nnodes, 
-        time=time, mem=memory_request, 
-        output_file=f"out/1D3D/1D3D_angles/slurm_output_1D3D_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L1}_{v_L2}_{v_L3}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R1}_{v_R2}_{v_R3}_theta_R{theta_R}_anglepair{i}.out"
-    )
+for i in range(len(Knudsen)):
+    Kn = Knudsen[i]
+    source = sources[i]
+    for i, angle_pair in enumerate(angle_pairs):
+        command = f"julia examples/RiemannMoments1D3D_angles.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {v_L2} {v_L3} {theta_L} {rho_R} {v_R1} {v_R2} {v_R3} {theta_R} {x_lower} {x_upper} {angle_pair[0]} {angle_pair[1]} {angle_pair[2]} {angle_pair[3]} {angle_pair[4]} {angle_pair[5]} {angle_pair[6]} {angle_pair[7]} {i}"
+        # os.system(command)
+        createsbatch(
+            command, 
+            nproc=threads, nnodes=nnodes, 
+            time=time, mem=memory_request, 
+            output_file=f"out/1D3D/1D3D_angles/slurm_output_1D3D_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L1}_{v_L2}_{v_L3}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R1}_{v_R2}_{v_R3}_theta_R{theta_R}_anglepair{i}.out"
+        )

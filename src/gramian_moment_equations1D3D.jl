@@ -337,6 +337,9 @@ end
 ##########################################################
 ##################### Source term ########################
 ##########################################################
+function zero_source(u, x, t, equations::GramianMomentEquations1D3D)
+    return SVector{10}(ntuple(i->0.0, 10))
+end
 function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
     """
         relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
