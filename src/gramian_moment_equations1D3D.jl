@@ -595,10 +595,12 @@ function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::Gr
     
     # Slab Geometry: Transverse symmetry P_zz = P_yy (P_002 = P_020)
     P_002_l = P_020_l; P_002_r = P_020_r 
+
+    v_kl = p_prim_l[2]; v_kr = p_prim_r[2] # velocity in x-direction (slab geometry)
     
     # Temperature theta = (U_200 + U_020 + U_002) / (3 * rho)
-    θ_l = (P_200_l + P_020_l + P_002_l) / (3 * ρ_l)
-    θ_r = (P_200_r + P_020_r + P_002_r) / (3 * ρ_r)
+    θ_l = 1 / (3 * ρ_l) * (P_200_l + P_020_l + P_002_l - ρ_l * v_kl^2)
+    θ_r = 1 / (3 * ρ_r) * (P_200_r + P_020_r + P_002_r - ρ_r * v_kr^2)
     
     γ = 5.0
     λ_l = ρ_l + γ * sqrt(θ_l) #!Trixi.max_abs_speeds(u_l, equations)
