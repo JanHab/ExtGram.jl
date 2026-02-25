@@ -10,9 +10,9 @@ M = 4 #parse(Int, ARGS[1])
 closure = "ExtGram" #ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = 1.0 #parse(Float64, ARGS[3])
 # source_string = ARGS[4]
-source = relaxation_source #zero_source #relaxation_source
-T_end = 0.2#!0.3 #parse(Float64, ARGS[5])
-base_tree_level = 7 #!2 #parse(Int, ARGS[6]) # e.g. 8
+source = zero_source #!relaxation_source #zero_source #relaxation_source
+T_end = 0.3 #parse(Float64, ARGS[5])
+base_tree_level = 8 #!2 #parse(Int, ARGS[6]) # e.g. 8
 polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
 ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
 v_L1 = 0.0 #!1.0 #!1.5 #parse(Float64, ARGS[9]) # 0.0
@@ -30,15 +30,15 @@ v_R3 = 0.0
 x_lower = -2.0; x_upper = 2.0
 domain = (x_lower, x_upper)
 
-angles = [ # maximizing angles / 2
-    (3.14159/2, 1.5708/2),
-    (0.684719/2, 4.71239/2),
-    (2.03444/2, 1.5708/2),
-    (2.18628/2, 0.886077/2)
-]
+# angles = [ # maximizing angles / 2
+#     (3.14159/2, 1.5708/2),
+#     (0.684719/2, 4.71239/2),
+#     (2.03444/2, 1.5708/2),
+#     (2.18628/2, 0.886077/2)
+# ]
 
 # Setting up everything
-equations = GramianMomentEquations1D3D(M, Kn, closure, angles=angles)
+equations = GramianMomentEquations1D3D(M, Kn, closure)#!, angles=angles)
 
 initial_condition = InitialConditionsShockTube1D3D(
     Maxwellian1D3D(ρ_L, (v_L1, v_L2, v_L3), θ_L), # Density, velocity, temperature
@@ -54,7 +54,7 @@ basis = LobattoLegendreBasis(polydeg)
 # #= crashes for p > 1, i.e. this does not help at all
 indicator_sc = IndicatorHennemannGassner(
     equations, basis,
-    alpha_max = 0.5, #!1.0,#*0.5,#0.1, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
+    alpha_max = 0.15, #!0.5,
     alpha_min = 0.001, #!0.01,#0.01,
     alpha_smooth = true, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
     variable = (u, eqns)->u[1]*u[5]#! *u[5]
@@ -169,48 +169,43 @@ plot!(
     pl,
     xlabel="x",
     ylabel="Moments (x-direction only)",
+    xlims=(-1.0, 1.0)
 );
 x = range(x_lower, x_upper, length=Nloc);
 
+# ρ = vec(u[1, :][1]);
+# v = vec(u[2, :][1]);
+# θ = 1 ./ (3 .* ρ) .* (vec(u[3,:][1]) .+ 2*vec(u[4,:][1]) .- ρ .* v.^2);
+# p = ρ .* θ
+
 plot!(
     pl,
-    x, u[1, :], 
-    label="U000",
+    x, vec(u[1, :][1]),#ρ, 
+    label="U1", #ρ",
     color=:blue,
 );
 
 plot!(
     pl,
-    x, u[2, :], 
-    label="U100",
+    x, vec(u[2, :][1]), 
+    label="U2",
     color=:red,
 );
 
 plot!(
     pl,
-    x, u[3, :], 
-    label="U200",
-    color=:green,
-);
-
-# plot!(
-#     pl,
-#     x, u[4, :], 
-#     label="U020",
-#     color=:orange,
-# )
-plot!(
-    pl,
-    x, u[5, :], 
-    label="300",
-    color=:purple,
-);
+    x, vec(u[3, :][1]),
+    label="U3",
+    color=:green
+)
 
 plot!(
     pl,
-    x, u[7, :], 
-    label="U400",
-    color=:brown,
-);
+    x, vec(u[4, :][1]),
+    label="U4",
+    color=:purple
+)
+
+
 
 display(pl)

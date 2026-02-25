@@ -36,7 +36,7 @@ solver = DGSEM(basis, surface_flux, volume_integral)
 mesh = TreeMesh(
     (domain[1],), (domain[2],), 
     initial_refinement_level=base_tree_level, 
-    n_cells_max=10_000, 
+    n_cells_max=100_000, 
     periodicity=true
 )
 
