@@ -14,7 +14,7 @@ closures = ["Gram", "ExtGram", "Grad"]
 ρ1, v1, θ1 = 0.4, 0.0, 1.0
 ρ2, θ2 = 0.6, 1.0
 
-v2_vector = range(0.5, 4.0, length=200)
+v2_vector = range(0.0001, 4.0, length=200)
 
 colors = [:blue, :red, :green]
 n = length(M_vector)
@@ -55,21 +55,6 @@ for (i, M) in enumerate(M_vector)
         )
     end
 end
-# labels = ["Gram", "ExtGram", "Grad"]
-# labels = ["\n  $(closures[1])\n" "\n  $(closures[2])\n" "\n  $(closures[3])\n"]
-# n_labels = length(closures)
-# # colors = palette(:default)[1:n_labels]'
-# p0 = scatter(
-#     (-n_labels:-1)',(-n_labels:-1)', 
-#     lims=(0,1), legendfontsize=7, 
-#     legend=:left, fg_color_legend = nothing, 
-#     label=labels, fc=colors, 
-#     frame=:none
-# );
-# # display(pl)
-# l = @layout  [grid(3,2) a{0.2w}]
-# plot(pl..., p0, layout=l, size=(800,500))
-# savefig("out/Figures/CompareClosure/ErrorVsVelocity.pdf")
 
 ######################################################
 ################## Order of Moments M ################
@@ -116,10 +101,6 @@ for (i, v2) in enumerate(v2_vector)
         )
     end
 end
-# display(pl)
-# l = @layout  [grid(2,2) a{0.2w}]
-# plot(pl..., p0, layout=l, size=(800,500))
-# savefig("out/Figures/CompareClosure/ErrorVsM.pdf")
 
 M_vector = 4:2:24
 
@@ -162,10 +143,6 @@ for (i, v2) in enumerate(v2_vector)
         )
     end
 end
-# display(pl)
-# l = @layout  [grid(2,2) a{0.2w}]
-# plot(pl..., p0, layout=l, size=(800,500))
-# savefig("out/Figures/CompareClosure/ErrorVsM.pdf")
 
 ######################################################
 ################## Equilibrium Test ##################
