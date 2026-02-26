@@ -4,8 +4,8 @@ import os
 # Solver and simulation parameters
 M = 4
 closure = "ExtGram"
-Knudsen = [10.0]#![0.1, 1.0, 10.0]
-sources = ["zero_source"]#!["relaxation_source", "relaxation_source", "zero_source"]
+Knudsen = [0.1, 1.0]#!, 10.0]
+sources = ["relaxation_source", "relaxation_source"]#!, "zero_source"]
 T_end = 0.3
 base_tree_level = 10
 polydeg = 1

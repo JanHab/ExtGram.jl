@@ -99,14 +99,13 @@ initial_condition = InitialConditionsShockTube1D3D(
 basis = LobattoLegendreBasis(polydeg)
 
 # shock capturing
-# #= crashes for p > 1, i.e. this does not help at all
 indicator_sc = IndicatorHennemannGassner(
     equations, basis,
-    alpha_max = 0.5, #!1.0,#*0.5,#0.1, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
+    alpha_max = 0.15, #! reduce to 0.1 (from 0.5) to reduce the dissipation
     alpha_min = 0.001, #!0.01,#0.01,
     alpha_smooth = true, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
     variable = (u, eqns)->u[1]*u[5]#! *u[5]
-) # ? Seems to restrict to M>=4
+)
 
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
