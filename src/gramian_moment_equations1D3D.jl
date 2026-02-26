@@ -125,6 +125,8 @@ struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquati
             closure_value = iseven(M) ? :GramEven : :GramOdd
         elseif closure == "ExtGram"
             closure_value = iseven(M) ? :ExtGramEven : :ExtGramOdd
+        elseif closure == "Grad"
+            closure_value = :Grad
         else
             error("Unknown closure type: $closure. Supported types are \"Gram\" and \"ExtGram\".\n.")
         end
@@ -163,42 +165,6 @@ function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D
     known_moments = SVector{6}(ntuple(i->if i <= 2; u[i+1]; else; u[i+2]; end, 6))
     closure_transformation = closure_transform(u, equations)
     return SVector{10}(known_moments..., closure_transformation...)
-    
-    # # The known moments, which are shifted by index for the flux
-    # known_moments_cons = SVector{6}(ntuple(i->if i <= 2; u[i+1]; else; u[i+2]; end, 6))
-
-    # # Use primitve moments for closure
-    # p_prim = cons2prim(u, equations)
-    # closure_transformation_prim = closure_transform(p_prim, equations)
-    
-    # # Concatenate all primitive moments
-    # extended_moments_prim = SVector{14}(p_prim..., closure_transformation_prim...)
-    
-    # # Define the indices of the moments
-    # MOMENT_INDICES_CLOSURE = (
-    #     (0,0,0), # 1: rho
-    #     (1,0,0), # 2: rho * v
-    #     (2,0,0), # 3: P_xx
-    #     (0,2,0), # 4: P_yy
-    #     (3,0,0), # 5
-    #     (1,2,0), # 6
-    #     (4,0,0), # 7
-    #     (2,2,0), # 8
-    #     (0,4,0), # 9
-    #     (0,2,2),  # 10: P_yyzz (mixed transverse)
-    #     (5,0,0), # 11
-    #     (3,2,0), # 12
-    #     (1,4,0), # 13
-    #     (1,2,2)  # 14
-    # )
-
-    # # Transform back to conservative moments
-    # extended_moments_cons = moment_prim2cons(extended_moments_prim, equations, MOMENT_INDICES_CLOSURE)
-    
-    # # Build flux vector
-    # flux_moments_cons = SVector{10}(known_moments_cons..., extended_moments_cons[11:14]...)
-    
-    # return flux_moments_cons
 end
 
 
@@ -228,15 +194,6 @@ function closure_transform(u, equations)
     target_indices = equations.constants.target_indices
     rhs = Float64[] # To store the rhs
 
-    # closure_string = "ExtGram" # default option
-    # if equations.closure == :GramEven || equations.closure == :GramOdd
-    #     closure_string = "Gram"
-    # end
-    # Grad not implemented yet
-    # elseif equations.closure == :Grad
-    #     closure = "Grad"
-    # end
-    # equations_1D1D = GramianMomentEquations1D(4, 1/equations.inv_Kn, closure_string)
     # Loop over angles
     for (i, (theta, phi)) in enumerate(equations.constants.Angles)
         # Get Rotation Matrix
@@ -247,27 +204,8 @@ function closure_transform(u, equations)
         # Extract (m0, m1, m2, m3, m4)
         substituted = rotated_moments_full[target_indices]
 
-        # Check realizability
-        # is_realizable = all(eigen(gramian(substituted, equations.n)).values .>= 0.0)
-        # if !is_realizable
-        #     println("Warning: Non-realizable moments encountered in closure transformation for angle (θ=$(theta), φ=$(phi)).")
-        #     println("Closure transformation for u: ", u)
-        #     println("Substituted moments: ", substituted)
-        # end
         # Apply closure
         val = closure(substituted, equations)
-        # println("Substituted moments for angle (θ=$(theta), φ=$(phi)): ", substituted)
-        # substituted_prim = cons2prim(substituted, equations_1D1D)
-        # # println("Substituted primitive moments: ", substituted_prim)
-        # val_prim = closure(substituted_prim, equations_1D1D)
-        # # println("Closure result in primitive variables: ", val_prim)
-        # moments_prim = [substituted_prim; val_prim]
-        # # println("Extended primitive moments: ", moments_prim)
-        # moments_cons = moment_prim2cons(moments_prim, equations_1D1D)
-        # # println("Extended conservative moments: ", moments_cons)
-        # val = moments_cons[end]
-        # # println("Closure result in conservative variables: ", val)
-        # # val = prim2cons(val_prim, equations_1D1D)
         push!(rhs, val)
     end
 
@@ -330,6 +268,48 @@ function closure(u, equations::GramianMomentEquations1D3D, ::Val{:ExtGramEven})
         u[2n-1] - u[n:2n-2]'*invG_nm2*u[n:2n-2]
     ) * (
         u[2n] - u[n+1:2n-1]'*invG_nm2*u[n:2n-2]
+    )
+end
+
+# -------------------------
+# Grad closure 
+# -------------------------
+function closure(u::AbstractVector, equations::GramianMomentEquations1D3D, ::Val{:Grad})
+    """
+    closure(u::AbstractVector, equations::GramianMomentEquations1D3D)
+
+    Given convective moments u[1..N] (N = M+1), compute the closure u_{N+1}
+    using Grad's closure.
+
+    Procedure:
+        - Construct Grad's distribution function with unknowns α_k:
+            f_G(c) = f_M(c; ρ,v,θ) * (1 + Σ_{k=0..M} α_k c^k)
+        - Compute α by solving the linear system arising from moment matching:
+            ∫ f_G(c) c^i dc = u_i, i=0..M
+        - Compute closure moment:
+            u_{M+1}^G = ∫ f_G(c) c^{M+1} dc
+    """
+    M = length(u)-1                 # this is M+1 typically
+    
+    ρ = u[1]
+    v = u[2] / ρ
+    Θ = (u[3] / ρ) - v^2 # ? Check this
+
+    # Solve for Grad coefficients α (supports Dual types)
+    α = solve_alpha(u, ρ, v, Θ)
+
+    # Compute closure: u_{M+1}^G = ∫ f_G c^{M+1} dc
+    # with f_G = f_M (1 + Σ_{k=0..M} α_k c^k)
+    T = promote_type(eltype(u), typeof(ρ), typeof(v), typeof(Θ))
+    nquad = 2*(M+2)
+    xF, wF = gausshermite(nquad)
+    x = T.(xF); w = T.(wF)
+    s = sqrt(T(2) * T(Θ))
+    c = T(v) .+ s .* x
+    pref = T(ρ) / sqrt(2 * T(pi) * T(Θ))
+
+    return @views(
+        pref * sum(w .* (c .^ (M+1)) .* (1 .+ sum(α[k+1] .* (c .^ k) for k in 0:M)))
     )
 end
 

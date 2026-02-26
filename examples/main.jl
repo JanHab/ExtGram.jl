@@ -6,9 +6,9 @@ using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
 M = 4    # number of moments
-closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
+closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
-T_end = 0.3 #!25.0 #!0.3
+T_end = 0.3
 source = relaxation_source
 
 # Domain and discretization parameters
@@ -21,7 +21,7 @@ base_tree_level = 8 #!8  # initial mesh refinement level
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
 
-ρ_L = 7.0
+ρ_L = 15.0 #!7.0
 v_L = 0.0
 θ_L = 1.0
 ρ_R = 1.0

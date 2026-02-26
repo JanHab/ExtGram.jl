@@ -52,10 +52,10 @@ struct GramianMomentEquations1D{Mp1, N, RealT <: Real} <: Trixi.AbstractEquation
             closure_value = iseven(M) ? :ExtGramEven : :ExtGramOdd
         elseif closure == "Grad"
             closure_value = :Grad
-        elseif closure == "MaxEnt"
-            closure_value = :MaxEnt
+        # elseif closure == "MaxEnt"
+        #     closure_value = :MaxEnt
         else
-            error("Unknown closure type: $closure. Supported types are \"Gram\", \"ExtGram\", \"Grad\" and \"MaxEnt (work in progress)\n.")
+            error("Unknown closure type: $closure. Supported types are \"Gram\", \"ExtGram\", and \"Grad\".\n.")
         end
         new{M+1, n, typeof(Knudsen)}(inv(Knudsen), χ, n, closure_value)
     end

@@ -7,14 +7,14 @@ using StaticArrays
 
 # Access arguments by index
 M = 4 #parse(Int, ARGS[1])
-closure = "ExtGram" #ARGS[2] # String # "Gram", "ExtGram" or "Grad"
+closure = "Grad" #ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = 1.0 #parse(Float64, ARGS[3])
 # source_string = ARGS[4]
-source = zero_source #!relaxation_source #zero_source #relaxation_source
+source = relaxation_source #zero_source #relaxation_source
 T_end = 0.3 #parse(Float64, ARGS[5])
 base_tree_level = 8 #!2 #parse(Int, ARGS[6]) # e.g. 8
 polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
-ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
+ρ_L = 15.0 #parse(Float64, ARGS[8]) # 7.0
 v_L1 = 0.0 #!1.0 #!1.5 #parse(Float64, ARGS[9]) # 0.0
 v_L2 = 0.0
 v_L3 = 0.0
