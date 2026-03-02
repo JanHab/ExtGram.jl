@@ -14,7 +14,7 @@ closures = ["Gram", "ExtGram", "Grad"]
 ρ1, v1, θ1 = 0.4, 0.0, 1.0
 ρ2, θ2 = 0.6, 1.0
 
-v2_vector = range(0.0001, 4.0, length=200)
+v2_vector = range(1e-4, 4.0, length=200)
 
 colors = [:blue, :red, :green]
 n = length(M_vector)
