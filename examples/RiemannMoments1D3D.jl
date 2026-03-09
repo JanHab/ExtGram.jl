@@ -28,48 +28,13 @@ v_R3 = parse(Float64, ARGS[16]) # 0.0
 θ_R = parse(Float64, ARGS[17]) # 1.0
 
 # x_lower = -2.0; x_upper = 2.0
-x_lower = parse(Float64, ARGS[18]) # -20.0
-x_upper = parse(Float64, ARGS[19]) # 100.0
-
-# # Rankine-Hugoniot
-# Ma = 3.8#!1.4#!3.8
-
-# ρ_L = 1.0
-# ρ_R = (4*Ma^2) / (Ma^2 + 3)
-
-# v_L1 = sqrt(5/3) * Ma
-# v_L2 = 0.0
-# v_L3 = 0.0
-# v_R1 = sqrt(5/3) * (Ma^2 + 3.0) / (4.0 * Ma)
-# v_R2 = 0.0
-# v_R3 = 0.0
-
-# θ_L = 1.0
-# θ_R = ( (5*Ma^2 - 1) * (Ma^2 + 3) ) / (16 * Ma^2)
-
-# # x_lower = -30; x_upper = 30
-# x_lower = -50; x_upper = 50
-
-
-
-
+x_lower = parse(Float64, ARGS[18]) 
+x_upper = parse(Float64, ARGS[19]) 
 domain = (x_lower, x_upper)
 
-# # Check IC with Mathematica
-# f_left = Maxwellian1D3D(0.4, (0.0, 0.0, 0.0), 0.6)
-# left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
-# f_right = Maxwellian1D3D(0.6, (1.5, 0.0, 0.0), 0.6)
-# right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
-
-# ic = left .+ right
 
 # Setting up everything
 equations = GramianMomentEquations1D3D(M, Kn, closure)
-# Mp1 = 35
-# f_left = Maxwellian1D3D(ρ_L, (v_L1, v_L2, v_L3), θ_L)
-# left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
-# f_right = Maxwellian1D3D(ρ_R, (v_R1, v_R2, v_R3), θ_R)
-# right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
 initial_condition = InitialConditionsShockTube1D3D(
     Maxwellian1D3D(ρ_L, (v_L1, v_L2, v_L3), θ_L), # Density, velocity, temperature
     Maxwellian1D3D(ρ_R, (v_R1, v_R2, v_R3), θ_R), # Shock in density, but not velocity, temperature initially
@@ -170,8 +135,8 @@ callbacks = CallbackSet(
     alive_callback,
     stepsize_callback,
     plot_callback,
-    #! save_solution_cons,
-    #! save_solution_prim,
+    save_solution_cons,
+    save_solution_prim,
 )
 
 #= solve =#

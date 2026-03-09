@@ -5,30 +5,30 @@ end # Runs in environment setup
 using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 # Access arguments by index
-N = 500 #!parse(Int, ARGS[1])
-c_l = -10.0 #"parse(Float64, ARGS[2])
-c_u = 10.0#!parse(Float64, ARGS[3])
-Kn = 1.0 #!parse(Float64, ARGS[4])
-source_string = "relaxation_source" #!ARGS[5]
+N = parse(Int, ARGS[1])
+c_l = parse(Float64, ARGS[2])
+c_u = parse(Float64, ARGS[3])
+Kn = parse(Float64, ARGS[4])
+source_string = ARGS[5]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source # default to zero_source if not relaxation_source
-T_end = 25.0 #!parse(Float64, ARGS[6])
-base_tree_level = 10 #!parse(Int, ARGS[7]) # e.g. 8
-polydeg = 1 #!parse(Int, ARGS[8]) # e.g. 3
-# ρ_L = parse(Float64, ARGS[9]) # 7.0
-# v_L = parse(Float64, ARGS[10]) # 0.0
-# θ_L = parse(Float64, ARGS[11]) # 1.0
-# ρ_R = parse(Float64, ARGS[12]) # 1.0
-# v_R = parse(Float64, ARGS[13]) # 0.0
-# θ_R = parse(Float64, ARGS[14]) # 1.0
-Ma = 2.0
-ρ_L = 1.0
-ρ_R = (2*Ma^2) / (Ma^2 + 1)
-v_L = sqrt(3) * Ma
-v_R = sqrt(3) / 2 * (Ma^2 + 1) / Ma
-θ_L = 1.0
-θ_R = (3*Ma^2 - 1) * (Ma^2 + 1) / (4 * Ma^2)
-x_left = -20.0 #!parse(Float64, ARGS[15]) # -5.0
-x_right = 100.0 #!parse(Float64, ARGS[16]) # 5.0
+T_end = parse(Float64, ARGS[6])
+base_tree_level = parse(Int, ARGS[7]) # e.g. 8
+polydeg = parse(Int, ARGS[8]) # e.g. 3
+ρ_L = parse(Float64, ARGS[9]) # 7.0
+v_L = parse(Float64, ARGS[10]) # 0.0
+θ_L = parse(Float64, ARGS[11]) # 1.0
+ρ_R = parse(Float64, ARGS[12]) # 1.0
+v_R = parse(Float64, ARGS[13]) # 0.0
+θ_R = parse(Float64, ARGS[14]) # 1.0
+# Ma = 2.0
+# ρ_L = 1.0
+# ρ_R = (2*Ma^2) / (Ma^2 + 1)
+# v_L = sqrt(3) * Ma
+# v_R = sqrt(3) / 2 * (Ma^2 + 1) / Ma
+# θ_L = 1.0
+# θ_R = (3*Ma^2 - 1) * (Ma^2 + 1) / (4 * Ma^2)
+x_left = parse(Float64, ARGS[15]) # -5.0
+x_right = parse(Float64, ARGS[16]) # 5.0
 domain = (x_left, x_right)
 
 # Setting up everything
