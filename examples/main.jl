@@ -13,11 +13,9 @@ source = relaxation_source
 
 # Domain and discretization parameters
 x_lower = -2.0; x_upper = 2.0
-# x_lower = -20.0; x_upper = 100.0
-# x_lower = -50; x_upper = 50
 domain = (x_lower, x_upper)
 polydeg = 1  # polynomial degree
-base_tree_level = 8 #!8  # initial mesh refinement level
+base_tree_level = 8 # initial mesh refinement level
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
 
@@ -27,32 +25,6 @@ v_L = 0.0
 ρ_R = 1.0
 v_R = 0.0
 θ_R = 1.0
-
-# Rankine-Hugoniot conditions for shock tube
-# ρ_L = 1.0
-# θ_L = 1.0
-# p_L = ρ_L * θ_L
-# Ma = 1.0001
-# γ = 5.0/3.0
-# ρ_R = ρ_L * (Ma^2 * (γ+1)) / (2 + Ma^2 * (γ - 1))
-# p_R = p_L * (1 - γ + 2 * γ * Ma^2) / (1 + γ)
-# θ_R = p_R / ρ_R
-# c_L = sqrt(γ * p_L / ρ_L) # speed of sound left
-# v_L = Ma * c_L
-# v_R = v_L * ρ_L / ρ_R
-
-# Cai
-# Ma = 1.4
-
-# ρ_L = 1.0
-# ρ_R = 2*Ma^2 / (Ma^2 + 1)
-
-# v_L = sqrt(3) * Ma
-# v_R = sqrt(3) / 2 * (Ma^2 + 1) / Ma
-
-# θ_L = 1.0
-# θ_R = (3*Ma^2 - 1) * (Ma^2 + 1) / (4 * Ma^2)
-
 
 # Setting up everything
 equations = GramianMomentEquations1D(M, Kn, closure)
