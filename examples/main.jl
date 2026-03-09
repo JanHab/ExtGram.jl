@@ -6,7 +6,7 @@ using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
 M = 4    # number of moments
-closure = "Grad" # flag for closure: "Gram", "ExtGram", "Grad"
+closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
 T_end = 0.3
 source = relaxation_source
@@ -21,7 +21,7 @@ base_tree_level = 8 #!8  # initial mesh refinement level
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
 
-ρ_L = 15.0 #!7.0
+ρ_L = 7.0
 v_L = 0.0
 θ_L = 1.0
 ρ_R = 1.0
@@ -111,22 +111,6 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     plot_interval = 20,  # plot every 20 steps
     name="gram_solution",
 )
-
-# amr_controller = ControllerThreeLevel(
-#     semi, indicator_sc;
-#     base_level=base_tree_level-3,
-#     med_level=base_tree_level, med_threshold=0.1,
-#     max_level=base_tree_level+3, max_threshold=0.6
-# )
-
-# amr_callback = AMRCallback(
-#     semi, amr_controller,
-#     interval=5,
-#     adapt_initial_condition=true,
-#     adapt_initial_condition_only_refine=true
-# )
-
-# callbacks = CallbackSet(callbacks, amr_callback)
 
 
 
