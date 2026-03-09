@@ -3,19 +3,6 @@
 # miscellaneous testing stuff
 test_closure(u, equations::GramianMomentEquations1D) = test_closure(u, Val(length(u)-1), Val(equations.closure))
 
-# todo: update to new closure
-# M3, extended
-# function test_closure(u, M::Val{3}, closure::Val{:ExtGramOdd}) # Todo: <:Vector, <:SVector?? for u
-#     @assert length(u) == 4
-#     M = 3
-#     n = (M+1)/2
-#     χ = (n+1)/(2n)
-#     A = u[4]*u[2]/u[1]
-#     B = (u[4] - u[3]*u[2]/u[1])^2
-#     C = u[3] - u[2]*u[2]/u[1]
-#     return A + χ * B / C
-# end
-
 # M3, standard
 function test_closure(u, M::Val{3}, closure::Val{:GramOdd})
     @assert length(u) == 4
@@ -45,22 +32,6 @@ function test_closure(u, M::Val{4}, closure::Val{:GramEven})
     a = [u[4], u[5]]'*G*[u[3], u[4]]
     return a
 end
-
-# todo: update to new closure
-# M5, extended
-# function test_closure(u, M::Val{5}, closure::Val{:ExtGramOdd})
-#     @assert length(u) == 6
-#     A_ = u[5]*(u[3]^2-u[2]*u[4])
-#     B_ = u[6]*(-u[2]*u[3]+u[1]*u[4])
-#     C_ = 1/(u[1]*u[3]-u[2]^2)
-#     A = C_ * (A_ + B_)
-#     D = u[5] - C_ * (u[3]*(u[3]^2 - u[2]*u[4]) + u[4] * (-u[2]*u[3] + u[1]*u[4]))
-#     B = u[6] - C_ * (u[4]*(u[3]^2-u[2]*u[4]) + u[5]*(-u[2]*u[3]+u[1]*u[4]))
-#     M = 5
-#     n = (M+1)/2
-#     χ = (n+1)/(2n)
-#     return A + χ * B^2 / D
-# end
 
 function test_closure(u, M::Val{5}, closure::Val{:GramOdd})
     @assert length(u) == 6
