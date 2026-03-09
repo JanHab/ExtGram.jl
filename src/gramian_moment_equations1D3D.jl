@@ -44,14 +44,6 @@ function init_constants(M::Int, angles::Vector{Tuple{Float64,Float64}} = [
     # Compile the function
     fp_func = compile_fp(M+1)
     
-    # # Define Angles - hard-coded for M=4
-    # angles = [
-    #     (3.14159, 1.5708),
-    #     (0.684719, 4.71239),
-    #     (2.03444, 1.5708),
-    #     (2.18628, 0.886077)
-    # ]
-    
     # Compute Matrix A immediately
     results = [fp_func(theta, phi) for (theta, phi) in angles]
     A_matrix = Matrix(hcat(results...)')
