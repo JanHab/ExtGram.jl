@@ -28,7 +28,7 @@ closures = [
 ]
 for M in Moments:
     for closure in closures:
-        command = f"julia examples/LandauDamping.jl {M} {closure} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k}"
+        command = f"julia examples/Vlasov_LandauDamping.jl {M} {closure} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k}"
         # os.system(command)
         createsbatch(
             command, 
@@ -44,7 +44,7 @@ Moments = [4, 5, 8, 9, 12, 13]
 closure = 'ExtGram'
 
 for M in Moments:
-    command = f"julia examples/LandauDamping.jl {M} {closure} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k}"
+    command = f"julia examples/Vlasov_LandauDamping.jl {M} {closure} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k}"
     # os.system(command)
     createsbatch(
         command, 

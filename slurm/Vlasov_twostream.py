@@ -19,7 +19,7 @@ time = '16:00:00'
 memory_request = '16G'
 
 for M in Moments:
-    command = f"julia examples/TwoStream.jl {M} {closure} {T_end} {base_tree_level} {polydeg} {epsilon} {k}"
+    command = f"julia examples/Vlasov_TwoStream.jl {M} {closure} {T_end} {base_tree_level} {polydeg} {epsilon} {k}"
     # os.system(command)
     createsbatch(
         command, 

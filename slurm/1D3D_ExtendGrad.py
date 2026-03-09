@@ -33,7 +33,7 @@ memory_request = '16G'
 
 for rho_L in rho_L_vec:
     # 1D1D
-    command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {theta_L} {rho_R} {v_R1} {theta_R} {x_lower} {x_upper}"
+    command = f"julia examples/Shock_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {theta_L} {rho_R} {v_R1} {theta_R} {x_lower} {x_upper}"
     # os.system(command)
     createsbatch(
         command, 
@@ -44,7 +44,7 @@ for rho_L in rho_L_vec:
 
 
     # 1D3D
-    command = f"julia examples/RiemannMoments1D3D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {v_L2} {v_L3} {theta_L} {rho_R} {v_R1} {v_R2} {v_R3} {theta_R} {x_lower} {x_upper}"
+    command = f"julia examples/Shock_1D3D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {v_L2} {v_L3} {theta_L} {rho_R} {v_R1} {v_R2} {v_R3} {theta_R} {x_lower} {x_upper}"
     # os.system(command)
     createsbatch(
         command, 

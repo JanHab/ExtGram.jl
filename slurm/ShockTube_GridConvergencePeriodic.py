@@ -29,7 +29,7 @@ memory_request = '32G'
 
 for M in M_vector:
     for base_tree_level in base_tree_level_vec:
-        command = f"julia examples/GridConvergence.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k} {x_lower} {x_upper}"
+        command = f"julia examples/ShockTube_GridConvergence.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k} {x_lower} {x_upper}"
         # os.system(command)
         createsbatch(
             command, 
