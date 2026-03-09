@@ -4,8 +4,8 @@ import os
 # Solver and simulation parameters
 M = 4
 closure = "ExtGram"
-Knudsen = [0.1, 1.0]#!, 10.0]
-sources = ["relaxation_source", "relaxation_source"]#!, "zero_source"]
+Knudsen = [0.1, 1.0, 10.0]
+sources = ["relaxation_source", "relaxation_source", "zero_source"]
 T_end = 0.3
 base_tree_level = 10
 polydeg = 1
@@ -30,16 +30,6 @@ threads = 1
 nnodes = 1
 time = '08:00:00'
 memory_request = '16G'
-
-# command = f"julia examples/RiemannMoments1D3D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {v_L2} {v_L3} {theta_L} {rho_R} {v_R1} {v_R2} {v_R3} {theta_R} {x_lower} {x_upper}"
-# os.system(command)
-# createsbatch(
-#     command, 
-#     nproc=threads, nnodes=nnodes, 
-#     time=time, mem=memory_request, 
-#     output_file=f"out/1D3D/Moments/slurm_output_1D3D_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L1}_{v_L2}_{v_L3}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R1}_{v_R2}_{v_R3}_theta_R{theta_R}.out"
-# )
-
 
 
 # Checkin on angles

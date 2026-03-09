@@ -11,7 +11,7 @@ base_tree_level = 10
 polydeg = 1
 
 # Initial condition parameters for the Riemann problem
-rho_L_vec = [10, 12, 14]#![4.0, 7.0, 15.0, 30.0]
+rho_L_vec = [4.0, 7.0, 15.0]
 v_L1 = 0.0
 v_L2 = 0.0
 v_L3 = 0.0
