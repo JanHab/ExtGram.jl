@@ -2,8 +2,7 @@ from clusterrun import createsbatch
 import os
 
 # Solver and simulation parameters
-# M = 4
-Moments = [4, 8, 12] #![4, 6, 8, 10, 12]
+Moments = [4, 8, 12]
 closure = "ExtGram"
 Kn = 1.0
 source = "relaxation_source"
