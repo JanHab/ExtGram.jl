@@ -22,7 +22,6 @@ mutable struct ElectricFieldStorage
     Lx::Float64 # Length of the domain (x_max - x_min) for Poisson solve
     x_range::Vector{Float64}    # Spatial grid points
     initialized::Bool   # Flag to check if initialized
-    ρ::Vector{Float64} # todo: remove this later
     MP1::Int    # number of moments + 1
     E_L2::Vector{Float64}   # Track L2 norm of electric field over time
     times::Vector{Float64}  # Track actual times when E_L2 is recorded
@@ -31,7 +30,7 @@ mutable struct ElectricFieldStorage
 end
 
 # Global instance
-const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], 0.0, Float64[], false, Float64[], 0, Float64[], Float64[],
+const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], 0.0, Float64[], false, 0, Float64[], Float64[],
     [Float64[]], Float64[]
 )
 
@@ -106,10 +105,11 @@ function vlasov_poisson_callback(integrator)
 
     # Extract density from solution variables
     # Helps for higher polynomial degrees, but could be optimized further
-    ρ = variables[2:end-1, 1]  # First column is density # todo: why 2:end-1? What's wrong here? The first and last entry seem to be off, though.
-
+    ρ = variables[2:end-1, 1]  # First column is density 
+    
     # Solve Poisson equation globally
     E = solve_poisson_periodic_fft(ρ)
+    
     # Store the electric field
     ELECTRIC_FIELD.E = copy(E)
 
