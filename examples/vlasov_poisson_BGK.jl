@@ -17,8 +17,8 @@ domain = (x_lower, x_upper)
 
 base_tree_level = 5
 
-# todo: need to export BGKEquations1D
-equations = ExtGram.BGKEquations1D(N, c_l, c_u, Kn)
+# todo: need to export DVMEquations1D
+equations = ExtGram.DVMEquations1D(N, c_l, c_u, Kn)
 ρ0 = 1.0; v0 = 0.0; θ0 = 1.0
 ϵ = 0.001
 k = 0.5
@@ -104,7 +104,7 @@ x = LinRange(domain[1], domain[2], length(sol.u[end]) ÷ N)
 
 p1 = plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(domain[1], domain[2]))
 display(p1)
-# savefig(p1, "out/Riemann1D/bgk_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.pdf")
+# savefig(p1, "out/ShockTube/bgk_Kn$(Kn)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_ρ_v_p.pdf")
 
 # Access the energy history
 E_L2_history = ExtGram.ELECTRIC_FIELD_BGK.E_L2

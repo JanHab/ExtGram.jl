@@ -1,3 +1,14 @@
+"""
+    This file provides analysis scripts for the 1D1D moment equations
+    
+    Including: 
+        - plot_ρ_v_p: calculates and plots density, velocity and pressure from the solution
+        - plot_λ_max: calculates and plots the maximum eigenvalue of the flux Jacobian over time
+        - conservation: calculates and plots the total variation in space of density, momentum and energy over time
+        - readsol: reads solution data from a .tvd file (output)
+        - readfile: reads the final time level solution from a .tvd file
+"""
+
 function plot_ρ_v_p(sol, M, x_lower, x_upper)
     """
     Calculates discretization, density, velocity and pressure

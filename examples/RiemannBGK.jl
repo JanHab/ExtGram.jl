@@ -32,7 +32,7 @@ x_right = parse(Float64, ARGS[16]) # 5.0
 domain = (x_left, x_right)
 
 # Setting up everything
-basis, mesh, equations, initial_condition, solver, boundary_conditions = setupBGK1DRiemann(
+basis, mesh, equations, initial_condition, solver, boundary_conditions = setupDVM1DRiemann(
     N, Kn,
     c_l, c_u, 
     Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
@@ -57,7 +57,7 @@ ode = semidiscretize(semi, tspan)
 cfl = 0.99          # Maximum cfl number
 plot_interval = 20  # plot every 20 steps
 time_interval = 20
-name="Riemann1D/BGK/bgk_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)" # name of output files
+name="ShockTube/DVM/DVM_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)" # name of output files
 
 alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
@@ -103,11 +103,11 @@ sol = solve(
 
 summary_callback()
 
-x, ρ, v, θ, p, q = ρ_v_θ_p_BGK(semi, sol, equations)
+x, ρ, v, θ, p, q = ρ_v_θ_p_DVM(semi, sol, equations)
 
-p1 = plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))
+p1 = plot_ρ_v_p_DVM(ρ, v, p, x; xlims=(-2.0, 2.0))
 # display(p1)
-# savefig(p1, "out/Riemann1D/BGK/bgk_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)_rho_v_p.pdf")
+# savefig(p1, "out/ShockTube/DVM/DVM_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)_rho_v_p.pdf")
 
 
 pl = plot(xlim=(-10, 10), title="T=$(T_end)", size=(500,500), yticks=0:0.1:1);
@@ -119,6 +119,6 @@ display(pl)
 
 # Store primitive variables in CSV file
 CSV.write(
-    "out/Riemann1D/BGK/bgk_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)_rho_v_p.csv",
+    "out/ShockTube/DVM/DVM_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)_rho_v_p.csv",
     Tables.columntable((x=x, rho=ρ, v=v, p=p, q=q))
 )

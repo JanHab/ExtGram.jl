@@ -263,7 +263,7 @@ function relaxation_source(u, x, t, equations::GramianMomentEquations1D3D)
     # 3. Transform P_eq back to Conservative U_eq
     u_eq = prim2cons(p_eq, equations)
     
-    # 4. Return BGK source
+    # 4. Return DVM source
     return SVector{10}(-equations.inv_Kn .* (u .- u_eq))
 end
 # Not necessary to redefine zero_source, as the default implementation for the 1D1D case suffices.

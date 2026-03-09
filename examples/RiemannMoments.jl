@@ -55,7 +55,7 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
     cfl = 0.45,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
-    name="Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name of output files
+    name="ShockTube/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name of output files
 )
 
 #= solve =#
@@ -77,7 +77,7 @@ x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
 
 # Store primitive variables in CSV file
 CSV.write(
-    "out/Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.csv",
+    "out/ShockTube/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.csv",
     Tables.columntable((x=x, rho=ρ, v=v, p=p))
 )
 
@@ -102,8 +102,8 @@ if polydeg == 1 # only implemented for polydeg=1 (linear basis functions)
     end
 
     CSV.write(
-        # "out/Riemann1D/eigenvalues.csv",
-        "out/Riemann1D/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_eigenvalues.csv",
+        # "out/ShockTube/eigenvalues.csv",
+        "out/ShockTube/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_eigenvalues.csv",
         Tables.columntable((x_vector=x_vector, eigenvalue=λ_vector, moments=u_vector))
     )
 end

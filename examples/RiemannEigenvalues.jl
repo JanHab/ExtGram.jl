@@ -108,7 +108,7 @@ x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
 
 # Store primitive variables in CSV file
 CSV.write(
-    "out/Riemann1D/ρ_v_p.csv",
+    "out/ShockTube/ρ_v_p.csv",
     Tables.columntable((x=x, rho=ρ, v=v, p=p))
 )
 
@@ -136,6 +136,6 @@ for x_index in 1:Nloc
 end
 
 CSV.write(
-    "out/Riemann1D/eigenvalues.csv",
+    "out/ShockTube/eigenvalues.csv",
     Tables.columntable((x_vector=x_vector, eigenvalue=λ_vector, moments=u_vector))
 )

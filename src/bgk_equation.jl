@@ -1,6 +1,6 @@
-struct BGKEquations1D{N} <: Trixi.AbstractEquations{1, N}
+struct DVMEquations1D{N} <: Trixi.AbstractEquations{1, N}
     """
-    BGK Equations in 1D velocity space with N discrete velocity points.
+    DVM Equations in 1D velocity space with N discrete velocity points.
 
     ∂_t f_k + c_k ∂_x f_k = - (1/Kn) (f_k - f̃_k),  k = 1,...,N
 
@@ -19,21 +19,21 @@ struct BGKEquations1D{N} <: Trixi.AbstractEquations{1, N}
     c_u::Real   # Upper bound of the velocity domain
     c_vec::SVector{N, Float64}  # Velocity grid points
     Kn::Real    # Knudsen number
-    function BGKEquations1D(N::Integer, c_l::Real, c_u::Real, Kn::Real)
+    function DVMEquations1D(N::Integer, c_l::Real, c_u::Real, Kn::Real)
         @assert N > 1 "Number of equations N must be positive"
         @assert c_l < c_u "Lower bound c_l must be smaller than upper bound c_u"
         c_vec = SVector{N, Float64}(Tuple(LinRange(c_l, c_u, N)))
         new{N}(N, c_l, c_u, c_vec, Kn)
     end
 end
-dc(equations::BGKEquations1D) = (equations.c_u - equations.c_l) / (equations.N - 1)
+dc(equations::DVMEquations1D) = (equations.c_u - equations.c_l) / (equations.N - 1)
 
 # * Conservative to Primitive variables and vice versa
-Trixi.varnames(::typeof(cons2cons), ::BGKEquations1D{N}) where {N} = ntuple(i->"f^{$(i-1)}", N)
+Trixi.varnames(::typeof(cons2cons), ::DVMEquations1D{N}) where {N} = ntuple(i->"f^{$(i-1)}", N)
 
-function Trixi.flux(f, orientation::Integer, equations::BGKEquations1D{N}) where {N}
+function Trixi.flux(f, orientation::Integer, equations::DVMEquations1D{N}) where {N}
     """
-    Compute the flux for the BGK equations in 1D velocity space.
+    Compute the flux for the DVM equations in 1D velocity space.
 
     f_i * c_i for i = 1,...,N
     """
@@ -42,9 +42,9 @@ function Trixi.flux(f, orientation::Integer, equations::BGKEquations1D{N}) where
     )
 end
 
-function relaxation_source(f, x, t, equations::BGKEquations1D{N}) where {N} 
+function relaxation_source(f, x, t, equations::DVMEquations1D{N}) where {N} 
     """
-    Compute the BGK relaxation source term with conservation constraints.
+    Compute the DVM relaxation source term with conservation constraints.
 
     Relaxation is: (-1/Kn) * (f - f̃)
 
@@ -70,7 +70,7 @@ function relaxation_source(f, x, t, equations::BGKEquations1D{N}) where {N}
     # @assert all(f_Maxwellian .>= 0.0)
     return (-1.0 / equations.Kn) * (f .- f_Maxwellian)
 
-    # # * Some attempt to stabilize the BGK solution, which seems to make it bad for small Knudsen numbers
+    # # * Some attempt to stabilize the DVM solution, which seems to make it bad for small Knudsen numbers
     # # ? Where is the problem here???
     # # Assemble weight matrix A
     # A = zeros(3, N)
@@ -108,16 +108,16 @@ function relaxation_source(f, x, t, equations::BGKEquations1D{N}) where {N}
 end
 
 # Zero source term (collisionless case)
-zero_source(f, x, t, equations::BGKEquations1D{N}) where {N} = SVector{N}(ntuple(i->0.0, N))
+zero_source(f, x, t, equations::DVMEquations1D{N}) where {N} = SVector{N}(ntuple(i->0.0, N))
 
-function flux_jacobian(u, equations::BGKEquations1D{N}) where {N}
+function flux_jacobian(u, equations::DVMEquations1D{N}) where {N}
     """
-    Compute the flux Jacobian for the BGK equations in 1D velocity space.
+    Compute the flux Jacobian for the DVM equations in 1D velocity space.
     """
     return Diagonal(equations.c_vec)
 end
 
-function Trixi.max_abs_speed_naive(f_l, f_r, orientation::Integer, equations::BGKEquations1D)
+function Trixi.max_abs_speed_naive(f_l, f_r, orientation::Integer, equations::DVMEquations1D)
     """
     Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
     """
@@ -127,7 +127,7 @@ function Trixi.max_abs_speed_naive(f_l, f_r, orientation::Integer, equations::BG
     return λ_max
 end
 
-function Trixi.max_abs_speeds(f, equations::BGKEquations1D)
+function Trixi.max_abs_speeds(f, equations::DVMEquations1D)
     """
     Estimate the flux Jacobian eigenvalues by means of Gerschgorin
     """
@@ -138,15 +138,15 @@ end
 # ========================================================================================== #
 
 # Initial Conditions
-struct InitialConditionsBGK{N}
+struct InitialConditionsDVM{N}
     """
-    Initial conditions for the BGK equations in 1D velocity space.
+    Initial conditions for the DVM equations in 1D velocity space.
     Setups up a Riemann problem with left and right states.
     """
     left::SVector{N}
     right::SVector{N}
 
-    function InitialConditionsBGK(f_left, f_right, equations::BGKEquations1D{N}) where {N}
+    function InitialConditionsDVM(f_left, f_right, equations::DVMEquations1D{N}) where {N}
         left = f_left.(equations.c_vec) #? ones(SVector{N}) * f_left
         right = f_right.(equations.c_vec) #? ones(SVector{N}) * f_right
         @assert all(left .>= 0.0) && all(right .>= 0.0)
@@ -155,7 +155,7 @@ struct InitialConditionsBGK{N}
     end
 end
 
-function (ic::InitialConditionsBGK)(coords, t, equations::BGKEquations1D{N}) where {N}
+function (ic::InitialConditionsDVM)(coords, t, equations::DVMEquations1D{N}) where {N}
     if coords[1] < 0.0; return ic.left; else; return ic.right; end
 end
 
@@ -167,14 +167,14 @@ end
 # physical variables
 # u_i = ∫ c^i f(c) dc, i=1,...,N
 # u_i(x) = ∫ c_k^i f(c_k)|_x dc, k=1,...,N
-function ρ_v_θ_p_BGK(semi, sol, equations::BGKEquations1D)
+function ρ_v_θ_p_DVM(semi, sol, equations::DVMEquations1D)
     """
-    Extract physical variables from the BGK solution.
+    Extract physical variables from the DVM solution.
 
     # Arguments:
     - `semi`: Semi-discretization object (Trixi.jl).
     - `sol`: Solution object containing the solution at different time steps (Trixi.jl).
-    - `equations::BGKEquations1D`: BGK equations object (BGKEquations1D).
+    - `equations::DVMEquations1D`: DVM equations object (DVMEquations1D).
 
     # Returns:
     - `x::Vector{Float64}`: Spatial coordinates.
@@ -194,9 +194,9 @@ function ρ_v_θ_p_BGK(semi, sol, equations::BGKEquations1D)
     return vec(x), vec(ρ), vec(v), vec(Θ), vec(p), vec(q)
 end
 
-function plot_ρ_v_p_bgk(ρ, v, p, x; xlims=(-2.0, 2.0))
+function plot_ρ_v_p_DVM(ρ, v, p, x; xlims=(-2.0, 2.0))
     """
-    Plot physical variables (density, velocity, pressure) from BGK solution.
+    Plot physical variables (density, velocity, pressure) from DVM solution.
 
     # Arguments:
     - `ρ::Vector{Float64}`: Density array.
@@ -238,7 +238,7 @@ end
 
 
 # setup for 1D Riemann
-function setupBGK1DRiemann(
+function setupDVM1DRiemann(
     N, Kn,
     c_l, c_u, 
     ic_left, ic_right;
@@ -249,7 +249,7 @@ function setupBGK1DRiemann(
     domain = (-5.0, 5.0),
     )
     """
-    Helper function to set the 1D BGK equations with Riemann initial conditions up.
+    Helper function to set the 1D DVM equations with Riemann initial conditions up.
 
     # Arguments
     - `N`: Number of discrete velocity points.
@@ -265,13 +265,13 @@ function setupBGK1DRiemann(
     # Returns
     - `basis`: DG basis functions.
     - `mesh`: Computational mesh.
-    - `equations`: BGK equations object.
+    - `equations`: DVM equations object.
     - `initial_condition`: Initial conditions object.
     - `solver`: DGSEM solver object.
     - `boundary_conditions`: Boundary conditions object.
     """
-    equations = BGKEquations1D(N, c_l, c_u, Kn)
-    initial_condition = InitialConditionsBGK(
+    equations = DVMEquations1D(N, c_l, c_u, Kn)
+    initial_condition = InitialConditionsDVM(
         ic_left,
         ic_right,
         equations
@@ -312,7 +312,7 @@ end
 
 # # Global storage for the electric field
 # # This will be updated during each RHS evaluation
-# mutable struct ElectricFieldStorageBGK
+# mutable struct ElectricFieldStorageDVM
 #     E::Vector{Float64}
 #     domain::Tuple{Float64, Float64}
 #     x_range::Vector{Float64}
@@ -328,17 +328,17 @@ end
 # end
 
 # # Global instance
-# const ELECTRIC_FIELD_BGK = ElectricFieldStorageBGK(Float64[], (0.0, 0.0), Float64[], 0, false, Float64[], 0, Float64[], Float64[],
+# const ELECTRIC_FIELD_DVM = ElectricFieldStorageDVM(Float64[], (0.0, 0.0), Float64[], 0, false, Float64[], 0, Float64[], Float64[],
 #     [Float64[]], # todo: remove this later
 #     Float64[],
 #     0.0
 # )
 
 # # Source term that solves Poisson globally and applies local source
-# function vlasov_poisson_source(f, x, t, equations::BGKEquations1D{N}) where {N}
+# function vlasov_poisson_source(f, x, t, equations::DVMEquations1D{N}) where {N}
 #     # todo: hard-coded for the moment
-#     x_range = ELECTRIC_FIELD_BGK.x_range
-#     E_field = linear_interpolation(x_range, ELECTRIC_FIELD_BGK.E, extrapolation_bc = Interpolations.Line())
+#     x_range = ELECTRIC_FIELD_DVM.x_range
+#     E_field = linear_interpolation(x_range, ELECTRIC_FIELD_DVM.E, extrapolation_bc = Interpolations.Line())
     
 #     # Evaluate electric field at position x
 #     E_local = E_field(x[1])
@@ -347,7 +347,7 @@ end
 #     source = MVector{N, Float64}(undef)
 
 #     ∂ᵥf = similar(f)
-#     dc = ELECTRIC_FIELD_BGK.dc
+#     dc = ELECTRIC_FIELD_DVM.dc
 #     # central differences in velocity space
 #     for i in 1:N
 #         if i == 1
@@ -364,9 +364,9 @@ end
 #     return source
 # end
 
-# function solve_poisson_periodic_fft_BGK(ρ::AbstractVector{<:Real})
+# function solve_poisson_periodic_fft_DVM(ρ::AbstractVector{<:Real})
 #     n = length(ρ)
-#     Lx = ELECTRIC_FIELD_BGK.domain[end] - ELECTRIC_FIELD_BGK.domain[1]
+#     Lx = ELECTRIC_FIELD_DVM.domain[end] - ELECTRIC_FIELD_DVM.domain[1]
 #     ρ̃  = ρ .- 1#! mean(ρ)  # neutralizing background
 #     ρk = fft(ρ̃)
 
@@ -394,71 +394,71 @@ end
 # end
 
 # # Callback to solve Poisson equation globally at each timestep
-# function vlasov_poisson_callback_BGK(integrator)
+# function vlasov_poisson_callback_DVM(integrator)
 #     u = integrator.u
 #     t = integrator.t
 
 #     connectivity, coordinates, variables = collect1dTreeArrays(integrator, cons2cons) # cons2cons only relevant for connectivity -> not relevant here
 
 #     Fmat = variables[2:end-1, :]  # First column is density # todo: why 2:end-1? What's wrong here? The first and last entry seem to be off, though.
-#     ρ = vec(ELECTRIC_FIELD_BGK.dc * sum(Fmat, dims=2))
-#     ELECTRIC_FIELD_BGK.variables = variables # todo: remove this later
-#     ELECTRIC_FIELD_BGK.ρ = ρ
-#     ELECTRIC_FIELD_BGK.x_range = vec(coordinates[2:end-1])
+#     ρ = vec(ELECTRIC_FIELD_DVM.dc * sum(Fmat, dims=2))
+#     ELECTRIC_FIELD_DVM.variables = variables # todo: remove this later
+#     ELECTRIC_FIELD_DVM.ρ = ρ
+#     ELECTRIC_FIELD_DVM.x_range = vec(coordinates[2:end-1])
 
 #     # Solve Poisson equation globally
-#     E = solve_poisson_periodic_fft_BGK(ρ)
+#     E = solve_poisson_periodic_fft_DVM(ρ)
 #     # Store the electric field
-#     ELECTRIC_FIELD_BGK.E = copy(E)
+#     ELECTRIC_FIELD_DVM.E = copy(E)
 
 #     # Add energy vector
 #     # Energy = ||E(t,⋅)||_L2 = (∫ |E(t,x)|² dx)^(1/2)  (approximated via trapezoidal rule) -> L2-norm of electric field
-#     E_L2 = trapz(ELECTRIC_FIELD_BGK.x_range, E.^2)^(1/2)
-#     push!(ELECTRIC_FIELD_BGK.E_L2, E_L2)
-#     push!(ELECTRIC_FIELD_BGK.times, t)  # Store the actual time
+#     E_L2 = trapz(ELECTRIC_FIELD_DVM.x_range, E.^2)^(1/2)
+#     push!(ELECTRIC_FIELD_DVM.E_L2, E_L2)
+#     push!(ELECTRIC_FIELD_DVM.times, t)  # Store the actual time
 
-#     ELECTRIC_FIELD_BGK.initialized = true
+#     ELECTRIC_FIELD_DVM.initialized = true
     
 #     return nothing
 # end
 
 # # Create the callback - triggers after each iteration
-# function vlasov_poisson_callback_BGK(;N, mesh, domain, equations)
+# function vlasov_poisson_callback_DVM(;N, mesh, domain, equations)
 #     # Reset the global storage to clear old data from previous runs
-#     empty!(ELECTRIC_FIELD_BGK.E)
-#     empty!(ELECTRIC_FIELD_BGK.E_L2)
-#     empty!(ELECTRIC_FIELD_BGK.times)
-#     empty!(ELECTRIC_FIELD_BGK.ρ)
-#     ELECTRIC_FIELD_BGK.n = 0
-#     ELECTRIC_FIELD_BGK.initialized = false
-#     ELECTRIC_FIELD_BGK.domain = domain
-#     ELECTRIC_FIELD_BGK.c_vec = equations.c_vec
-#     ELECTRIC_FIELD_BGK.dc = dc(equations)
+#     empty!(ELECTRIC_FIELD_DVM.E)
+#     empty!(ELECTRIC_FIELD_DVM.E_L2)
+#     empty!(ELECTRIC_FIELD_DVM.times)
+#     empty!(ELECTRIC_FIELD_DVM.ρ)
+#     ELECTRIC_FIELD_DVM.n = 0
+#     ELECTRIC_FIELD_DVM.initialized = false
+#     ELECTRIC_FIELD_DVM.domain = domain
+#     ELECTRIC_FIELD_DVM.c_vec = equations.c_vec
+#     ELECTRIC_FIELD_DVM.dc = dc(equations)
     
 #     # Set parameters for this run
-#     ELECTRIC_FIELD_BGK.N = N
+#     ELECTRIC_FIELD_DVM.N = N
     
 #     return DiscreteCallback(
 #         (u, t, integrator) -> true,  # Always trigger at every step
-#         vlasov_poisson_callback_BGK,
+#         vlasov_poisson_callback_DVM,
 #         save_positions=(true, true), # ?(false, false),
-#         initialize = (c, u, t, integrator) -> vlasov_poisson_callback_BGK(integrator)  # Call at initialization
+#         initialize = (c, u, t, integrator) -> vlasov_poisson_callback_DVM(integrator)  # Call at initialization
 #     )
 # end
 
-# struct InitialConditionsLandauDamping_BGK{N}
+# struct InitialConditionsLandauDamping_DVM{N}
 #     ρ0::Float64
 #     ϵ::Float64
 #     v0::Float64
 #     θ0::Float64
 #     k::Float64
 
-#     function InitialConditionsLandauDamping_BGK(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::BGKEquations1D{N}) where {N}
+#     function InitialConditionsLandauDamping_DVM(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::DVMEquations1D{N}) where {N}
 #         return new{N}(ρ0, ϵ, v0, θ0, k)
 #     end
 # end
 
-# function (ic::InitialConditionsLandauDamping_BGK)(coords, t, equations::BGKEquations1D{N}) where {N}
+# function (ic::InitialConditionsLandauDamping_DVM)(coords, t, equations::DVMEquations1D{N}) where {N}
 #     ρx = ic.ρ0 * (1 + ic.ϵ * cos(ic.k * coords[1]))
 #     f = Maxwellian(ρx, ic.v0, ic.θ0)
 #     # return convective_moments(f, Val(Mp1))

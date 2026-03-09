@@ -55,8 +55,8 @@ export setupGramianMomentEquations1DRiemann, callbacksGramianMomentEquations
 include("analysis.jl")
 export plot_ρ_v_p, plot_λ_max, conservation, readsol, readfile
 
-# BGK equation
-include("bgk_equation.jl")
-export setupBGK1DRiemann, InitialConditionsBGK, ρ_v_θ_p_BGK, setupBGK1DRiemann, plot_ρ_v_p_bgk
+# DVM equation
+include("DVM_equation.jl")
+export setupDVM1DRiemann, InitialConditionsDVM, ρ_v_θ_p_DVM, setupDVM1DRiemann, plot_ρ_v_p_DVM
 
 end # module ExtGram
