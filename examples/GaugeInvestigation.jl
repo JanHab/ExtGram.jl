@@ -31,7 +31,7 @@ domain = (x_lower, x_upper)
 
 
 # Setting up everything
-basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DRiemann(
+basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DShockTube(
     M, Kn, closure,
     Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
     Maxwellian(ρ_R, v_R, θ_R);

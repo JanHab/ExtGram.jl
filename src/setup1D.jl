@@ -2,7 +2,7 @@
     Some helper functions for setting up 1D Gramian moment equations with Riemann initial conditions
 """
 
-function setupGramianMomentEquations1DRiemann(
+function setupGramianMomentEquations1DShockTube(
     M, Kn, closure, 
     f_left, f_right;
     base_tree_level = 8,

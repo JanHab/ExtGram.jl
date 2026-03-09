@@ -49,7 +49,7 @@ export SaveTriangulationCallback
 
 # Semidiscretization and callbacks
 include("setup1D.jl")
-export setupGramianMomentEquations1DRiemann, callbacksGramianMomentEquations
+export setupGramianMomentEquations1DShockTube, callbacksGramianMomentEquations
 
 # analysis tools
 include("analysis.jl")
