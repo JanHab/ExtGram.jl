@@ -441,3 +441,8 @@ function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::Gr
     λ_r = ρ_r + γ * sqrt(θ_r)
     return max(λ_l, λ_r)
 end
+
+function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
+    # For the moment hard coded, not ideal
+    return 10.0 
+end
