@@ -83,8 +83,8 @@ mkdir out/Figures/CompareClosure
 mkdir out/Figures/EigenvaluesEquilibrium
 mkdir out/Figures/GaugeInvestigation
 mkdir out/Figures/LandauDamping
-mkdir out/Figures/ModelConvergence
 mkdir out/Figures/ShockTube
+mkdir out/Figures/ShockStructure
 mkdir out/Figures/TwoStreamInstability
 mkdir out/GridConvergencePeriodic
 mkdir out/ShockTube
