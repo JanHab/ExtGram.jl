@@ -7,7 +7,7 @@ closure = "Grad"
 Kn = 1.0
 source = "relaxation_source"
 T_end = 0.3
-base_tree_level = 5
+base_tree_level = 10
 polydeg = 1
 
 # Initial condition parameters for the Riemann problem
@@ -41,14 +41,14 @@ memory_request = '16G'
 
 for rho_L in rho_L_vec:
     # 1D1D
-    # command = f"julia examples/Shock_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {theta_L} {rho_R} {v_R1} {theta_R} {x_lower} {x_upper}"
+    command = f"julia examples/Shock_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L1} {theta_L} {rho_R} {v_R1} {theta_R} {x_lower} {x_upper}"
     # os.system(command)
-    # createsbatch(
-    #     command, 
-    #     nproc=threads, nnodes=nnodes, 
-    #     time=time, mem=memory_request, 
-    #     output_file=f"out/ShockTube/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L1}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R1}_theta_R{theta_R}.out"
-    # )
+    createsbatch(
+        command, 
+        nproc=threads, nnodes=nnodes, 
+        time=time, mem=memory_request, 
+        output_file=f"out/ShockTube/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L1}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R1}_theta_R{theta_R}.out"
+    )
 
 
     # 1D3D
