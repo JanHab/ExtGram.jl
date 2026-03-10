@@ -60,13 +60,41 @@ Pkg.instantiate()
 Now we can install the `ExtGram` package locally with:
 
 ``` bash
-
 julia --project
 using Pkg;
 Pkg.instantiate()
 ```
 
 - ToDo: Test this out!
+
+The solutions will be stored in `out`, which is in the .gitignore.
+You need to create it, with all subfolders, manually, with:
+
+``` bash
+mkdir out
+mkdir out/1D3D
+mkdir out/1D3D/1D3D_angles
+mkdir out/1D3D/Moments
+mkdir out/CompareClosure
+mkdir out/Figures
+mkdir out/Figures/1D3D
+mkdir out/Figures/ChiValues
+mkdir out/Figures/CompareClosure
+mkdir out/Figures/EigenvaluesEquilibrium
+mkdir out/Figures/GaugeInvestigation
+mkdir out/Figures/LandauDamping
+mkdir out/Figures/ModelConvergence
+mkdir out/Figures/ShockTube
+mkdir out/Figures/TwoStreamInstability
+mkdir out/GridConvergencePeriodic
+mkdir out/ShockTube
+mkdir out/ShockTube/DVM
+mkdir out/ShockTube/GaugeInvestigation
+mkdir out/ShockTube/Moments
+mkdir out/VlasovPoisson
+mkdir out/VlasovPoisson/LandauDamping
+mkdir out/VlasovPoisson/TwoStreamInstability
+```
 
 ### Testing
 
