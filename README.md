@@ -9,13 +9,13 @@ However, the NSF equations fail for gases with a high Knudsen number and, conseq
 Directly solving Boltzmann's equation is an alternative approach of high accuracy, but is computationally very demanding due to its high dimensionality.
 Another method is to approximate the Boltzmann equation by directly solving for macroscopic properties, such as density, velocity, and temperature, which can be described by moments.
 Therefore, the so-called moment system is solved, which is an infinitely large system of hierarchically coupled partial differential equations (PDEs), with the moments as unknowns.
-The $i$-th PDE depends on the $i$-th moment and is coupled to the $(i+1)$-st PDE, again depending on the $(i+1)$-st moment.
+The $i$-th PDE depends on the i-th moment and is coupled to the (i+1)-st PDE, again depending on the (i+1)-st moment.
 Directly solving the moment system is impossible, as it is infinitely large and always has one unknown more than equations.
-Therefore, the moment system is truncated after $M$ equations, requiring a moment closure for the $(M+1)$-st moment.
+Therefore, the moment system is truncated after $M$ equations, requiring a moment closure for the (M+1)-st moment.
 
 This thesis discusses the extended Gramian closure, a recently invented moment closure based on orthogonal polynomials.
 The extended Gramian closure has attractive structure-preserving properties and overcomes shortcomings of classical closures, such as the lack of global hyperbolicity in Grad's closure and the computational effort required by the maximum entropy closure.
-This work introduces the theoretical framework of the extended Gramian closure and suggests an updated closure under the condition that the equations are truncated with $M$ being odd.
+This work introduces the theoretical framework of the extended Gramian closure and suggests an updated closure under the condition that the equations are truncated with M being odd.
 Rigorous mathematical proofs for the structure-preserving properties of this updated closure are discussed. 
 While the closure is constructed in one dimension, a projection method for applying it to a three-dimensional velocity phase, based on matrix rotations, is introduced.
 Further, the extended Gramian closure is numerically solved with the discontinuous Galerkin method and its accuracy is analyzed and compared with that of the Gramian closure and Grad's closure.
