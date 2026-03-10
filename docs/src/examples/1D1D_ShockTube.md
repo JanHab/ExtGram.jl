@@ -1,6 +1,8 @@
 # Shock Tube Example
 
-This tutorial mirrors the setup from examples/main.jl with parameters tuned for a fast documentation build. It evolves a one-dimensional shock tube and stores the resulting density/velocity/pressure profile.
+This tutorial mirrors the setup from examples/Shock_1D1D.jl with parameters chosen for the shock tube test case. 
+It evolves a one-dimensional shock tube and stores the resulting density/velocity/pressure profile.
+Note: The grid is usually finer, and is coarsened for this example.
 
 ``` julia
 if !endswith(Base.active_project(), "../Project.toml")
