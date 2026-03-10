@@ -11,7 +11,7 @@ Another method is to approximate the Boltzmann equation by directly solving for 
 Therefore, the so-called moment system is solved, which is an infinitely large system of hierarchically coupled partial differential equations (PDEs), with the moments as unknowns.
 The $i$-th PDE depends on the i-th moment and is coupled to the (i+1)-st PDE, again depending on the (i+1)-st moment.
 Directly solving the moment system is impossible, as it is infinitely large and always has one unknown more than equations.
-Therefore, the moment system is truncated after $M$ equations, requiring a moment closure for the (M+1)-st moment.
+Therefore, the moment system is truncated after M equations, requiring a moment closure for the (M+1)-st moment.
 
 This thesis discusses the extended Gramian closure, a recently invented moment closure based on orthogonal polynomials.
 The extended Gramian closure has attractive structure-preserving properties and overcomes shortcomings of classical closures, such as the lack of global hyperbolicity in Grad's closure and the computational effort required by the maximum entropy closure.
