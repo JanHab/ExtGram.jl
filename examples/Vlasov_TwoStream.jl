@@ -89,7 +89,6 @@ CSV.write(
     "out/VlasovPoisson/TwoStreamInstability/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).csv",
     Tables.columntable((
         time=time_callback, E_L2=E_L2_history, 
-        E_L2_normalized=E_L2_history ./ E_L2_history[1], 
-        theoretical_decay=γt
+        E_L2_normalized=E_L2_history ./ E_L2_history[1]
     ))
 )

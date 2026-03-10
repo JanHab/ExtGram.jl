@@ -30,7 +30,7 @@ memory_request = '16G'
 
 # Even
 for M in M_vector_even:
-        command = f"julia examples/ShockTube_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
+        command = f"julia examples/Shock_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
         # os.system(command)
         createsbatch(
                 command, 
@@ -41,7 +41,7 @@ for M in M_vector_even:
 
 # odd
 for M in M_vector_odd:
-        command = f"julia examples/ShockTube_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
+        command = f"julia examples/Shock_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
         # os.system(command)
         createsbatch(
                 command, 
@@ -55,7 +55,7 @@ for M in M_vector_odd:
 rho_L = 30.0
 Moments = [4, 5]
 for M in Moments:
-        command = f"julia examples/ShockTube_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
+        command = f"julia examples/Shock_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
         # os.system(command)
         createsbatch(
                 command, 
@@ -71,8 +71,8 @@ rho_L = 7.0
 closure_vec = ["Gram", "Grad"]
 for closure in closure_vec:
         for M in Moments:
-                command = f"julia examples/ShockTube_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
-                # os.system(command)
+                command = f"julia examples/Shock_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_lower} {x_upper}"
+                os.system(command)
                 createsbatch(
                         command, 
                         nproc=threads, nnodes=nnodes, 
