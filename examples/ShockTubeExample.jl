@@ -159,11 +159,11 @@ display(pl)
 
 
 display(p1)
-savefig(p1, "out/ShockTube/ρ_v_p.pdf")
+savefig(p1, "out/Shock/ρ_v_p.pdf")
 
 # Store primitive variables in CSV file
 CSV.write(
-    "out/ShockTube/ρ_v_p.csv",
+    "out/Shock/ρ_v_p.csv",
     Tables.columntable((x=x, rho=ρ, v=v, p=p))
 )
 
@@ -171,9 +171,9 @@ CSV.write(
 n_plots = 5
 p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
 # display(p2)
-savefig(p2, "out/ShockTube/λ_max.pdf")
+savefig(p2, "out/Shock/λ_max.pdf")
 
 # Plot total variation in space over time
 p3, mass, momentum, energy = conservation(sol, M, semi)
 # display(p3)
-savefig(p3, "out/ShockTube/conservation.pdf")
+savefig(p3, "out/Shock/conservation.pdf")

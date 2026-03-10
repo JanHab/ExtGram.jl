@@ -45,7 +45,7 @@ for Ma in Mach_numbers:
                 command, 
                 nproc=threads, nnodes=nnodes, 
                 time=time, mem=memory_request, 
-                output_file=f"out/ShockTube/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
+                output_file=f"out/Shock/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
             )
 
     # DVM
@@ -55,5 +55,5 @@ for Ma in Mach_numbers:
         command, 
         nproc=threads, nnodes=nnodes, 
         time=time, mem=memory_request, 
-        output_file=f"out/ShockTube/DVM/slurm_output_N{N}_c_l{c_l}_c_u{c_u}_Kn{Kn}_source{source}_T{T_end}_base_tree_level{base_tree_level}_polydeg{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}_x_left{x_left}_x_right{x_right}.out"
+        output_file=f"out/Shock/DVM/slurm_output_N{N}_c_l{c_l}_c_u{c_u}_Kn{Kn}_source{source}_T{T_end}_base_tree_level{base_tree_level}_polydeg{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}_x_left{x_left}_x_right{x_right}.out"
         )

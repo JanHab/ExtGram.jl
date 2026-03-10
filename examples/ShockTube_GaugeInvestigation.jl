@@ -59,7 +59,7 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
     cfl = 0.45,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
-    name="ShockTube/GaugeInvestigation/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_chi$(χ_value)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name of output files
+    name="Shock/GaugeInvestigation/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_chi$(χ_value)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name of output files
 )
 
 #= solve =#

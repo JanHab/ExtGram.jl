@@ -53,7 +53,7 @@ ode = semidiscretize(semi, tspan)
 cfl = 0.99          # Maximum cfl number
 plot_interval = 20  # plot every 20 steps
 time_interval = 20
-name="ShockTube/DVM/DVM_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)" # name of output files
+name="Shock/DVM/DVM_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)" # name of output files
 
 alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
@@ -94,6 +94,6 @@ x, ρ, v, θ, p, q = ρ_v_θ_p_DVM(semi, sol, equations)
 
 # Store primitive variables in CSV file
 CSV.write(
-    "out/ShockTube/DVM/DVM_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)_rho_v_p.csv",
+    "out/Shock/DVM/DVM_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)_rho_v_p.csv",
     Tables.columntable((x=x, rho=ρ, v=v, p=p, q=q))
 )

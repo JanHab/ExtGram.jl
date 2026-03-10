@@ -47,7 +47,7 @@ for rho_L in rho_L_vec:
         command, 
         nproc=threads, nnodes=nnodes, 
         time=time, mem=memory_request, 
-        output_file=f"out/ShockTube/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L1}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R1}_theta_R{theta_R}.out"
+        output_file=f"out/Shock/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L1}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R1}_theta_R{theta_R}.out"
     )
 
 

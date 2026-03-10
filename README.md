@@ -87,10 +87,10 @@ mkdir out/Figures/ShockTube
 mkdir out/Figures/ShockStructure
 mkdir out/Figures/TwoStreamInstability
 mkdir out/GridConvergencePeriodic
-mkdir out/ShockTube
-mkdir out/ShockTube/DVM
-mkdir out/ShockTube/GaugeInvestigation
-mkdir out/ShockTube/Moments
+mkdir out/Shock
+mkdir out/Shock/DVM
+mkdir out/Shock/GaugeInvestigation
+mkdir out/Shock/Moments
 mkdir out/VlasovPoisson
 mkdir out/VlasovPoisson/LandauDamping
 mkdir out/VlasovPoisson/TwoStreamInstability

@@ -33,5 +33,5 @@ for M in Moments:
             command, 
             nproc=threads, nnodes=nnodes, 
             time=time, mem=memory_request, 
-            output_file=f"out/ShockTube/ShockTube_GaugeInvestigation/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_chi{chi_value}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
+            output_file=f"out/Shock/ShockTube_GaugeInvestigation/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_chi{chi_value}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
         )
