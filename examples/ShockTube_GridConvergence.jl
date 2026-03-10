@@ -1,8 +1,7 @@
-using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
+using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
 M = parse(Int, ARGS[1])    # number of moments

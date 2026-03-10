@@ -1,9 +1,7 @@
-using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
-using LaTeXStrings
+using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LaTeXStrings
 
 # Access arguments by index
 M = parse(Int, ARGS[1])

@@ -1,8 +1,7 @@
-using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
+using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 # Access arguments by index
 M = parse(Int, ARGS[1])
@@ -37,7 +36,6 @@ basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGr
     base_tree_level = base_tree_level,
     domain = domain,
     polydeg = polydeg,
-    # alpha_max = 1.0 # ! to be removed again
 )
 
 semi = SemidiscretizationHyperbolic(
@@ -72,15 +70,6 @@ sol = solve(
 
 summary_callback()
 
-# Post Processing
-x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
-
-# Store primitive variables in CSV file
-CSV.write(
-    "out/ShockTube/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_rho_v_p.csv",
-    Tables.columntable((x=x, rho=ρ, v=v, p=p))
-)
-
 # Eigenvalues
 if polydeg == 1 # only implemented for polydeg=1 (linear basis functions)
     u_final = sol.u[end]
@@ -102,7 +91,6 @@ if polydeg == 1 # only implemented for polydeg=1 (linear basis functions)
     end
 
     CSV.write(
-        # "out/ShockTube/eigenvalues.csv",
         "out/ShockTube/Moments/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_eigenvalues.csv",
         Tables.columntable((x_vector=x_vector, eigenvalue=λ_vector, moments=u_vector))
     )

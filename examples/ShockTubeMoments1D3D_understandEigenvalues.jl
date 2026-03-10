@@ -1,9 +1,7 @@
-using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
-using StaticArrays
+using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra, StaticArrays
 
 # Access arguments by index
 M = 4 #parse(Int, ARGS[1])
