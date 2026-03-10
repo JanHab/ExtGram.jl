@@ -1,3 +1,7 @@
+"""
+    Example file for a 1D-1D Two-Stream instability test case.
+"""
+
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
@@ -7,8 +11,8 @@ using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LaTeXStrings
 M = parse(Int, ARGS[1])
 closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 T_end = parse(Float64, ARGS[3])
-base_tree_level = parse(Int, ARGS[4]) # e.g. 8
-polydeg = parse(Int, ARGS[5]) # e.g. 3
+base_tree_level = parse(Int, ARGS[4]) # e.g. 10
+polydeg = parse(Int, ARGS[5]) # e.g. 1
 ϵ = parse(Float64, ARGS[6]) # 0.01
 k = parse(Float64, ARGS[7]) # 0.5
 
@@ -80,18 +84,6 @@ summary_callback()
 E_L2_history = ExtGram.ELECTRIC_FIELD.E_L2;
 time_callback = ExtGram.ELECTRIC_FIELD.times;  # Use actual times from callback
 
-# You can then plot it or analyze it
-γ = -0.1533; # theoretical decay rate for k=1/2
-γt = exp.(γ .* time_callback);
-# plot(
-#     time_callback, E_L2_history ./ E_L2_history[1],
-#     xlabel="Time", 
-#     label="ExtGram M=$M (from callback)",
-#     ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
-#     yaxis=:log,
-#     legend=:bottomleft
-# )
-# savefig("out/VlasovPoisson/TwoStreamInstability/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).pdf")
 # store to csv file
 CSV.write(
     "out/VlasovPoisson/TwoStreamInstability/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).csv",

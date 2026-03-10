@@ -1,3 +1,7 @@
+"""
+    Example file for a 1D-1D shock (tube or structure) test case with the DVM method.
+"""
+
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
@@ -9,23 +13,16 @@ c_l = parse(Float64, ARGS[2])
 c_u = parse(Float64, ARGS[3])
 Kn = parse(Float64, ARGS[4])
 source_string = ARGS[5]
-source = source_string == "relaxation_source" ? relaxation_source : zero_source # default to zero_source if not relaxation_source
+source = source_string == "relaxation_source" ? relaxation_source : zero_source 
 T_end = parse(Float64, ARGS[6])
-base_tree_level = parse(Int, ARGS[7]) # e.g. 8
-polydeg = parse(Int, ARGS[8]) # e.g. 3
+base_tree_level = parse(Int, ARGS[7]) # e.g. 10
+polydeg = parse(Int, ARGS[8]) # e.g. 1
 ρ_L = parse(Float64, ARGS[9]) # 7.0
 v_L = parse(Float64, ARGS[10]) # 0.0
 θ_L = parse(Float64, ARGS[11]) # 1.0
 ρ_R = parse(Float64, ARGS[12]) # 1.0
 v_R = parse(Float64, ARGS[13]) # 0.0
 θ_R = parse(Float64, ARGS[14]) # 1.0
-# Ma = 2.0
-# ρ_L = 1.0
-# ρ_R = (2*Ma^2) / (Ma^2 + 1)
-# v_L = sqrt(3) * Ma
-# v_R = sqrt(3) / 2 * (Ma^2 + 1) / Ma
-# θ_L = 1.0
-# θ_R = (3*Ma^2 - 1) * (Ma^2 + 1) / (4 * Ma^2)
 x_left = parse(Float64, ARGS[15]) # -5.0
 x_right = parse(Float64, ARGS[16]) # 5.0
 domain = (x_left, x_right)
@@ -62,14 +59,6 @@ alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
 stepsize_callback = StepsizeCallback(cfl=cfl)
 
-# plot_callback = VisualizationCallback(
-#     semi;
-#     interval=plot_interval,
-#     solution_variables=cons2cons,
-#     plot_data_creator=PlotData1D,
-#     plot_creator=Trixi.show_plot
-# )
-
 save_solution = SaveTriangulationCallback(
     time_interval=tspan[2]/time_interval,
     save_initial_solution=true,
@@ -84,7 +73,6 @@ save_solution = SaveTriangulationCallback(
 callbacks = CallbackSet(
     alive_callback,
     stepsize_callback,
-    # plot_callback,
     save_solution,
 )
 
@@ -103,18 +91,6 @@ sol = solve(
 summary_callback()
 
 x, ρ, v, θ, p, q = ρ_v_θ_p_DVM(semi, sol, equations)
-
-p1 = plot_ρ_v_p_DVM(ρ, v, p, x; xlims=(-2.0, 2.0))
-# display(p1)
-# savefig(p1, "out/ShockTube/DVM/DVM_solution_N$(N)_c_l$(c_l)_c_u$(c_u)_Kn$(Kn)_source$(source_string)_T_end$(T_end)_rho_L$(ρ_L)_rho_R$(ρ_R)_v_L$(v_L)_v_R$(v_R)_theta_L$(θ_L)_theta_R$(θ_R)_base_tree_level$(base_tree_level)_polydeg$(polydeg)_x_left$(x_left)_x_right$(x_right)_rho_v_p.pdf")
-
-
-pl = plot(xlim=(-10, 10), title="T=$(T_end)", size=(500,500), yticks=0:0.1:1);
-plot!(pl, x, (ρ[:, end] .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2, xlims=(-10, 10));
-plot!(pl, x, (v[:, end] .- v_R) ./ (v_L - v_R), label="v", lw=2, xlims=(-10, 10));
-# plot!(pl, x, (p[:, end] .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2)
-plot!(pl, x, (θ[:, end] .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2, xlims=(-10, 10));
-display(pl)
 
 # Store primitive variables in CSV file
 CSV.write(

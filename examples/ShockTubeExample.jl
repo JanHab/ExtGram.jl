@@ -1,3 +1,9 @@
+"""
+    Example file for a 1D-1D shock (tube or structure) test case.
+
+    Ready to run, as it is, just for testing purposes
+"""
+
 using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")

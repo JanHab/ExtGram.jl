@@ -1,3 +1,9 @@
+"""
+    Example file for a 1D-3D shock (tube or structure) test case with the moment method.
+
+    ! Note: Only implemented for M=4 for now, but can be extended to higher M in the future.
+"""
+
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
@@ -5,14 +11,14 @@ using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 # Access arguments by index
 M = parse(Int, ARGS[1])
-@assert M ==4 # only M=4 is currently supported for 1D3D
+@assert M ==4 # !only M=4 is currently supported for 1D3D
 closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = parse(Float64, ARGS[3])
 source_string = ARGS[4]
-source = source_string == "relaxation_source" ? relaxation_source : zero_source # default to zero_source if not relaxation_source
+source = source_string == "relaxation_source" ? relaxation_source : zero_source 
 T_end = parse(Float64, ARGS[5])
-base_tree_level = parse(Int, ARGS[6]) # e.g. 8
-polydeg = parse(Int, ARGS[7]) # e.g. 3
+base_tree_level = parse(Int, ARGS[6]) # e.g. 10
+polydeg = parse(Int, ARGS[7]) # e.g. 1
 
 # Riemann
 ρ_L = parse(Float64, ARGS[8]) # 7.0
@@ -39,50 +45,10 @@ angles = [ # maximizing angles
     (parse(Float64, ARGS[26]), parse(Float64, ARGS[27]))
 ]
 
-anglepairnumber = parse(Int, ARGS[28]) # e.g. 1, 2, 3, 4, 5 to select one of the pre-defined angle pairs
-# # pre-defined angles for testing
-# angles1 = [ # maximizing angles
-#     (3.14159, 1.5708),
-#     (0.684719, 4.71239),
-#     (2.03444, 1.5708),
-#     (2.18628, 0.886077)
-# ]
-# angles2 = [ # maximizing angles / 2
-#     (3.14159/2, 1.5708/2),
-#     (0.684719/2, 4.71239/2),
-#     (2.03444/2, 1.5708/2),
-#     (2.18628/2, 0.886077/2)
-# ]
-# angles3 = [
-#     (2.4, 0.3),
-#     (0.3, 3.314159),
-#     (1.3, 1.5),
-#     (2.9, 0.7)
-# ]
-# angles4 = [
-#     (2.8, 1.1),
-#     (0.9, 4.3),
-#     (2.5, 1.1),
-#     (2.7, 0.6)
-# ]
-# angles5 = [
-#     (2.3, 3.7),
-#     (1.3, 2.7),
-#     (2.9, 0.1),
-#     (0.7, 0.1)
-# ]
+anglepairnumber = parse(Int, ARGS[28]) 
 
-# angle_pairs = [angles1, angles2, angles3, angles4, angles5]
-# # angle_pairs = [
-# #     [ # maximizing angles * 2
-# #     (2.3, 3.7),
-# #     (1.3, 2.7),
-# #     (2.9, 0.1),
-# #     (0.7, 0.1)#(2.18628, 0.886077)
-# # ]
-# # ]
 
-# for (anglepair, angles) in enumerate(angle_pairs)
+
 # Setting up everything
 equations = GramianMomentEquations1D3D(M, Kn, closure, angles=angles)
 
@@ -99,10 +65,10 @@ basis = LobattoLegendreBasis(polydeg)
 # shock capturing
 indicator_sc = IndicatorHennemannGassner(
     equations, basis,
-    alpha_max = 0.15, #! reduce to 0.1 (from 0.5) to reduce the dissipation
-    alpha_min = 0.001, #!0.01,#0.01,
-    alpha_smooth = true, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
-    variable = (u, eqns)->u[1]*u[5]#! *u[5]
+    alpha_max = 0.15, 
+    alpha_min = 0.001, 
+    alpha_smooth = true,  # smoothes with all neighboring indicators to remove numerical artifacts
+    variable = (u, eqns)->u[1]*u[5]
 )
 
 surface_flux = flux_lax_friedrichs
@@ -190,76 +156,10 @@ sol = solve(
     dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
     ode_default_options()...,
     callback = callbacks,
-    # saveat = range(tspan[1], tspan[2], length=100)
 );
 
-# # summary_callback()
+summary_callback()
 
-# # Post Processing
-# n_equations = 10
-# u_final = sol.u[end] #!ode.u0 #!sol.u[end]
-# L = length(u_final)
-# Nloc = L ÷ (n_equations)
-# Fmat = reshape(u_final, n_equations, Nloc)
-
-# u = []
-# for i in 1:n_equations
-#     push!(u, Fmat[i, :])
-# end
-
-# # Plot first moments
-# pl = plot();
-# plot!(
-#     pl,
-#     title="Riemann Problem Moments 1D3D: M=$(M), closure=$(closure), Kn=$(Kn), source=$(source), T_end=$(T_end)",
-#     xlabel="x",
-#     ylabel="Primitive Variables",
-# );
-# x = range(x_lower, x_upper, length=Nloc);
-
-# plot!(
-#     pl,
-#     x, u[1, :], 
-#     label="U000",
-#     color=:blue,
-# );
-
-# plot!(
-#     pl,
-#     x, u[2, :], 
-#     label="U100",
-#     color=:red,
-# );
-
-# plot!(
-#     pl,
-#     x, u[3, :], 
-#     label="U200",
-#     color=:green,
-# );
-
-# # plot!(
-# #     pl,
-# #     x, u[4, :], 
-# #     label="U020",
-# #     color=:orange,
-# # )
-# plot!(
-#     pl,
-#     x, u[5, :], 
-#     label="300",
-#     color=:purple,
-# );
-
-# plot!(
-#     pl,
-#     x, u[7, :], 
-#     label="U400",
-#     color=:brown,
-# );
-
-# display(pl)
-# end
 
 # Eigenvalues
 if polydeg == 1 # only implemented for polydeg=1 (linear basis functions)

@@ -1,3 +1,7 @@
+"""
+    Example file for a 1D-1D shock (tube or structure) test case with the moment method.
+"""
+
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
@@ -10,20 +14,18 @@ Kn = parse(Float64, ARGS[3])
 source_string = ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source # default to zero_source if not relaxation_source
 T_end = parse(Float64, ARGS[5])
-base_tree_level = parse(Int, ARGS[6]) # e.g. 8
-polydeg = parse(Int, ARGS[7]) # e.g. 3
+base_tree_level = parse(Int, ARGS[6]) # e.g. 10
+polydeg = parse(Int, ARGS[7]) # e.g. 1
 ρ_L = parse(Float64, ARGS[8]) # 7.0
 v_L = parse(Float64, ARGS[9]) # 0.0
 θ_L = parse(Float64, ARGS[10]) # 1.0
 ρ_R = parse(Float64, ARGS[11]) # 1.0
 v_R = parse(Float64, ARGS[12]) # 0.0
 θ_R = parse(Float64, ARGS[13]) # 1.0
-x_lower = parse(Float64, ARGS[14]) # -20.0
-x_upper = parse(Float64, ARGS[15]) # 100.0
-
+x_lower = parse(Float64, ARGS[14]) # -2.0
+x_upper = parse(Float64, ARGS[15]) # 2.0
 
 # Fixed settings
-# x_lower = -20.0; x_upper = 100.0
 domain = (x_lower, x_upper)
 
 

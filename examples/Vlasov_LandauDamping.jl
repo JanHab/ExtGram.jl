@@ -1,3 +1,7 @@
+"""
+    Example file for a 1D-1D Landau damping test case.
+"""
+
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
@@ -7,8 +11,8 @@ using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LaTeXStrings
 M = parse(Int, ARGS[1])
 closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 T_end = parse(Float64, ARGS[3])
-base_tree_level = parse(Int, ARGS[4]) # e.g. 8
-polydeg = parse(Int, ARGS[5]) # e.g. 3
+base_tree_level = parse(Int, ARGS[4]) # e.g. 10
+polydeg = parse(Int, ARGS[5]) # e.g. 1
 ρ_0 = parse(Float64, ARGS[6]) # 1.0
 v_0 = parse(Float64, ARGS[7]) # 0.0
 θ_0 = parse(Float64, ARGS[8]) # 1.0
@@ -46,7 +50,6 @@ mesh = TreeMesh((domain[1],), (domain[2],), initial_refinement_level=base_tree_l
 semi = SemidiscretizationHyperbolic(
     mesh, equations, 
     initial_condition, solver, 
-    # boundary_conditions=boundary_conditions, 
     source_terms=source
 )
 
@@ -82,25 +85,6 @@ summary_callback()
 E_L2_history = ExtGram.ELECTRIC_FIELD.E_L2
 time_callback = ExtGram.ELECTRIC_FIELD.times  # Use actual times from callback
 
-# You can then plot it or analyze it
-# plot(
-#     time_callback, E_L2_history ./ E_L2_history[1],
-#     xlabel="Time", 
-#     label="ExtGram M=$M (from callback)",
-#     ylabel=L"∥E(t,⋅)∥_{L^2} / ∥E(0,⋅)∥_{L^2}", 
-#     yaxis=:log
-# )
-# if k == 0.5
-#     γ = -0.1533 # theoretical decay rate for k=1/2
-#     γt = exp.(γ .* time_callback)
-#     plot!(
-#         time_callback, γt,
-#         label="Theoretical Decay exp($γ t)", 
-#         linestyle=:dash
-#     )
-# end
-# plot!(legend=:bottomleft)
-# savefig("out/VlasovPoisson/LandauDamping/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_rho_0$(ρ_0)_v_0$(v_0)_theta_0$(θ_0)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).pdf")
 # store to csv file
 CSV.write(
     "out/VlasovPoisson/LandauDamping/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_rho_0$(ρ_0)_v_0$(v_0)_theta_0$(θ_0)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).csv",
