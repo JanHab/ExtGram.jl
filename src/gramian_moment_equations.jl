@@ -31,12 +31,12 @@ closure(u, equations::GramianMomentEquations) = closure(u, equations, Val(equati
 # -------------------------
 
 # Even case (classical and extended)
-function closure(u, equations::GramianMomentEquations, ::Val{:GramEven})
-    """
+"""
     closure(u, equations::GramianMomentEquations, ::Val{:GramEven})
 
     Gramian closure for the even case
-    """
+"""
+function closure(u, equations::GramianMomentEquations, ::Val{:GramEven})
     M = length(u)-1 # u[0, ..., M]
     @assert iseven(M)
     n = equations.n 
@@ -46,12 +46,12 @@ function closure(u, equations::GramianMomentEquations, ::Val{:GramEven})
     )
 end
 
-function closure(u, equations::GramianMomentEquations, ::Val{:ExtGramEven})
-    """
+"""
     closure(u, equations::GramianMomentEquations, ::Val{:ExtGramEven})
 
     Extended Gramian closure for the even case
-    """
+"""
+function closure(u, equations::GramianMomentEquations, ::Val{:ExtGramEven})
     M = length(u)-1 # u[0, ..., M]
     @assert iseven(M)
     n = equations.n 
@@ -69,12 +69,12 @@ function closure(u, equations::GramianMomentEquations, ::Val{:ExtGramEven})
 end
 
 # Odd case (classical and extended)
-function closure(u, equations::GramianMomentEquations, ::Val{:GramOdd})
-    """
+"""
     closure(u, equations::GramianMomentEquations, ::Val{:GramOdd})
 
     Gramian closure for the odd case
-    """
+"""
+function closure(u, equations::GramianMomentEquations, ::Val{:GramOdd})
     M = length(u)-1 # u[0, ..., M]
     @assert isodd(M)
     n = equations.n
@@ -84,12 +84,12 @@ function closure(u, equations::GramianMomentEquations, ::Val{:GramOdd})
     )
 end
 
-function closure(u, equations::GramianMomentEquations, ::Val{:ExtGramOdd})
-    """
+"""
     closure(u, equations::GramianMomentEquations, ::Val{:GramOdd})
 
     Extended Gramian closure for the odd case
-    """
+"""
+function closure(u, equations::GramianMomentEquations, ::Val{:ExtGramOdd})
     M = length(u)-1 # u[0, ..., M]
     @assert isodd(M)
     n = equations.n
@@ -148,8 +148,7 @@ end
 # -------------------------
 # Grad closure 
 # -------------------------
-function closure(u::AbstractVector, equations::GramianMomentEquations, ::Val{:Grad})
-    """
+"""
     closure(u::AbstractVector, equations::GramianMomentEquations)
 
     Given convective moments u[1..N] (N = M+1), compute the closure u_{N+1}
@@ -162,7 +161,8 @@ function closure(u::AbstractVector, equations::GramianMomentEquations, ::Val{:Gr
             ∫ f_G(c) c^i dc = u_i, i=0..M
         - Compute closure moment:
             u_{M+1}^G = ∫ f_G(c) c^{M+1} dc
-    """
+"""
+function closure(u::AbstractVector, equations::GramianMomentEquations, ::Val{:Grad})
     M = length(u)-1                 # this is M+1 typically
     
     ρ = u[1]
@@ -187,14 +187,14 @@ function closure(u::AbstractVector, equations::GramianMomentEquations, ::Val{:Gr
     )
 end
 
-function solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
-    """
-        solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
+"""
+    solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
 
-        Given convective moments u[1..N], compute the Grad coefficients α_k by solving the linear system arising from moment matching:
-            ∫ f_G(c) c^i dc = u_i, i=0..M
-        where f_G(c) = f_M(c; ρ,v,θ) * (1 + Σ_{k=0..M} α_k c^k)
-    """
+    Given convective moments u[1..N], compute the Grad coefficients α_k by solving the linear system arising from moment matching:
+        ∫ f_G(c) c^i dc = u_i, i=0..M
+    where f_G(c) = f_M(c; ρ,v,θ) * (1 + Σ_{k=0..M} α_k c^k)
+"""
+function solve_alpha(u::AbstractVector, ρ::Real, v::Real, θ::Real; λ::Float64=0.0)
     # Promote to a common numeric type (supports ForwardDiff.Dual)
     T = promote_type(eltype(u), typeof(ρ), typeof(v), typeof(θ))
     M = length(u)-1
@@ -247,13 +247,13 @@ end
 
 
 # compute Gramian matrix G_n
-function gramian(u, n::Int)
-    """
-        gramian(u, n::Int)
+"""
+    gramian(u, n::Int)
 
-        Gramian matrix
-        G_{ij} = u_{i+j}
-    """
+    Gramian matrix
+    G_{ij} = u_{i+j}
+"""
+function gramian(u, n::Int)
     G = zeros(eltype(u), n+1,n+1)
     for i=1:n+1
         for j=1:n+1

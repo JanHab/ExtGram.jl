@@ -28,7 +28,7 @@ x_right = parse(Float64, ARGS[16]) # 5.0
 domain = (x_left, x_right)
 
 # Setting up everything
-basis, mesh, equations, initial_condition, solver, boundary_conditions = setupDVM1DRiemann(
+basis, mesh, equations, initial_condition, solver, boundary_conditions = setupDVM1DShockTube(
     N, Kn,
     c_l, c_u, 
     Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature

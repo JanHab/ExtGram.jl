@@ -9,8 +9,7 @@
         - readfile: reads the final time level solution from a .tvd file
 """
 
-function plot_ρ_v_p(sol, M, x_lower, x_upper)
-    """
+"""
     Calculates discretization, density, velocity and pressure
 
     Careful: Only works for polydeg=1 (linear basis functions)!
@@ -27,7 +26,8 @@ function plot_ρ_v_p(sol, M, x_lower, x_upper)
     - `v`: velocity values at discretization points
     - `p`: pressure values at discretization points
     - `p_plot`: Plots.jl plot object containing the plots of ρ, v, and p
-    """
+"""
+function plot_ρ_v_p(sol, M, x_lower, x_upper)
     u_final = sol.u[end]
     L = length(u_final)
     Nloc = L ÷ (M+1)
@@ -67,8 +67,7 @@ function plot_ρ_v_p(sol, M, x_lower, x_upper)
 end
 
 # Plot maximum eigenvalue (wave-speed) of flux Jacobian over time
-function plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
-    """
+"""
     Plots the maximum eigenvalue (wave-speed) of the flux Jacobian over time.
 
     Careful: Only works for polydeg=1 (linear basis functions)!
@@ -83,7 +82,8 @@ function plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
 
     # Returns:
     - `p`: Plots.jl plot object containing the maximum eigenvalue plots
-    """
+"""
+function plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
     L = length(sol.u[end]) # get number of local cells (from last time)
     Nloc = L ÷ (M+1)
 
@@ -115,8 +115,7 @@ function plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
 end
 
 # Plot total variation in space of density over time
-function conservation(sol, M::Int, semi)
-    """
+"""
     Plots the total variation in space of density, momentum and energy over time.
 
     # Arguments:
@@ -129,7 +128,8 @@ function conservation(sol, M::Int, semi)
     - `mass`: array of total mass over time
     - `momentum`: array of total momentum over time
     - `energy`: array of total energy over time
-    """
+"""
+function conservation(sol, M::Int, semi)
     solution_variables = cons2cons
 
     mass, momentum, energy = [], [], []
@@ -226,8 +226,7 @@ function conservation(sol, M::Int, semi)
 end
 
 # read solution from tvd file
-function readsol(filename)
-    """
+"""
     Reads solution data from a .tvd file (output).
 
     # Arguments:
@@ -235,7 +234,8 @@ function readsol(filename)
 
     # Returns:
     - `blocks`: Vector of matrices, each matrix corresponds to a time level
-    """
+"""
+function readsol(filename)
     f = open(filename)
     lines = readlines(f)
     n_vars = length(split(lines[3]))-1 # counts coordinates x as var
@@ -261,8 +261,7 @@ function readsol(filename)
     return blocks
 end
 
-function readfile(filename)
-    """
+"""
     Reads the final time level solution from a .tvd file.
 
     # Arguments:
@@ -271,7 +270,8 @@ function readfile(filename)
     # Returns:
     - `x`: Vector of spatial coordinates
     - `u_solutions`: Matrix of solution variables (variables × npts)
-    """
+"""
+function readfile(filename)
     x = Vector{Float64}
     u_solutions = Matrix{Float64}  # (vars × npts) matrix per dataset
 

@@ -83,13 +83,12 @@ function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D
 end
 
 
+"""
+    relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
 
+    RHS = 1/Kn (u - u_eq)
+"""
 function relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    """
-        relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-
-        RHS = 1/Kn (u - u_eq)
-    """
     prim = cons2prim(u, equations); θ = prim[3]
     # Vector for equilibrium moments (primitive); the first three moments are conserved
     eq_moments = MVector{Mp1, Float64}(undef); eq_moments[1:3] = prim[1:3]
@@ -109,10 +108,10 @@ end
 zero_source(u, x, t, eqns::EqT) where {N, EqT <: Trixi.AbstractEquations{1, N}} = SVector{N}(ntuple(i->0.0, N))
 
 
+"""
+    computes c^n = v^n + 0 + (n over 2) v^(n-2)C^2 + ... + (n over 1) vC^(n-1) + C^n, where u[k] is the primitive moment arising from C^(k-1) 
+"""
 function binomial_moment_sum(u, n::Integer=length(u)-1)
-    """
-        computes c^n = v^n + 0 + (n over 2) v^(n-2)C^2 + ... + (n over 1) vC^(n-1) + C^n, where u[k] is the primitive moment arising from C^(k-1) 
-    """
     @assert length(u) > n > 1
     ρ = u[1]; v = u[2]
     res = v^n
@@ -124,10 +123,10 @@ end
 
 
 
+"""
+    convert primitive [1, v, C^2, ...] variables to conservative [1, c, c^2, ....] variables
+"""
 function moment_prim2cons(u_prim, eqns::GramianMomentEquations1D)
-    """
-        convert primitive [1, v, C^2, ...] variables to conservative [1, c, c^2, ....] variables
-    """
     m = length(u_prim)
     @assert m > 2
     cons = zeros(eltype(u_prim), m)
@@ -140,10 +139,10 @@ function moment_prim2cons(u_prim, eqns::GramianMomentEquations1D)
 end
 
 
+"""
+    convert conservative to primitive variables
+"""
 function moment_cons2prim(u_cons, eqns::GramianMomentEquations1D)
-    """
-        convert conservative to primitive variables
-    """
     m = length(u_cons)
     @assert m > 2
     prim = zeros(eltype(u_cons), m)
@@ -161,10 +160,10 @@ Trixi.cons2prim(u, eqns::GramianMomentEquations1D) = moment_cons2prim(u, eqns)
 Trixi.cons2entropy(u, equations::GramianMomentEquations1D) = u
 
 
+"""
+    Derivative of the closure function w.r.t. the moments u
+"""
 function dCdu(u, equations::GramianMomentEquations1D)
-    """
-        Derivative of the closure function w.r.t. the moments u
-    """
     # automatic differentiation
     closure_wrapped(x) = closure(x, equations)
     grad = ForwardDiff.gradient(closure_wrapped, u)
@@ -172,10 +171,10 @@ function dCdu(u, equations::GramianMomentEquations1D)
 end
 
 
+"""
+    Jacobian of the flux function
+"""
 function flux_jacobian(u, equations::GramianMomentEquations1D)
-    """
-        Jacobian of the flux function
-    """
     m = length(u)
     A = zeros(eltype(u), m, m)
     for i=1:m-1 A[i, i+1] = 1 end
@@ -184,10 +183,10 @@ function flux_jacobian(u, equations::GramianMomentEquations1D)
     return A
 end
 
+"""
+    Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
+"""
 function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D)
-    """
-        Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
-    """
     λ_l = Trixi.max_abs_speeds(u_l, equations)
     λ_r = Trixi.max_abs_speeds(u_r, equations)
     λ_max = max(λ_l, λ_r)
@@ -195,9 +194,9 @@ function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::Gr
 end
 
 
+"""
+    Estimate the flux Jacobian eigenvalues by means of Gerschgorin
+"""
 function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D)
-    """
-        Estimate the flux Jacobian eigenvalues by means of Gerschgorin
-    """
     return maximum(abs.(real.(eigen(flux_jacobian(u, equations)).values)))
 end

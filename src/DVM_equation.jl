@@ -1,5 +1,5 @@
-struct DVMEquations1D{N} <: Trixi.AbstractEquations{1, N}
-    """
+
+"""
     Discrete Velocity Method (DVM) Equations in 1D velocity space with N discrete velocity points.
 
     ∂_t f_k + c_k ∂_x f_k = - (1/Kn) (f_k - f̃_k),  k = 1,...,N
@@ -13,7 +13,8 @@ struct DVMEquations1D{N} <: Trixi.AbstractEquations{1, N}
     - `c_u::Real`: Upper bound of the velocity domain.
     - `c_vec::SVector{N, Float64}`: Velocity grid points.
     - `Kn::Real`: Knudsen number.
-    """
+"""
+struct DVMEquations1D{N} <: Trixi.AbstractEquations{1, N}
     N::Int  # Number of equations to be solved
     c_l::Real   # Lower bound of the velocity domain
     c_u::Real   # Upper bound of the velocity domain
@@ -31,19 +32,18 @@ dc(equations::DVMEquations1D) = (equations.c_u - equations.c_l) / (equations.N -
 # * Conservative to Primitive variables and vice versa
 Trixi.varnames(::typeof(cons2cons), ::DVMEquations1D{N}) where {N} = ntuple(i->"f^{$(i-1)}", N)
 
-function Trixi.flux(f, orientation::Integer, equations::DVMEquations1D{N}) where {N}
-    """
+"""
     Compute the flux for the DVM equations in 1D velocity space.
 
     f_i * c_i for i = 1,...,N
-    """
+"""
+function Trixi.flux(f, orientation::Integer, equations::DVMEquations1D{N}) where {N}
     return SVector(
         ntuple(i -> f[i] * equations.c_vec[i], N)
     )
 end
 
-function relaxation_source(f, x, t, equations::DVMEquations1D{N}) where {N} 
-    """
+"""
     Compute the DVM relaxation source term with conservation constraints.
 
     Relaxation is: (-1/Kn) * (f - f̃)
@@ -59,7 +59,8 @@ function relaxation_source(f, x, t, equations::DVMEquations1D{N}) where {N}
     3. Set up the Lagrange-multiplier system to enforce conservation of mass, momentum, and energy.
     4. Solve for the correction Δf to f_Maxwellian.
     5. Return the relaxation source term.
-    """
+"""
+function relaxation_source(f, x, t, equations::DVMEquations1D{N}) where {N} 
     ρ = trapz(equations.c_vec, f) # density
     v = trapz(equations.c_vec, f .* equations.c_vec) / ρ # velocity
     θ = trapz(equations.c_vec, f .* (equations.c_vec .- v).^ 2) / ρ # temperature
@@ -74,27 +75,27 @@ end
 # Zero source term (collisionless case)
 zero_source(f, x, t, equations::DVMEquations1D{N}) where {N} = SVector{N}(ntuple(i->0.0, N))
 
-function flux_jacobian(u, equations::DVMEquations1D{N}) where {N}
-    """
+"""
     Compute the flux Jacobian for the DVM equations in 1D velocity space.
-    """
+"""
+function flux_jacobian(u, equations::DVMEquations1D{N}) where {N}
     return Diagonal(equations.c_vec)
 end
 
-function Trixi.max_abs_speed_naive(f_l, f_r, orientation::Integer, equations::DVMEquations1D)
-    """
+"""
     Calculate maximum wave speed for local Lax-Friedrichs-type dissipation
-    """
+"""
+function Trixi.max_abs_speed_naive(f_l, f_r, orientation::Integer, equations::DVMEquations1D)
     λ_l = Trixi.max_abs_speeds(f_l, equations)
     λ_r = Trixi.max_abs_speeds(f_r, equations)
     λ_max = max(λ_l, λ_r)
     return λ_max
 end
 
-function Trixi.max_abs_speeds(f, equations::DVMEquations1D)
-    """
+"""
     Estimate the flux Jacobian eigenvalues by means of Gerschgorin
-    """
+"""
+function Trixi.max_abs_speeds(f, equations::DVMEquations1D)
     return maximum(abs.(real.(eigen(flux_jacobian(f, equations)).values)))
 end
 
@@ -102,11 +103,11 @@ end
 # ========================================================================================== #
 
 # Initial Conditions
-struct InitialConditionsDVM{N}
-    """
+"""
     Initial conditions for the DVM equations in 1D velocity space.
     Setups up a Riemann problem with left and right states.
-    """
+"""
+struct InitialConditionsDVM{N}
     left::SVector{N}
     right::SVector{N}
 
@@ -131,8 +132,7 @@ end
 # physical variables
 # u_i = ∫ c^i f(c) dc, i=1,...,N
 # u_i(x) = ∫ c_k^i f(c_k)|_x dc, k=1,...,N
-function ρ_v_θ_p_DVM(semi, sol, equations::DVMEquations1D)
-    """
+"""
     Extract physical variables from the DVM solution.
 
     # Arguments:
@@ -146,7 +146,8 @@ function ρ_v_θ_p_DVM(semi, sol, equations::DVMEquations1D)
     - `v::Vector{Float64}`: Velocity at each spatial coordinate.
     - `Θ::Vector{Float64}`: Temperature at each spatial coordinate.
     - `p::Vector{Float64}`: Pressure at each spatial coordinate.
-    """
+"""
+function ρ_v_θ_p_DVM(semi, sol, equations::DVMEquations1D)
     _, coords, variables = collect1DTreeArrays_local(semi, sol.u[end], cons2cons)
     x = coords[2:end-1]
     Fmat = variables[2:end-1, :]'  # First column is density
@@ -158,8 +159,9 @@ function ρ_v_θ_p_DVM(semi, sol, equations::DVMEquations1D)
     return vec(x), vec(ρ), vec(v), vec(Θ), vec(p), vec(q)
 end
 
-function plot_ρ_v_p_DVM(ρ, v, p, x; xlims=(-2.0, 2.0))
-    """
+
+
+"""
     Plot physical variables (density, velocity, pressure) from DVM solution.
 
     # Arguments:
@@ -171,7 +173,8 @@ function plot_ρ_v_p_DVM(ρ, v, p, x; xlims=(-2.0, 2.0))
 
     # Returns:
     - `plt`: Plot object containing the plotted variables.
-    """
+"""
+function plot_ρ_v_p_DVM(ρ, v, p, x; xlims=(-2.0, 2.0))
     # create primary plot and plot density and pressure on it
     plt = plot(x, ρ;
         xlabel = "x",
@@ -201,19 +204,9 @@ function plot_ρ_v_p_DVM(ρ, v, p, x; xlims=(-2.0, 2.0))
 end
 
 
-# setup for 1D Riemann
-function setupDVM1DRiemann(
-    N, Kn,
-    c_l, c_u, 
-    ic_left, ic_right;
-    base_tree_level = 8,
-    surface_flux = flux_lax_friedrichs,
-    volume_flux = flux_central,
-    polydeg = 1,        # DG polynomial degree
-    domain = (-5.0, 5.0),
-    )
-    """
-    Helper function to set the 1D DVM equations with Riemann initial conditions up.
+# setup for 1D Shock Tube
+"""
+    Helper function to set the 1D DVM equations with shock tube initial conditions up.
 
     # Arguments
     - `N`: Number of discrete velocity points.
@@ -233,7 +226,17 @@ function setupDVM1DRiemann(
     - `initial_condition`: Initial conditions object.
     - `solver`: DGSEM solver object.
     - `boundary_conditions`: Boundary conditions object.
-    """
+"""
+function setupDVM1DShockTube(
+    N, Kn,
+    c_l, c_u, 
+    ic_left, ic_right;
+    base_tree_level = 8,
+    surface_flux = flux_lax_friedrichs,
+    volume_flux = flux_central,
+    polydeg = 1,        # DG polynomial degree
+    domain = (-5.0, 5.0),
+    )
     equations = DVMEquations1D(N, c_l, c_u, Kn)
     initial_condition = InitialConditionsDVM(
         ic_left,

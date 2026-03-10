@@ -1,16 +1,6 @@
 import Pkg
 using Logging
 Pkg.activate(@__DIR__)
-# try
-#     Pkg.Registry.add("General")
-# catch err
-#     @info "General registry already available" err
-# end
-# try
-#     Pkg.Registry.update()
-# catch err
-#     @warn "Registry update failed" err
-# end
 Pkg.develop(; path=joinpath(@__DIR__, ".."))
 Pkg.instantiate()
 
@@ -24,13 +14,16 @@ DocMeta.setdocmeta!(ExtGram, :DocTestSetup, :(using ExtGram); recursive=true)
 makedocs(
     modules = [ExtGram],
     sitename = "ExtGram.jl",
-    format = Documenter.HTML(
-        prettyurls = get(ENV, "CI", "false") == "true"),
     remotes = nothing,
+    format = Documenter.HTML(
+        prettyurls = get(ENV, "CI", "false") == "true",
+        repolink = "https://git.rwth-aachen.de/JanHab/ExtGram.jl",  
+        edit_link = "main"
+    ),
     pages = [
         "Home" => "index.md",
         "Tutorials" => [
-            "Shock Tube Example" => "examples/main.md",
+            "Shock Tube Example" => "examples/1D1D_ShockTube.md",
         ],
         "API Reference" => "reference.md",
     ],

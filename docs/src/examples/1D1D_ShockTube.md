@@ -15,74 +15,45 @@ Start with the number of moments, closure, and the Knudsen number
 
 ``` julia
 M = 4
-closure = "ExtGram"
+closure = "ExtGram" # possible: "Gram", "ExtGram" or "Grad"
 Kn = 1.0
+source = relaxation_source # if "zero_source" Kn doesn't matter, as no source term
 ```
 
 continue with the numerical setting
 ``` julia
 T_end = 0.3
-x_lower, x_upper = -2.0, 2.0
+base_tree_level = 8 # 10 used in thesis, but let's speed it up a bit
 polydeg = 1
-base_tree_level = 8
-surface_flux = flux_lax_friedrichs
-volume_flux = flux_central
+x_lower = -2.0
+x_upper = 2.0
+
+# Fixed settings
+domain = (x_lower, x_upper)
 ```
 
 and the initial conditions
 ```julia
 ρ_L = 7.0
-v_L = 1.0
+v_L = 0.0
 θ_L = 1.0
 ρ_R = 1.0
-v_R = 1.0
+v_R = 0.0
 θ_R = 1.0
-
-# Setting up everything
-equations = GramianMomentEquations1D(M, Kn, closure)
-initial_condition = InitialConditionsShockTube(
-    Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
-    Maxwellian(ρ_R, v_R, θ_R), # Shock in density, but not velocity, temperature initially
-    equations
-)
 ```
 
 ### Set up the numerical solver
 
-The solver
-
 ``` julia
-basis = LobattoLegendreBasis(polydeg)
-
-# shock capturing
-indicator_sc = IndicatorHennemannGassner(
-    equations, basis,
-    alpha_max = 0.5,
-    alpha_min = 0.001,
-    alpha_smooth = true,
-    variable = (u, eqns)->u[1]*u[3]
+# Setting up everything
+basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DShockTube(
+    M, Kn, closure,
+    Maxwellian(ρ_L, v_L, θ_L), # Density, velocity, temperature
+    Maxwellian(ρ_R, v_R, θ_R);
+    base_tree_level = base_tree_level,
+    domain = domain,
+    polydeg = polydeg,
 )
-
-volume_integral = VolumeIntegralShockCapturingHG(
-    indicator_sc;
-    volume_flux_dg = volume_flux,
-    volume_flux_fv = surface_flux
-)
-
-solver = DGSEM(basis, surface_flux, volume_integral)
-````
-
-and the semidiscretization
-
-``` julia
-mesh = TreeMesh(
-    (domain[1],), (domain[2],), 
-    initial_refinement_level=base_tree_level, 
-    n_cells_max=10_000, 
-    periodicity=false
-)
-
-boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
 
 semi = SemidiscretizationHyperbolic(
     mesh, equations, 
@@ -90,7 +61,7 @@ semi = SemidiscretizationHyperbolic(
     boundary_conditions=boundary_conditions, 
     source_terms=source
 )
-````
+```
 
 with the ode problem
 
@@ -123,6 +94,8 @@ sol = solve(
     callback = callbacks,
     saveat = range(tspan[1], tspan[2], length=100)
 );
+
+summary_callback()
 ```
 
 ### Post Processing
@@ -131,10 +104,13 @@ Visualize the density, velocity, and pressure
 
 ``` julia
 x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
+plot!(
+    p1, xlims = (-1, 1)
+)
 display(p1)
 ```
 
-![ShockTube](assets/ShockTube.svg)
+![ShockTube](assets/1D1D_ShockTube.svg)
 
 or visualize all the (conservative) moments separately
 
@@ -172,4 +148,4 @@ l = @layout  [grid(3,3)]
 plot(pl..., layout=l, size=(1_200, 600))
 ```
 
-![ShockTube](assets/ShockTube_Moments.svg)
+![ShockTube](assets/1D1D_ShockTube_Moments.svg)

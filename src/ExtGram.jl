@@ -57,6 +57,6 @@ export plot_ρ_v_p, plot_λ_max, conservation, readsol, readfile
 
 # DVM equation
 include("DVM_equation.jl")
-export setupDVM1DRiemann, InitialConditionsDVM, ρ_v_θ_p_DVM, setupDVM1DRiemann, plot_ρ_v_p_DVM
+export setupDVM1DShockTube, InitialConditionsDVM, ρ_v_θ_p_DVM, setupDVM1DShockTube, plot_ρ_v_p_DVM
 
 end # module ExtGram

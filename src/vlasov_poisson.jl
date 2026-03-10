@@ -2,9 +2,8 @@
     Implementation of the Vlasov-Poisson system using Gramian moment equations in 1D1D.
 """
 
-mutable struct ElectricFieldStorage
-    """
-        Storage for the electric field values and related data for the Vlasov-Poisson system
+"""
+    Storage for the electric field values and related data for the Vlasov-Poisson system
 
     # Fields:
     - `E::Vector{Float64}`: Electric field values at spatial points
@@ -17,7 +16,8 @@ mutable struct ElectricFieldStorage
     - `times::Vector{Float64}`: Track actual times when E_L2 is recorded
     - `variables`: Store solution variables at spatial points
     - `coordinates::Vector{Float64}`: Store spatial coordinates
-    """
+"""
+mutable struct ElectricFieldStorage
     E::Vector{Float64} # Electric field values at spatial points
     Lx::Float64 # Length of the domain (x_max - x_min) for Poisson solve
     x_range::Vector{Float64}    # Spatial grid points
@@ -35,10 +35,10 @@ const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], 0.0, Float64[], false, 0,
 )
 
 
+"""
+    Source term that applies the source term from the electric field to the moment equations
+"""
 function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    """
-        Source term that applies the source term from the electric field to the moment equations
-    """
     E_field = linear_interpolation(ELECTRIC_FIELD.x_range, ELECTRIC_FIELD.E, extrapolation_bc = Interpolations.Line())
     
     # Evaluate electric field at position x
@@ -58,11 +58,10 @@ function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}
     return source
 end
 
+"""
+    Solve the Poisson equation ∂E/∂x = ρ - ⟨ρ⟩ with periodic boundary conditions using FFT
+"""
 function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real})
-    """
-        Solve the Poisson equation ∂E/∂x = ρ - ⟨ρ⟩ with periodic boundary conditions using FFT
-
-    """
     n = length(ρ) # number of spatial points
     ρ̃  = ρ .- mean(ρ)  # neutralizing background
     ρk = fft(ρ̃)
@@ -90,10 +89,10 @@ function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real})
 end
 
 # Callback to solve Poisson equation globally at each timestep
+"""
+    Callback function to solve the Poisson equation and store electric field data
+"""
 function vlasov_poisson_callback(integrator)
-    """
-        Callback function to solve the Poisson equation and store electric field data
-    """
     u = integrator.u
     t = integrator.t
 
@@ -122,10 +121,10 @@ function vlasov_poisson_callback(integrator)
     return nothing
 end
 
+"""
+    Create a DiscreteCallback for the Vlasov-Poisson system to solve Poisson equation at each timestep
+"""
 function vlasov_poisson_callback(;M, mesh, domain)
-    """
-        Create a DiscreteCallback for the Vlasov-Poisson system to solve Poisson equation at each timestep
-    """
     # Reset the global storage to clear old data from previous runs
     empty!(ELECTRIC_FIELD.E)
     empty!(ELECTRIC_FIELD.E_L2)

@@ -1,8 +1,8 @@
 
+"""
+    Maxwellian distribution function in 1D velocity space
+"""
 struct Maxwellian
-    """
-        Maxwellian distribution function in 1D velocity space
-    """
     ρ::Real
     v::Real
     θ::Real # defined here as ∫ C^2 f dc (no factor 1/2)
@@ -16,10 +16,10 @@ end
 
 
 # Gauss-Hermite quadrature
+"""
+    Compute the integral using the coordinate transform ξ = C/sqrt(2*f.θ) and divide out the exp(-c^2) contained in the gauss hermite quadrature rule (note: quite the inefficient implementation here)
+"""
 function convective_moments(f::Maxwellian, ::Val{N}) where {N}
-    """
-        Compute the integral using the coordinate transform ξ = C/sqrt(2*f.θ) and divide out the exp(-c^2) contained in the gauss hermite quadrature rule (note: quite the inefficient implementation here)
-    """
     ξ, w = gausshermite(N+1) # +1 for good measure, should not be necessary
     C = sqrt(2*f.θ) .* ξ; c = C .+ f.v
     fw = f.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*f.θ)
@@ -28,12 +28,11 @@ end
 
 
 
-
+"""
+    Compute the convective moments ∫ C^{n-1} f dc where C = c - v
+    and return the primitive moments [ρ, v, C^2, C^3, ..., C^{N-1}]
+"""
 function primitive_moments(f::Maxwellian, ::Val{N}) where {N}
-    """
-        Compute the convective moments ∫ C^{n-1} f dc where C = c - v
-        and return the primitive moments [ρ, v, C^2, C^3, ..., C^{N-1}]
-    """
     ξ, w = gausshermite(N+1)
     C = sqrt(2*f.θ) .* ξ; c = C .+ f.v
     fw = f.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*f.θ)
@@ -49,11 +48,10 @@ end
 
 
 
-
+"""
+    Shock tube initial conditions with left and right distribution functions
+"""
 struct InitialConditionsShockTube{N}
-    """
-        Shock tube initial conditions with left and right distribution functions
-    """
     left::SVector{N}
     right::SVector{N}
 
@@ -76,10 +74,10 @@ end
 #######################################
 ########### 1D3D Maxwellian ###########
 #######################################
+"""
+    Maxwellian distribution function in 3D velocity space (1D spatial)
+"""
 struct Maxwellian1D3D
-    """
-        Maxwellian distribution function in 3D velocity space (1D spatial)
-    """
     ρ::Real
     v::NTuple{3,Real}
     θ::Real # defined here as ∫ C^2 f dc (no factor 1/2)
@@ -88,13 +86,13 @@ end
 
 (f::Maxwellian1D3D)(cx::Real, cy::Real, cz::Real) = f.ρ/(2*π*f.θ)^(3/2) * exp(-((cx-f.v[1])^2 + (cy-f.v[2])^2 + (cz-f.v[3])^2) / (2*f.θ)) # note: normalized in 1D velocity space 
 
-function index3D(n::Integer)
-    """
-        index3D(total_degree)
+"""
+    index3D(total_degree)
 
     Return a vector of multi-indices (i,j,k) with i+j+k == total_degree.
     Ordering matches a lexicographic-style ordering and is intended for moment lists.
-    """
+"""
+function index3D(n::Integer)
     tuples = collect(Iterators.product(0:n, 0:n, 0:n))
     vecs = [collect(t) for t in tuples]
     selected = filter(v -> sum(v) == n, vecs)
@@ -102,23 +100,23 @@ function index3D(n::Integer)
     return reverse(selected)
 end
 
-function multi_index_list(M::Integer)
-    """
-        multi_index_list(M)
+"""
+    multi_index_list(M)
 
     Return a flattened list of multi-indices for all shells 0..M.
-    """
+"""
+function multi_index_list(M::Integer)
     return vcat([index3D(n) for n in 0:M]...)
 end
 
-function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0.0,0.0,0.0), theta::Real=1.0; q::Integer=35+1)
-    """
-        convective_moments_1D3D(M; rho=1.0, u=(0,0,0), theta=1.0, q=8)
+"""
+    convective_moments_1D3D(M; rho=1.0, u=(0,0,0), theta=1.0, q=8)
 
     Compute the velocity moments up to `M` (all multi-indices with i+j+k <= M)
     using tensor-product Gauss–Hermite with `q` nodes per dimension. Returns a Vector{Float64}
     with the same ordering as `multi_index_list(M)`.
-    """
+"""
+function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0.0,0.0,0.0), theta::Real=1.0; q::Integer=35+1)
     # 35+1 is max degree in the test cases for M=4 (hard-coded)
     # quadrature nodes and weights for ∫ e^{-x^2} g(x) dx
     ξ, w = gausshermite(q)
@@ -157,10 +155,10 @@ function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0
     return moments
 end
 
+"""
+    Shock tube initial conditions with left and right distribution functions in 1D3D
+"""
 struct InitialConditionsShockTube1D3D{N}
-    """
-        Shock tube initial conditions with left and right distribution functions in 1D3D
-    """
     left::SVector{N}
     right::SVector{N}
 
@@ -190,13 +188,13 @@ end
 ########## Vlasov Example Initial Conditions ##########
 #############################################
 
-struct InitialConditionsLandauDamping{N}
-    """
+"""
         Initial conditions for Landau damping problem in Vlasov-Poisson system
 
-    The probability distribution function is a small perturbtation of a Maxwellian:
+        The probability distribution function is a small perturbtation of a Maxwellian:
         f(x,c) = 1 / √(2π) * (1 + ϵ * cos(k * x)) * exp(- c^2 / 2)
     """
+struct InitialConditionsLandauDamping{N}
     ρ0::Float64
     ϵ::Float64
     v0::Float64
@@ -214,13 +212,13 @@ function (ic::InitialConditionsLandauDamping)(coords, t, equations::GramianMomen
     return convective_moments(f, Val(Mp1))
 end
 
-struct InitialConditionsTwoStream{N}
-    """
-        Initial conditions for the two-stream instability problem in Vlasov-Poisson system
+"""
+    Initial conditions for the two-stream instability problem in Vlasov-Poisson system
 
     The probability distribution function is given by:
         f(x,c) = 1 / √(2π) * (1 + ϵ cos(k * x)) * (exp(- c^2 / 2) * c^2
-    """
+"""
+struct InitialConditionsTwoStream{N}
     ϵ::Float64
     k::Float64
 

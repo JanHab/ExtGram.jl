@@ -21,20 +21,20 @@
     The moments U_{500}, U_{320}, U_{140}, U_{122} are not part of the slab geometry and calculated with the transformation.
 """
 
-function idx(n::Integer)
-    """
+"""
     Generates all sorted tuples of length 3 with elements in {1,2,3}
-    """
+"""
+function idx(n::Integer)
     tuples = collect(Iterators.product(fill(1:3, n)...))
     sorted_vectors = [sort(collect(t)) for t in tuples]
     unique(sorted_vectors)
 end
 
-function index(n::Integer)
-    """
+"""
     Gives the indices of the higher dimensional moments
     u_xx, u_xy, u_xz, u_yy, u_yz, u_zz
-    """
+"""
+function index(n::Integer)
     tuples = collect(Iterators.product(0:n, 0:n, 0:n))
     vectors = [collect(t) for t in tuples]
     selected = filter(v -> sum(v) == n, vectors)
@@ -52,10 +52,10 @@ end
 # Checks if the moment is non-zero in slab geometry
 @inline slab_condition(y, z) = iseven(y) && iseven(z) && (y >= z)
 
-function index_1d(n::Integer)
-    """
+"""
     Positions of moments in slab geometry which are ≠ 0
-    """
+"""
+function index_1d(n::Integer)
     indices = index(n)
     pos = Int[]
     for (idx_pos, (_, y, z)) in enumerate(indices)
@@ -66,17 +66,17 @@ function index_1d(n::Integer)
     pos
 end
 
-function mainmomindex(nmax::Integer)
-    """
+"""
     Generates the full list of multi-indices up to nmax
-    """
+"""
+function mainmomindex(nmax::Integer)
     vcat([index(n) for n in 0:nmax]...)
 end
 
-function get_rotation_matrix(theta::Real, phi::Real)
-    """
+"""
     Constructs the rotation matrix for given angles theta and phi.
-    """
+"""
+function get_rotation_matrix(theta::Real, phi::Real)
     θ = Float64(theta)
     φ = Float64(phi)
     ct, st = cos(θ), sin(θ)
@@ -88,11 +88,11 @@ function get_rotation_matrix(theta::Real, phi::Real)
     ]
 end
 
-function tensor_transformation(n::Int, theta::Real, phi::Real)
-    """
+"""
     Constructs the tensor transformation matrix for rank-n tensors
     Combines rotation matrices for each index of the tensor.
-    """
+"""
+function tensor_transformation(n::Int, theta::Real, phi::Real)
     row_basis = idx(n) 
     col_basis = index(n) 
     col_lookup = Dict(vec => i for (i, vec) in enumerate(col_basis))
@@ -132,10 +132,10 @@ function tensor_transformation(n::Int, theta::Real, phi::Real)
     return TT
 end
 
-function construct_block_diagonal(matrices::Vector{Matrix{Float64}})
-    """
+"""
     Helper function to construct a block diagonal matrix from a list of matrices.
-    """
+"""
+function construct_block_diagonal(matrices::Vector{Matrix{Float64}})
     total_rows = sum(size(m, 1) for m in matrices)
     total_cols = sum(size(m, 2) for m in matrices)
     
@@ -154,10 +154,10 @@ function construct_block_diagonal(matrices::Vector{Matrix{Float64}})
     return full_matrix
 end
 
-function rot(moment_degree::Int, theta::Real, phi::Real)
-    """
+"""
     Constructs the full rotation matrix for moments up to given degree.
-    """
+"""
+function rot(moment_degree::Int, theta::Real, phi::Real)
     blocks = Matrix{Float64}[]
     push!(blocks, reshape([1.0], 1, 1)) # Degree 0
     
@@ -168,10 +168,10 @@ function rot(moment_degree::Int, theta::Real, phi::Real)
     return construct_block_diagonal(blocks)
 end
 
-function nidx(moment_degree::Integer)
-    """
+"""
     Index of moments necessary for the closure (u, u_x, u_xx, u_xxx, …)
-    """ 
+""" 
+function nidx(moment_degree::Integer)
     Int[1 + div(k * (k + 1) * (k + 2), 6) for k in 0:moment_degree]
 end
 
@@ -180,10 +180,10 @@ function shell_slab_positions(moment_degree::Integer)
     [start + pos - 1 for pos in index_1d(moment_degree)]
 end
 
-function compile_fp(degree::Int)
-    """
+"""
     Compiles the function to get the transformed higher order moments for given degree.
-    """
+"""
+function compile_fp(degree::Int)
     target_index = nidx(degree)[end]
     shell_positions = shell_slab_positions(degree)
     function fp(theta::Real, phi::Real)
@@ -192,10 +192,10 @@ function compile_fp(degree::Int)
     end
 end
 
-function get_valid_indices(M::Integer)
-    """
+"""
     Get the valid indices for slab geometry up to moment degree M (which are ≠ 0)
-    """
+"""
+function get_valid_indices(M::Integer)
     slab_indices = Int[]
     index_start = 0
     for i in 0:M
