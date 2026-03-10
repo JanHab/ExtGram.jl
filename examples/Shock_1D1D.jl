@@ -79,6 +79,9 @@ if polydeg == 1 # only implemented for polydeg=1 (linear basis functions)
     Nloc = L ÷ (M+1)
     Fmat = reshape(u_final, M+1, Nloc)
 
+    # Post Processing
+    x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
+
     x_vector = [];
     λ_vector = [];
     u_vector = [];
