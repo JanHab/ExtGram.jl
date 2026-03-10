@@ -18,9 +18,10 @@ x_left = -20.0
 x_right = 100.0
 
 # DVM
-N = 1_500
-c_l = -20.0
-c_u = 20.0
+N = 500
+c_l = -10.0
+c_u = 10.0
+base_tree_level_DVM = 10
 
 # SLURM job parameters
 threads = 1
