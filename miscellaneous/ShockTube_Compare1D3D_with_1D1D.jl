@@ -1,31 +1,33 @@
-using Revise
+"""
+    Some routine to run the 1D-1D and 1D-3D Riemann problem with the same initial conditions and compare the results.
+        - The same closure is used for both.
+"""
+
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
+using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LinearAlgebra
 
 ##################################################################
-###################### 1D3D Riemann Problem ######################
+###################### ## ShockTube Problem ######################
 ##################################################################
-# Access arguments by index
-M = 4 #parse(Int, ARGS[1])
-closure = "ExtGram" #ARGS[2] # String # "Gram", "ExtGram" or "Grad"
-Kn = 1.0 #parse(Float64, ARGS[3])
-# source_string = ARGS[4]
-source = relaxation_source #!zero_source #relaxation_source
-T_end = 0.1#0.3 #parse(Float64, ARGS[5])
-base_tree_level = 7 #!4 #parse(Int, ARGS[6]) # e.g. 8
-polydeg = 1 #parse(Int, ARGS[7]) # e.g. 3
-ρ_L = 7.0 #parse(Float64, ARGS[8]) # 7.0
-v_L1 = 0.0 #!1.0 #!1.5 #parse(Float64, ARGS[9]) # 0.0
+M = 4 
+closure = "ExtGram" 
+Kn = 1.0 
+source = relaxation_source 
+T_end = 0.3
+base_tree_level = 8
+polydeg = 1 
+ρ_L = 7.0 
+v_L1 = 0.0 
 v_L2 = 0.0
 v_L3 = 0.0
-θ_L = 1.0 #parse(Float64, ARGS[10]) # 1.0
-ρ_R = 1.0 #parse(Float64, ARGS[11]) # 1.0
-v_R1 = 0.0 #!1.0 #parse(Float64, ARGS[12]) # 0.0
+θ_L = 1.0 
+ρ_R = 1.0 
+v_R1 = 0.0 
 v_R2 = 0.0
 v_R3 = 0.0
-θ_R = 1.0 #parse(Float64, ARGS[13]) # 1.0
+θ_R = 1.0 
 
 
 # Fixed settings
@@ -56,20 +58,20 @@ basis = LobattoLegendreBasis(polydeg)
 # #= crashes for p > 1, i.e. this does not help at all
 indicator_sc_1D3D = IndicatorHennemannGassner(
     equations_1D3D, basis,
-    alpha_max = 0.5, #!1.0,#*0.5,#0.1, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
-    alpha_min = 0.001, #!0.01,#0.01,
-    alpha_smooth = true, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
-    variable = (u, eqns)->u[1]*u[5]#! *u[5]
-) # ? Seems to restrict to M>=4
+    alpha_max = 0.5, # Rather conservative guess
+    alpha_min = 0.001, 
+    alpha_smooth = true, # smoothes with all neighboring indicators to remove numerical artifacts
+    variable = (u, eqns)->u[1]*u[5]
+) 
 indicator_sc_1D1D = IndicatorHennemannGassner(
     equations_1D1D, basis,
-    alpha_max = 0.5, #!1.0,#*0.5,#0.1, #  α_max = 1.0 seems natural -> corresponds to pure first order FV (Gassner paper)
-    alpha_min = 0.001, #!0.01,#0.01,
-    alpha_smooth = true, #* false, # smoothes with all neighboring indicators to remove numerical artifacts
-    variable = (u, eqns)->u[1]*u[3]#! *u[5]
-) # ? Seems to restrict to M>=4
+    alpha_max = 0.5, # Rather conservative guess
+    alpha_min = 0.001, 
+    alpha_smooth = true, # smoothes with all neighboring indicators to remove numerical artifacts
+    variable = (u, eqns)->u[1]*u[3]
+) 
 
-
+#= surface flux and volume flux =#
 surface_flux = flux_lax_friedrichs
 volume_flux = flux_central
 volume_integral_1D3D = VolumeIntegralShockCapturingHG(
@@ -83,9 +85,11 @@ volume_integral_1D1D = VolumeIntegralShockCapturingHG(
     volume_flux_fv = surface_flux
 )
 
+# = solver =#
 solver_1D3D = DGSEM(basis, surface_flux, volume_integral_1D3D)
 solver_1D1D = DGSEM(basis, surface_flux, volume_integral_1D1D)
 
+# = mesh =#
 mesh = TreeMesh(
     (domain[1],), (domain[2],), 
     initial_refinement_level=base_tree_level, 
@@ -93,9 +97,11 @@ mesh = TreeMesh(
     periodicity=false
 )
 
+# = boundary conditions =#
 boundary_conditions_1D3D = (x_neg = BoundaryConditionDirichlet(initial_condition_1D3D), x_pos = BoundaryConditionDirichlet(initial_condition_1D3D))
 boundary_conditions_1D1D = (x_neg = BoundaryConditionDirichlet(initial_condition_1D1D), x_pos = BoundaryConditionDirichlet(initial_condition_1D1D))
 
+# = semidiscretization =#
 semi_1D3D = SemidiscretizationHyperbolic(
     mesh, equations_1D3D, 
     initial_condition_1D3D, solver_1D3D, 
@@ -114,16 +120,10 @@ tspan = (0.0, T_end)
 ode_1D3D = semidiscretize(semi_1D3D, tspan)
 ode_1D1D = semidiscretize(semi_1D1D, tspan)
 
-# callbacks, summary_callback = callbacksGramianMomentEquations(
-#     semi, tspan, basis; 
-#     cfl = 0.9,          # Maximum cfl number
-#     plot_interval = 20,  # plot every 20 steps
-#     name="gram_solution",
-# )
-
 cfl = 0.99
 time_interval = 20
 
+#= callbacks =#
 alive_callback_1D3D = AliveCallback(analysis_interval=100)
 summary_callback_1D3D = SummaryCallback()
 stepsize_callback_1D3D = StepsizeCallback(cfl=cfl)
@@ -174,7 +174,6 @@ sol_1D1D = solve(
     # saveat = range(tspan[1], tspan[2], length=100)
 );
 
-# # summary_callback()
 
 # Post Processing
 n_equations_1D3D = 10
@@ -182,8 +181,6 @@ u_final_1D3D = sol_1D3D.u[end]
 u_final_1D1D = sol_1D1D.u[end]
 L_1D3D = length(u_final_1D3D)
 L_1D1D = length(u_final_1D1D)
-# Nloc_1D3D = L_1D3D ÷ (n_equations_1D3D)
-# Nloc_1D1D = L_1D1D ÷ (M+1)
 Nloc = L_1D3D ÷ (n_equations_1D3D)
 Fmat_1D3D = reshape(u_final_1D3D, n_equations_1D3D, Nloc)
 Fmat_1D1D = reshape(u_final_1D1D, M+1, Nloc)
@@ -280,4 +277,3 @@ plot!(
 
 l = @layout  [grid(2,3)]# a{0.2w}]
 plot(pl..., layout=l, size=(1_200, 600))
-savefig("out/Figures/1D3D/RiemannCompare1D3D_with_1D1D_M$(M)_$(closure)_Kn$(Kn)_Tend$(T_end)_base_tree_level$(base_tree_level).pdf")
