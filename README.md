@@ -2,8 +2,19 @@
 
 *A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl*
 
-## Abstract (from the thesis)
 
+<details>
+<summary>BibTeX</summary>
+
+```bibtex
+ToDo: Add the Zenodo
+```
+</details>
+
+<details>
+<summary>Abstract (from the thesis)</summary>
+
+```Abstract (from the thesis)
 The classical continuum mechanical equations of Navier-Stokes and Fourier (NSF) accurately describe gases with a high collision frequency, measured by a small Knudsen number (Kn).
 However, the NSF equations fail for gases with a high Knudsen number and, consequently, a small collision frequency.
 Directly solving Boltzmann's equation is an alternative approach of high accuracy, but is computationally very demanding due to its high dimensionality.
@@ -20,6 +31,8 @@ Rigorous mathematical proofs for the structure-preserving properties of this upd
 While the closure is constructed in one dimension, a projection method for applying it to a three-dimensional velocity phase, based on matrix rotations, is introduced.
 Further, the extended Gramian closure is numerically solved with the discontinuous Galerkin method and its accuracy is analyzed and compared with that of the Gramian closure and Grad's closure.
 Therefore, various benchmark problems, including the shock tube, shock structure, Landau damping, and two-stream instability, are analyzed.
+```
+</details>
 
 ## Main Features
 
@@ -108,7 +121,7 @@ julia test/tests.jl
 Further, you can test the installation by running the example `examples/ShockTubeExampe.jl`
 
 ``` bash
-julia --project examples/ShockTubeExampe.jl
+julia --project examples/ShockTubeExample.jl
 ```
 
 ### Documentation

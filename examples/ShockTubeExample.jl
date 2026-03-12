@@ -12,7 +12,7 @@ using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
 M = 4    # number of moments
-closure = "Gram" # flag for closure: "Gram", "ExtGram", "Grad"
+closure = "ExtGram" # flag for closure: "Gram", "ExtGram", "Grad"
 Kn = 1.0  # Knudsen number
 T_end = 0.3
 source = relaxation_source
@@ -110,70 +110,4 @@ summary_callback()
 # Post Processing
 x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
 
-θ = p ./ ρ
-
-plot(x, ρ[:, end], label="ρ", lw=2)
-plot(x, v[:, end], label="v", lw=2)
-plot(x, p[:, end], label="p", lw=2)
-plot(x, θ[:, end], label="θ", lw=2)
-
-# Eigenvalues
-u_final = sol.u[end]
-L = length(u_final)
-Nloc = L ÷ (M+1)
-Fmat = reshape(u_final, M+1, Nloc)
-
-x_index_center = Nloc ÷ 2
-u0 = Fmat[1, x_index_center]
-u1 = Fmat[2, x_index_center]
-u2 = Fmat[3, x_index_center]
-u3 = Fmat[4, x_index_center]
-u4 = Fmat[5, x_index_center]
-u5 = Fmat[6, x_index_center]
-u6 = Fmat[7, x_index_center]
-u7 = Fmat[8, x_index_center]
-u8 = Fmat[9, x_index_center]
-
-
-u = SVector{M+1}(u0, u1, u2, u3, u4, u5, u6, u7, u8)
-jacobian = flux_jacobian(u, equations)
-using LinearAlgebra
-λ = real.(eigen(jacobian).values)
-y = zeros(length(λ))
-
-# plot values of eigenvalues on a horizontal line
-plot(λ, y, seriestype=:scatter, title="Eigenvalues at center cell", xlabel="Index", ylabel="Eigenvalue")
-
-# Plot primitive variables at final time
-# plot(x, (ρ[:, end] .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2, xlim=(-10, 10))
-# plot(x, (v[:, end] .- v_R) ./ (v_L - v_R), label="v", lw=2, xlim=(-10, 10))
-# plot(x, (p[:, end] .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2, xlim=(-10, 10))
-# plot(x, (θ[:, end] .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2, xlim=(-10, 10))
-
-pl = plot(xlim=(-10, 10), title="T=$(T_end)", size=(500,500), yticks=0:0.1:1);
-plot!(pl, x, (ρ[:, end] .- ρ_L) ./ (ρ_R - ρ_L), label="ρ", lw=2);
-plot!(pl, x, (v[:, end] .- v_R) ./ (v_L - v_R), label="v", lw=2);
-# plot!(pl, x, (p[:, end] .- θ_L .* ρ_L) ./ (θ_R .* ρ_R - θ_L .* ρ_L), label="p", lw=2)
-plot!(pl, x, (θ[:, end] .- θ_L) ./ (θ_R - θ_L), label="θ", lw=2);
-display(pl)
-
-
 display(p1)
-savefig(p1, "out/Shock/ρ_v_p.pdf")
-
-# Store primitive variables in CSV file
-CSV.write(
-    "out/Shock/ρ_v_p.csv",
-    Tables.columntable((x=x, rho=ρ, v=v, p=p))
-)
-
-# Plot maximum eigenvalue (wave-speed) of flux Jacobian over time
-n_plots = 5
-p2 = plot_λ_max(semi, sol, M, n_plots, x_lower, x_upper)
-# display(p2)
-savefig(p2, "out/Shock/λ_max.pdf")
-
-# Plot total variation in space over time
-p3, mass, momentum, energy = conservation(sol, M, semi)
-# display(p3)
-savefig(p3, "out/Shock/conservation.pdf")
