@@ -60,9 +60,7 @@ Pkg.instantiate()
 Now we can install the `ExtGram` package locally with:
 
 ``` bash
-julia --project
-using Pkg;
-Pkg.instantiate()
+julia --project -e 'import Pkg; Pkg.instantiate()'
 ```
 
 - ToDo: Test this out!
