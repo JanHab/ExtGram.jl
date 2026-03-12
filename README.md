@@ -1,5 +1,9 @@
 # ExtGram.jl
 
+<!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15388656.svg)](https://doi.org/10.5281/zenodo.15388656)
+[![GitLab Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://git.rwth-aachen.de/janhab/fxdgm/-/tags)
+[![License](https://img.shields.io/badge/license-GPLv3-blue)](https://git.rwth-aachen.de/janhab/fxdgm/-/blob/main/LICENSE?ref_type=heads) -->
+
 *A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl*
 
 ## Abstract (from the thesis)
@@ -49,8 +53,8 @@ julia --project -e 'import Pkg; Pkg.instantiate()'
 
 The solutions are stored in the `out` folder (in .gitignore).
 You need to create it and all subfolders.
-Further, Python (with jupyter notebooks) is used for visualizations.
-Install the requirements from the `requirements.txt` file with (tested for python version 3.12.2):
+Further, Python (with Jupyter notebooks) is used for visualizations.
+Install the requirements from the `requirements.txt` file with (tested for Python version 3.12.2):
 
 ``` bash
 pip install -r requirements.txt
@@ -87,7 +91,7 @@ Clone the repository and execute the testing pipeline with:
 julia test/tests.jl
 ```
 
-Further, you can test the installation by running the example `examples/ShockTubeExampe.jl`
+Further, you can test the installation by running a shock tube example with:
 
 ``` bash
 julia --project examples/ShockTubeExample.jl
@@ -106,8 +110,8 @@ julia --project docs/make.jl
 Find the package source code in [src](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/src?ref_type=heads), which implements the momentum closure and the system of PDEs.
 The subfolder [src/TrixiTree2Triangulation](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/src/TrixiTree2Triangulation?ref_type=heads) is a subpackage developed by Matthias Geratz for storing the solution in a *.tsv file.
 
-The folder [examples](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/examples?ref_type=heads) contains some main files for physical relevant benchmark problems.
-[slurm](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/slurm?ref_type=heads) gives shell scripts for executing the benchmark problems either on your local laptop or on a HPC server with a slurm script. You need to either comment the `os.system(command)` or `createsbatch` file, depending on your system.
+The folder [examples](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/examples?ref_type=heads) contains the main files for physically relevant benchmark problems.
+[slurm](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/slurm?ref_type=heads) gives shell scripts for executing the benchmark problems either on your local laptop or on a HPC server with a slurm script. You need to either comment out the `os.system(command)` or the `createsbatch` file, depending on your system.
 
 [miscellaneous](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/miscellaneous?ref_type=heads) contains miscellaneous files used for implementation and checking.
 
