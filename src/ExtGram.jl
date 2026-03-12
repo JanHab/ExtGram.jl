@@ -5,6 +5,7 @@ using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, Ordi
 
 # Gramian Moments Implementation
 include("gramian_moment_equations.jl")
+include("gramian_moment_equations1D1D.jl")
 include("testing.jl")
 
 # Gramian Moments Implementation for 1D3D
@@ -16,6 +17,7 @@ include("gramian_moment_equations1D3D.jl")
 
 include("initial_conditions.jl")
 
+export GramianMomentEquations
 export GramianMomentEquations1D, gramian, closure, moment_prim2cons, moment_cons2prim, dCdu, flux_jacobian, relaxation_source, zero_source, numerical_flux
 export InitialConditionsShockTube, Maxwellian, convective_moments, primitive_moments, InitialConditionsTwoShocks, ElectronHole, InitialConditionsElectronHole
 export test_closure, check_realizability
@@ -47,14 +49,14 @@ export SaveTriangulationCallback
 
 # Semidiscretization and callbacks
 include("setup1D.jl")
-export setupGramianMomentEquations1DRiemann, callbacksGramianMomentEquations
+export setupGramianMomentEquations1DShockTube, callbacksGramianMomentEquations
 
 # analysis tools
 include("analysis.jl")
 export plot_ρ_v_p, plot_λ_max, conservation, readsol, readfile
 
-# BGK equation
-include("bgk_equation.jl")
-export setupBGK1DRiemann, InitialConditionsBGK, ρ_v_θ_p_BGK, setupBGK1DRiemann, plot_ρ_v_p_bgk
+# DVM equation
+include("DVM_equation.jl")
+export setupDVM1DShockTube, InitialConditionsDVM, ρ_v_θ_p_DVM, setupDVM1DShockTube, plot_ρ_v_p_DVM
 
 end # module ExtGram

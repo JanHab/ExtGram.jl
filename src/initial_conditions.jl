@@ -1,8 +1,8 @@
 
+"""
+    Maxwellian distribution function in 1D velocity space
+"""
 struct Maxwellian
-    """
-        Maxwellian distribution function in 1D velocity space
-    """
     ρ::Real
     v::Real
     θ::Real # defined here as ∫ C^2 f dc (no factor 1/2)
@@ -16,10 +16,10 @@ end
 
 
 # Gauss-Hermite quadrature
+"""
+    Compute the integral using the coordinate transform ξ = C/sqrt(2*f.θ) and divide out the exp(-c^2) contained in the gauss hermite quadrature rule (note: quite the inefficient implementation here)
+"""
 function convective_moments(f::Maxwellian, ::Val{N}) where {N}
-    """
-        Compute the integral using the coordinate transform ξ = C/sqrt(2*f.θ) and divide out the exp(-c^2) contained in the gauss hermite quadrature rule (note: quite the inefficient implementation here)
-    """
     ξ, w = gausshermite(N+1) # +1 for good measure, should not be necessary
     C = sqrt(2*f.θ) .* ξ; c = C .+ f.v
     fw = f.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*f.θ)
@@ -28,12 +28,11 @@ end
 
 
 
-
+"""
+    Compute the convective moments ∫ C^{n-1} f dc where C = c - v
+    and return the primitive moments [ρ, v, C^2, C^3, ..., C^{N-1}]
+"""
 function primitive_moments(f::Maxwellian, ::Val{N}) where {N}
-    """
-        Compute the convective moments ∫ C^{n-1} f dc where C = c - v
-        and return the primitive moments [ρ, v, C^2, C^3, ..., C^{N-1}]
-    """
     ξ, w = gausshermite(N+1)
     C = sqrt(2*f.θ) .* ξ; c = C .+ f.v
     fw = f.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*f.θ)
@@ -49,11 +48,10 @@ end
 
 
 
-
+"""
+    Shock tube initial conditions with left and right distribution functions
+"""
 struct InitialConditionsShockTube{N}
-    """
-        Shock tube initial conditions with left and right distribution functions
-    """
     left::SVector{N}
     right::SVector{N}
 
@@ -72,34 +70,14 @@ end
 
 
 
-struct InitialConditionsTwoShocks{N}
-    """
-        Two-shock initial conditions with inner and outer distribution functions
-    """
-    outer::SVector{N}
-    inner::SVector{N}
-
-    function InitialConditionsTwoShocks(f_outer, f_inner, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
-        outer = convective_moments(f_outer, Val(Mp1))
-        inner = convective_moments(f_inner, Val(Mp1))
-        # ToDo: verbose=false
-        @assert check_realizability(outer, verbose=false) && check_realizability(inner, verbose=false)
-        return new{Mp1}(outer, inner)
-    end
-end
-
-function (ic::InitialConditionsTwoShocks)(coords, t, equations::GramianMomentEquations1D)
-    if -1.0 < coords[1] && coords[1] < 1.0; return ic.inner; else; return ic.outer; end
-end
-
 
 #######################################
 ########### 1D3D Maxwellian ###########
 #######################################
+"""
+    Maxwellian distribution function in 3D velocity space (1D spatial)
+"""
 struct Maxwellian1D3D
-    """
-        Maxwellian distribution function in 3D velocity space (1D spatial)
-    """
     ρ::Real
     v::NTuple{3,Real}
     θ::Real # defined here as ∫ C^2 f dc (no factor 1/2)
@@ -108,13 +86,13 @@ end
 
 (f::Maxwellian1D3D)(cx::Real, cy::Real, cz::Real) = f.ρ/(2*π*f.θ)^(3/2) * exp(-((cx-f.v[1])^2 + (cy-f.v[2])^2 + (cz-f.v[3])^2) / (2*f.θ)) # note: normalized in 1D velocity space 
 
-function index3D(n::Integer)
-    """
-        index3D(total_degree)
+"""
+    index3D(total_degree)
 
     Return a vector of multi-indices (i,j,k) with i+j+k == total_degree.
     Ordering matches a lexicographic-style ordering and is intended for moment lists.
-    """
+"""
+function index3D(n::Integer)
     tuples = collect(Iterators.product(0:n, 0:n, 0:n))
     vecs = [collect(t) for t in tuples]
     selected = filter(v -> sum(v) == n, vecs)
@@ -122,23 +100,23 @@ function index3D(n::Integer)
     return reverse(selected)
 end
 
-function multi_index_list(M::Integer)
-    """
-        multi_index_list(M)
+"""
+    multi_index_list(M)
 
     Return a flattened list of multi-indices for all shells 0..M.
-    """
+"""
+function multi_index_list(M::Integer)
     return vcat([index3D(n) for n in 0:M]...)
 end
 
-function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0.0,0.0,0.0), theta::Real=1.0; q::Integer=35+1)
-    """
-        convective_moments_1D3D(M; rho=1.0, u=(0,0,0), theta=1.0, q=8)
+"""
+    convective_moments_1D3D(M; rho=1.0, u=(0,0,0), theta=1.0, q=8)
 
     Compute the velocity moments up to `M` (all multi-indices with i+j+k <= M)
     using tensor-product Gauss–Hermite with `q` nodes per dimension. Returns a Vector{Float64}
     with the same ordering as `multi_index_list(M)`.
-    """
+"""
+function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0.0,0.0,0.0), theta::Real=1.0; q::Integer=35+1)
     # 35+1 is max degree in the test cases for M=4 (hard-coded)
     # quadrature nodes and weights for ∫ e^{-x^2} g(x) dx
     ξ, w = gausshermite(q)
@@ -177,10 +155,10 @@ function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0
     return moments
 end
 
+"""
+    Shock tube initial conditions with left and right distribution functions in 1D3D
+"""
 struct InitialConditionsShockTube1D3D{N}
-    """
-        Shock tube initial conditions with left and right distribution functions in 1D3D
-    """
     left::SVector{N}
     right::SVector{N}
 
@@ -203,49 +181,57 @@ function (ic::InitialConditionsShockTube1D3D)(coords, t, equations::GramianMomen
     if coords[1] < 0.0; return ic.left; else; return ic.right; end
 end
 
-#######################################
-# Electron hole distribution function #
-#######################################
-struct ElectronHole
-    ψ::Real
-    Δ::Real
-    v0::Real
-    β::Real
-    ElectronHole(ψ, Δ, v0, β) = new(ψ, Δ, v0, β)
-end
 
-f0_eh(v, ϕ, v0) = 1 / √(2π) * exp(-.5 * (sign(v) * √(v^2 - 2ϕ) - v0)^2)
-f1_eh(v, ϕ, v0, β) = 1 / √(2π) * exp(-.5 * (β  * (v^2 - 2ϕ) + v0)^2)
-f_eh(v, ϕ, v0, β) = if v^2 > 2ϕ; f0_eh(v, ϕ, v0); else; f1_eh(v, ϕ, v0, β); end;
 
-(eh::ElectronHole)(x::Real, c::Real) = begin
-    ϕ = eh.ψ * exp(((x/eh.Δ))^2)
-    return f_eh(c, ϕ, eh.v0, eh.β)
-end
 
-function convective_moments(eh::ElectronHole, x::Real, ::Val{N}) where {N}
-    moments = zeros(N)
-    c = LinRange(-5.0, 5.0, 1_000) # todo: maybe make this generic
-    # Compute the integral with the trapezoidal rule
-    fc = eh.(x, c)
-    for n in 1:N
-        moments[n] = trapz(c, c.^(n-1) .* fc)
-    end
-    return SVector{N,Float64}(moments)
-end
+#############################################
+########## Vlasov Example Initial Conditions ##########
+#############################################
 
-struct InitialConditionsElectronHole{N}
-    eh::ElectronHole
-    MP1::Int
+"""
+        Initial conditions for Landau damping problem in Vlasov-Poisson system
 
-    function InitialConditionsElectronHole(eh, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
-        return new{Mp1}(eh, Mp1)
+        The probability distribution function is a small perturbtation of a Maxwellian:
+        f(x,c) = 1 / √(2π) * (1 + ϵ * cos(k * x)) * exp(- c^2 / 2)
+    """
+struct InitialConditionsLandauDamping{N}
+    ρ0::Float64
+    ϵ::Float64
+    v0::Float64
+    θ0::Float64
+    k::Float64
+
+    function InitialConditionsLandauDamping(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+        return new{Mp1}(ρ0, ϵ, v0, θ0, k)
     end
 end
 
-function (ic::InitialConditionsElectronHole)(coords, t, equations::GramianMomentEquations1D)
-    moments = convective_moments(ic.eh, coords[1], Val(ic.MP1))
-    # ToDo: verbose=false
-    @assert check_realizability(moments, verbose=false)
-    return moments
+function (ic::InitialConditionsLandauDamping)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
+    ρx = ic.ρ0 * (1 + ic.ϵ * cos(ic.k * coords[1]))
+    f = Maxwellian(ρx, ic.v0, ic.θ0)
+    return convective_moments(f, Val(Mp1))
+end
+
+"""
+    Initial conditions for the two-stream instability problem in Vlasov-Poisson system
+
+    The probability distribution function is given by:
+        f(x,c) = 1 / √(2π) * (1 + ϵ cos(k * x)) * (exp(- c^2 / 2) * c^2
+"""
+struct InitialConditionsTwoStream{N}
+    ϵ::Float64
+    k::Float64
+
+    function InitialConditionsTwoStream(ϵ::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+        return new{Mp1}(ϵ, k)
+    end
+end
+
+function (ic::InitialConditionsTwoStream)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
+    max(c) = 1/sqrt(2*π) * exp(-c^2 / 2) * c^2 .* (1 + ic.ϵ * cos(ic.k * coords[1])) # note: normalized in 1D velocity space 
+    # copying from convective_moments for standard Maxwellian
+    ξ, w = gausshermite(Mp1+1) # +1 for good measure, should not be necessary
+    C = sqrt(2*1.0) .* ξ; c = C .+ 0.0
+    fw = max.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*1.0)
+    return SVector{Mp1,Float64}(ntuple(n->sum(c .^(n-1) .* fw), Mp1))
 end

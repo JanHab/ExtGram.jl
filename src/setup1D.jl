@@ -2,21 +2,8 @@
     Some helper functions for setting up 1D Gramian moment equations with Riemann initial conditions
 """
 
-function setupGramianMomentEquations1DRiemann(
-    M, Kn, closure, 
-    f_left, f_right;
-    base_tree_level = 8,
-    surface_flux = flux_lax_friedrichs,
-    volume_flux = flux_central,
-    polydeg = 1,        # DG polynomial degree
-    domain = (-2.0, 2.0),
-    χ_set = "optimal",
-    alpha_max = 0.5,
-    alpha_min = 0.001,
-    alpha_smooth = true,
-    )
-    """
-        Setup ready to create semidiscretizations of the Gramian moment equations in 1D
+"""
+    Setup ready to create semidiscretizations of the Gramian moment equations in 1D
 
     # Arguments
     - `M`: Number of moments
@@ -33,7 +20,20 @@ function setupGramianMomentEquations1DRiemann(
     - `alpha_max=0.5`: Maximum shock capturing parameter
     - `alpha_min=0.001`: Minimum shock capturing parameter
     - `alpha_smooth=true`: Smooth shock capturing parameter
-    """
+"""
+function setupGramianMomentEquations1DShockTube(
+    M, Kn, closure, 
+    f_left, f_right;
+    base_tree_level = 8,
+    surface_flux = flux_lax_friedrichs,
+    volume_flux = flux_central,
+    polydeg = 1,        # DG polynomial degree
+    domain = (-2.0, 2.0),
+    χ_set = "optimal",
+    alpha_max = 0.5,
+    alpha_min = 0.001,
+    alpha_smooth = true,
+    )
     equations = GramianMomentEquations1D(M, Kn, closure; χ_set=χ_set)
     initial_condition = InitialConditionsShockTube(
         f_left, # Density, velocity, temperature
@@ -69,15 +69,8 @@ function setupGramianMomentEquations1DRiemann(
 end
 
 
-function callbacksGramianMomentEquations(
-    semi, tspan, basis;
-    cfl = 0.45,          # Maximum cfl number
-    plot_interval = 20,  # plot every 20 steps
-    time_interval = 20, # save at 20 time intervals
-    name="gram_solution",
-)
-    """
-        Creates set of callbacks
+"""
+    Creates set of callbacks
 
     # Arguments
     - `semi`: Semidiscretization (Trixi.jl)
@@ -87,7 +80,14 @@ function callbacksGramianMomentEquations(
     - `plot_interval=20`: Plot every `plot_interval` steps
     - `time_interval=20`: Save solution `time_interval` often times
     - `name="gram_solution"`: Name of the output files (*.tsv)
-    """
+"""
+function callbacksGramianMomentEquations(
+    semi, tspan, basis;
+    cfl = 0.45,          # Maximum cfl number
+    plot_interval = 20,  # plot every 20 steps
+    time_interval = 20, # save at 20 time intervals
+    name="gram_solution",
+)
     alive_callback = AliveCallback(analysis_interval=100)
     summary_callback = SummaryCallback()
     stepsize_callback = StepsizeCallback(cfl=cfl)

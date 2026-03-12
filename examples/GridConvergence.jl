@@ -1,8 +1,11 @@
-using Revise
+"""
+    Grid Convergence with periodic boundaries and initial condition from Landau damping
+"""
+
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
+using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
 
 # Parameter
 M = parse(Int, ARGS[1])    # number of moments
@@ -13,7 +16,7 @@ source = source_string == "relaxation_source" ? relaxation_source : zero_source 
 T_end = parse(Float64, ARGS[5])
 
 base_tree_level = parse(Int, ARGS[6]) # e.g. 8
-polydeg = parse(Int, ARGS[7]) # e.g. 3
+polydeg = parse(Int, ARGS[7]) # e.g. 1
 
 ρ_0 = parse(Float64, ARGS[8])
 v_0 = parse(Float64, ARGS[9])
@@ -79,4 +82,4 @@ sol = solve(
     callback = callbacks,
 );
 
-# summary_callback()
+summary_callback()

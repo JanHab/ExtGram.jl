@@ -2,9 +2,8 @@
     Implementation of the Vlasov-Poisson system using Gramian moment equations in 1D1D.
 """
 
-mutable struct ElectricFieldStorage
-    """
-        Storage for the electric field values and related data for the Vlasov-Poisson system
+"""
+    Storage for the electric field values and related data for the Vlasov-Poisson system
 
     # Fields:
     - `E::Vector{Float64}`: Electric field values at spatial points
@@ -17,12 +16,12 @@ mutable struct ElectricFieldStorage
     - `times::Vector{Float64}`: Track actual times when E_L2 is recorded
     - `variables`: Store solution variables at spatial points
     - `coordinates::Vector{Float64}`: Store spatial coordinates
-    """
+"""
+mutable struct ElectricFieldStorage
     E::Vector{Float64} # Electric field values at spatial points
     Lx::Float64 # Length of the domain (x_max - x_min) for Poisson solve
     x_range::Vector{Float64}    # Spatial grid points
     initialized::Bool   # Flag to check if initialized
-    ρ::Vector{Float64} # todo: remove this later
     MP1::Int    # number of moments + 1
     E_L2::Vector{Float64}   # Track L2 norm of electric field over time
     times::Vector{Float64}  # Track actual times when E_L2 is recorded
@@ -31,15 +30,15 @@ mutable struct ElectricFieldStorage
 end
 
 # Global instance
-const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], 0.0, Float64[], false, Float64[], 0, Float64[], Float64[],
+const ELECTRIC_FIELD = ElectricFieldStorage(Float64[], 0.0, Float64[], false, 0, Float64[], Float64[],
     [Float64[]], Float64[]
 )
 
 
+"""
+    Source term that applies the source term from the electric field to the moment equations
+"""
 function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    """
-        Source term that applies the source term from the electric field to the moment equations
-    """
     E_field = linear_interpolation(ELECTRIC_FIELD.x_range, ELECTRIC_FIELD.E, extrapolation_bc = Interpolations.Line())
     
     # Evaluate electric field at position x
@@ -59,11 +58,10 @@ function vlasov_poisson_source(u, x, t, equations::GramianMomentEquations1D{Mp1}
     return source
 end
 
+"""
+    Solve the Poisson equation ∂E/∂x = ρ - ⟨ρ⟩ with periodic boundary conditions using FFT
+"""
 function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real})
-    """
-        Solve the Poisson equation ∂E/∂x = ρ - ⟨ρ⟩ with periodic boundary conditions using FFT
-
-    """
     n = length(ρ) # number of spatial points
     ρ̃  = ρ .- mean(ρ)  # neutralizing background
     ρk = fft(ρ̃)
@@ -91,10 +89,10 @@ function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real})
 end
 
 # Callback to solve Poisson equation globally at each timestep
+"""
+    Callback function to solve the Poisson equation and store electric field data
+"""
 function vlasov_poisson_callback(integrator)
-    """
-        Callback function to solve the Poisson equation and store electric field data
-    """
     u = integrator.u
     t = integrator.t
 
@@ -106,10 +104,11 @@ function vlasov_poisson_callback(integrator)
 
     # Extract density from solution variables
     # Helps for higher polynomial degrees, but could be optimized further
-    ρ = variables[2:end-1, 1]  # First column is density # todo: why 2:end-1? What's wrong here? The first and last entry seem to be off, though.
-
+    ρ = variables[2:end-1, 1]  # First column is density 
+    
     # Solve Poisson equation globally
     E = solve_poisson_periodic_fft(ρ)
+    
     # Store the electric field
     ELECTRIC_FIELD.E = copy(E)
 
@@ -122,10 +121,10 @@ function vlasov_poisson_callback(integrator)
     return nothing
 end
 
+"""
+    Create a DiscreteCallback for the Vlasov-Poisson system to solve Poisson equation at each timestep
+"""
 function vlasov_poisson_callback(;M, mesh, domain)
-    """
-        Create a DiscreteCallback for the Vlasov-Poisson system to solve Poisson equation at each timestep
-    """
     # Reset the global storage to clear old data from previous runs
     empty!(ELECTRIC_FIELD.E)
     empty!(ELECTRIC_FIELD.E_L2)
@@ -142,52 +141,4 @@ function vlasov_poisson_callback(;M, mesh, domain)
         save_positions=(true, true), # ?(false, false),
         initialize = (c, u, t, integrator) -> vlasov_poisson_callback(integrator)  # Call at initialization
     )
-end
-
-struct InitialConditionsLandauDamping{N}
-    """
-        Initial conditions for Landau damping problem in Vlasov-Poisson system
-
-    The probability distribution function is a small perturbtation of a Maxwellian:
-        f(x,c) = 1 / √(2π) * (1 + ϵ * cos(k * x)) * exp(- c^2 / 2)
-    """
-    ρ0::Float64
-    ϵ::Float64
-    v0::Float64
-    θ0::Float64
-    k::Float64
-
-    function InitialConditionsLandauDamping(ρ0::Float64, ϵ::Float64, v0::Float64, θ0::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
-        return new{Mp1}(ρ0, ϵ, v0, θ0, k)
-    end
-end
-
-function (ic::InitialConditionsLandauDamping)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    ρx = ic.ρ0 * (1 + ic.ϵ * cos(ic.k * coords[1]))
-    f = Maxwellian(ρx, ic.v0, ic.θ0)
-    return convective_moments(f, Val(Mp1))
-end
-
-struct InitialConditionsTwoStream{N}
-    """
-        Initial conditions for the two-stream instability problem in Vlasov-Poisson system
-
-    The probability distribution function is given by:
-        f(x,c) = 1 / √(2π) * (1 + ϵ cos(k * x)) * (exp(- c^2 / 2) * c^2
-    """
-    ϵ::Float64
-    k::Float64
-
-    function InitialConditionsTwoStream(ϵ::Float64, k::Float64, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
-        return new{Mp1}(ϵ, k)
-    end
-end
-
-function (ic::InitialConditionsTwoStream)(coords, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    max(c) = 1/sqrt(2*π) * exp(-c^2 / 2) * c^2 .* (1 + ic.ϵ * cos(ic.k * coords[1])) # note: normalized in 1D velocity space 
-    # copying from convective_moments for standard Maxwellian
-    ξ, w = gausshermite(Mp1+1) # +1 for good measure, should not be necessary
-    C = sqrt(2*1.0) .* ξ; c = C .+ 0.0
-    fw = max.(c) .* w .* exp.(ξ .^ 2) * sqrt(2*1.0)
-    return SVector{Mp1,Float64}(ntuple(n->sum(c .^(n-1) .* fw), Mp1))
 end

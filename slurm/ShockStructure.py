@@ -3,8 +3,8 @@ import os
 import numpy as np
 
 # Solver and simulation parameters
-Moments = [5,9]#![4]#!, 8]
-closure_vec = ["Grad"]# ["Gram", "ExtGram"]#!, "Grad"]
+Moments = [4, 5, 8, 9]
+closure_vec = ["Gram", "ExtGram", "Grad"]
 Kn = 1.0
 source = "relaxation_source"
 T_end = 25.0
@@ -17,10 +17,11 @@ Mach_numbers = [1.4, 2.0]
 x_left = -20.0
 x_right = 100.0
 
-# BGK
-N = 1_500
-c_l = -20.0
-c_u = 20.0
+# DVM
+N = 500
+c_l = -10.0
+c_u = 10.0
+base_tree_level_DVM = 10
 
 # SLURM job parameters
 threads = 1
@@ -38,21 +39,21 @@ for Ma in Mach_numbers:
     # Moment Methods
     for closure in closure_vec:
         for M in Moments:
-            command = f"julia examples/RiemannMoments.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
+            command = f"julia examples/Shock_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
             # os.system(command)
             createsbatch(
                 command, 
                 nproc=threads, nnodes=nnodes, 
                 time=time, mem=memory_request, 
-                output_file=f"out/Riemann1D/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
+                output_file=f"out/Shock/Moments/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}.out"
             )
 
-    # # BGK
-    # command = f"julia examples/RiemannBGK.jl {N} {c_l} {c_u} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
-    # # os.system(command)
-    # createsbatch(
-    #     command, 
-    #     nproc=threads, nnodes=nnodes, 
-    #     time=time, mem=memory_request, 
-    #     output_file=f"out/Riemann1D/BGK/slurm_output_N{N}_c_l{c_l}_c_u{c_u}_Kn{Kn}_source{source}_T{T_end}_base_tree_level{base_tree_level}_polydeg{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}_x_left{x_left}_x_right{x_right}.out"
-    #     )
+    # DVM
+    command = f"julia examples/Shock_DVM.jl {N} {c_l} {c_u} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
+    # os.system(command)
+    createsbatch(
+        command, 
+        nproc=threads, nnodes=nnodes, 
+        time=time, mem=memory_request, 
+        output_file=f"out/Shock/DVM/slurm_output_N{N}_c_l{c_l}_c_u{c_u}_Kn{Kn}_source{source}_T{T_end}_base_tree_level{base_tree_level}_polydeg{polydeg}_rho_L{rho_L}_v_L{v_L}_theta_L{theta_L}_rho_R{rho_R}_v_R{v_R}_theta_R{theta_R}_x_left{x_left}_x_right{x_right}.out"
+        )

@@ -119,7 +119,7 @@ def sol_final(filename, time_query=21):
     return x, u, t
 
 
-def read_solution_file_bgk(filename):
+def read_solution_file_DVM(filename):
     """
     Reads the Trixi-like solution file into a dict:
     {
@@ -175,7 +175,7 @@ def read_solution_file_bgk(filename):
 
     return data
 
-def interpolate_solution_bgk(data, time_query, times, timesteps):
+def interpolate_solution_DVM(data, time_query, times, timesteps):
     """Linear interpolation in time for all u's"""
     # Clamp outside range
     if time_query <= times.min():
