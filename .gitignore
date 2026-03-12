@@ -8,3 +8,4 @@ run_simulation.sh
 slurm/out/
 docs/build/
 Manifest.toml
+docs/Manifest.toml
