@@ -3,13 +3,7 @@
 *A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl*
 
 ```bibtex
-@software{habermann2024extgram,
-  author = {Habermann, Jan},
-  title = {ExtGram.jl},
-  year = {2024},
-  publisher = {Zenodo},
-  doi = {10.5281/zenodo.xxxxxx}
-}
+Placeholder
 ```
 
 ## Abstract (from the thesis)
