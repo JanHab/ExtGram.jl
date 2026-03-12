@@ -2,10 +2,6 @@
 
 *A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl*
 
-```bibtex
-Placeholder
-```
-
 ## Abstract (from the thesis)
 The classical continuum mechanical equations of Navier-Stokes and Fourier (NSF) accurately describe gases with a high collision frequency, measured by a small Knudsen number (Kn).
 However, the NSF equations fail for gases with a high Knudsen number and, consequently, a small collision frequency.
@@ -121,6 +117,12 @@ Note that this folder is in `.gitignore`.
 The visualizations will only work if you have the necessary data.
 
 Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?ref_type=heads) contains a small testing pipeline.
+
+## Referencing 
+
+```bibtex
+Placeholder
+```
 
 ## Contact
 
