@@ -96,6 +96,13 @@ mkdir out/VlasovPoisson/LandauDamping
 mkdir out/VlasovPoisson/TwoStreamInstability
 ```
 
+Visualizations are performed with Python in jupyter notebooks.
+Install the requirements from the `requirements.txt` file with (tested for python version 3.12.2):
+
+``` bash
+pip install -r requirements.txt
+```
+
 ### Testing
 
 Clone the repository and execute the testing pipeline with:
