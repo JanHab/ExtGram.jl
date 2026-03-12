@@ -4,7 +4,7 @@
 [![GitLab Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://git.rwth-aachen.de/janhab/fxdgm/-/tags)
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](https://git.rwth-aachen.de/janhab/fxdgm/-/blob/main/LICENSE?ref_type=heads) -->
 
-*A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl*
+*A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl.*
 
 ## Abstract (from the thesis)
 The classical continuum mechanical equations of Navier-Stokes and Fourier (NSF) accurately describe gases with a high collision frequency, measured by a small Knudsen number (Kn).
