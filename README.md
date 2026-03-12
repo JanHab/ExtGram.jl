@@ -105,6 +105,12 @@ Clone the repository and execute the testing pipeline with:
 julia test/tests.jl
 ```
 
+Further, you can test the installation by running the example `examples/ShockTubeExampe.jl`
+
+``` bash
+julia --project examples/ShockTubeExampe.jl
+```
+
 ### Documentation
 
 Generate the docs with:
