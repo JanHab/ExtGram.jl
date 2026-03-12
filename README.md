@@ -68,9 +68,12 @@ Pkg.instantiate()
 - ToDo: Test this out!
 
 The solutions will be stored in `out`, which is in the .gitignore.
-You need to create it, with all subfolders, manually, with:
+You need to create it, with all subfolders, manually.
+Further, Python (with jupyter notebooks) is used for visualizations.
+Install the requirements from the `requirements.txt` file with (tested for python version 3.12.2):
 
 ``` bash
+pip install -r requirements.txt
 mkdir out
 mkdir out/1D3D
 mkdir out/1D3D/1D3D_angles
@@ -94,13 +97,6 @@ mkdir out/Shock/Moments
 mkdir out/VlasovPoisson
 mkdir out/VlasovPoisson/LandauDamping
 mkdir out/VlasovPoisson/TwoStreamInstability
-```
-
-Visualizations are performed with Python in jupyter notebooks.
-Install the requirements from the `requirements.txt` file with (tested for python version 3.12.2):
-
-``` bash
-pip install -r requirements.txt
 ```
 
 ### Testing
