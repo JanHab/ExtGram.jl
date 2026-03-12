@@ -2,19 +2,17 @@
 
 *A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl*
 
-
-<details>
-<summary>BibTeX</summary>
-
 ```bibtex
-ToDo: Add the Zenodo
+@software{habermann2024extgram,
+  author = {Habermann, Jan},
+  title = {ExtGram.jl},
+  year = {2024},
+  publisher = {Zenodo},
+  doi = {10.5281/zenodo.xxxxxx}
+}
 ```
-</details>
 
-<details>
-<summary>Abstract (from the thesis)</summary>
-
-```Abstract (from the thesis)
+## Abstract (from the thesis)
 The classical continuum mechanical equations of Navier-Stokes and Fourier (NSF) accurately describe gases with a high collision frequency, measured by a small Knudsen number (Kn).
 However, the NSF equations fail for gases with a high Knudsen number and, consequently, a small collision frequency.
 Directly solving Boltzmann's equation is an alternative approach of high accuracy, but is computationally very demanding due to its high dimensionality.
@@ -31,8 +29,6 @@ Rigorous mathematical proofs for the structure-preserving properties of this upd
 While the closure is constructed in one dimension, a projection method for applying it to a three-dimensional velocity phase, based on matrix rotations, is introduced.
 Further, the extended Gramian closure is numerically solved with the discontinuous Galerkin method and its accuracy is analyzed and compared with that of the Gramian closure and Grad's closure.
 Therefore, various benchmark problems, including the shock tube, shock structure, Landau damping, and two-stream instability, are analyzed.
-```
-</details>
 
 ## Main Features
 
@@ -53,33 +49,16 @@ Therefore, various benchmark problems, including the shock tube, shock structure
 
 ## Installation
 
-First, clone the git repository
+Clone the git repository and install the `ExtGram.jl` package locally with:
 
 ``` bash
 git clone git@git.rwth-aachen.de:JanHab/ExtGram.jl.git
 cd ExtGram.jl
-```
-
-<!-- We need the `Revise` julia package to execute most of the scripts.
-In principle, this is not necessary for the numerical backend, but was used to accelerate implementations.
-
-``` julia
-using Pkg;
-Pkg.add(Revise);
-Pkg.instantiate()
-``` 
--->
-
-Now we can install the `ExtGram` package locally with:
-
-``` bash
 julia --project -e 'import Pkg; Pkg.instantiate()'
 ```
 
-- ToDo: Test this out!
-
-The solutions will be stored in `out`, which is in the .gitignore.
-You need to create it, with all subfolders, manually.
+The solutions are stored in the `out` folder (in .gitignore).
+You need to create it and all subfolders.
 Further, Python (with jupyter notebooks) is used for visualizations.
 Install the requirements from the `requirements.txt` file with (tested for python version 3.12.2):
 
@@ -110,7 +89,7 @@ mkdir out/VlasovPoisson/LandauDamping
 mkdir out/VlasovPoisson/TwoStreamInstability
 ```
 
-### Testing
+## Testing
 
 Clone the repository and execute the testing pipeline with:
 
@@ -124,7 +103,7 @@ Further, you can test the installation by running the example `examples/ShockTub
 julia --project examples/ShockTubeExample.jl
 ```
 
-### Documentation
+## Documentation
 
 Generate the docs with:
 
@@ -143,6 +122,9 @@ The folder [examples](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/e
 [miscellaneous](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/miscellaneous?ref_type=heads) contains miscellaneous files used for implementation and checking.
 
 [notebooks](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/notebooks?ref_type=heads) has all the visualizations.
+The results are stored in `out`.
+Note that this folder is in `.gitignore`. 
+The visualizations will only work if you have the necessary data.
 
 Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?ref_type=heads) contains a small testing pipeline.
 
