@@ -3,9 +3,9 @@
 <!-- [![Build Status](https://github.com/JanHab/ExtGram.jl/actions/workflows/documentation.yml/badge.svg)](https://github.com/JanHab/ExtGram.jl/actions) -->
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://JanHab.github.io/ExtGram.jl/)
 [![Build](https://img.shields.io/github/actions/workflow/status/JanHab/ExtGram.jl/documentation.yml?label=build)](https://github.com/JanHab/ExtGram.jl/actions)
-<!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15388656.svg)](https://doi.org/10.5281/zenodo.15388656)
-[![GitLab Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://git.rwth-aachen.de/janhab/fxdgm/-/tags)
-[![License](https://img.shields.io/badge/license-GPLv3-blue)](https://git.rwth-aachen.de/janhab/fxdgm/-/blob/main/LICENSE?ref_type=heads) -->
+[![GitLab Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://git.rwth-aachen.de/janhab/ExtGram.jl/-/tags)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://git.rwth-aachen.de/janhab/ExtGram.jl/-/blob/main/LICENSE?ref_type=heads)
+<!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15388656.svg)](https://doi.org/10.5281/zenodo.15388656) -->
 
 *A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl.*
 
