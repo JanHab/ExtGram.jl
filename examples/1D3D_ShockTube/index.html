@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>1D3D - Shock Tube Example · ExtGram.jl</title><meta name="title" content="1D3D - Shock Tube Example · ExtGram.jl"/><meta property="og:title" content="1D3D - Shock Tube Example · ExtGram.jl"/><meta property="twitter:title" content="1D3D - Shock Tube Example · ExtGram.jl"/><meta name="description" content="Documentation for ExtGram.jl."/><meta property="og:description" content="Documentation for ExtGram.jl."/><meta property="twitter:description" content="Documentation for ExtGram.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ExtGram.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../1D1D_ShockTube/">1D1D - Shock Tube Example</a></li><li><a class="tocitem" href="../1D1D_ShockStructure/">1D1D - Shock Structure Example</a></li><li class="is-active"><a class="tocitem" href>1D3D - Shock Tube Example</a></li></ul></li><li><a class="tocitem" href="../../reference/">API Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>1D3D - Shock Tube Example</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>1D3D - Shock Tube Example</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://git.rwth-aachen.de/JanHab/ExtGram.jl" title="View the repository"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">Repository</span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Shock-Structure-Example"><a class="docs-heading-anchor" href="#Shock-Structure-Example">Shock Structure Example</a><a id="Shock-Structure-Example-1"></a><a class="docs-heading-anchor-permalink" href="#Shock-Structure-Example" title="Permalink"></a></h1><p>This tutorial mirrors the setup from examples/Shock_1D1D.jl with parameters chosen for the shock structure test case (Ma=1.4).  It evolves a one-dimensional shock structure and stores the resulting density/velocity/pressure profile. Note: The grid is usually finer, and is coarsened for this example.</p><pre><code class="language-julia hljs">if !endswith(Base.active_project(), &quot;../Project.toml&quot;)
+    import Pkg; Pkg.activate(&quot;.&quot;)
+end # Runs in environment setup
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
+
+# General parameter
+M = 4
+closure = &quot;ExtGram&quot; # possible: &quot;Gram&quot;, &quot;ExtGram&quot; or &quot;Grad&quot;
+Kn = 1.0
+source = relaxation_source # if &quot;zero_source&quot; Kn doesn&#39;t matter, as no source term
+
+T_end = 0.3
+base_tree_level = 8 # 10 used in thesis, but let&#39;s speed it up a bit
+polydeg = 1
+x_lower = -2.0
+x_upper = 2.0
+
+# Fixed settings
+domain = (x_lower, x_upper)
+
+# Initial conditions
+ρ_L = 7.0
+v_L1 = 0.0
+v_L2 = 0.0
+v_L3 = 0.0
+θ_L = 1.0
+ρ_R = 1.0
+v_R1 = 0.0
+v_R2 = 0.0
+v_R3 = 0.0
+θ_R = 1.0
+
+# Setting up everything
+equations = GramianMomentEquations1D3D(M, Kn, closure)
+
+initial_condition = InitialConditionsShockTube1D3D(
+    Maxwellian1D3D(ρ_L, (v_L1, v_L2, v_L3), θ_L), # Density, velocity, temperature
+    Maxwellian1D3D(ρ_R, (v_R1, v_R2, v_R3), θ_R), # Shock in density, but not velocity, temperature initially
+    M,
+    equations
+)
+
+#= set up semidiscretization =#
+basis = LobattoLegendreBasis(polydeg)
+
+# shock capturing
+indicator_sc = IndicatorHennemannGassner(
+    equations, basis,
+    alpha_max = 0.15, 
+    alpha_min = 0.001, 
+    alpha_smooth = true,  # smoothes with all neighboring indicators to remove numerical artifacts
+    variable = (u, eqns)-&gt;u[1]*u[5]
+)
+
+surface_flux = flux_lax_friedrichs
+volume_flux = flux_central
+volume_integral = VolumeIntegralShockCapturingHG(
+    indicator_sc;
+    volume_flux_dg = volume_flux,
+    volume_flux_fv = surface_flux
+)
+
+solver = DGSEM(basis, surface_flux, volume_integral)
+
+mesh = TreeMesh(
+    (domain[1],), (domain[2],), 
+    initial_refinement_level=base_tree_level, 
+    n_cells_max=10_000, 
+    periodicity=false
+)
+
+boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
+
+semi = SemidiscretizationHyperbolic(
+    mesh, equations, 
+    initial_condition, solver, 
+    boundary_conditions=boundary_conditions, 
+    source_terms=source
+)
+
+#= set up ODE =#
+tspan = (0.0, T_end)
+ode = semidiscretize(semi, tspan)
+
+cfl = 0.99
+time_interval = 20
+
+alive_callback = AliveCallback(analysis_interval=100)
+summary_callback = SummaryCallback()
+stepsize_callback = StepsizeCallback(cfl=cfl)
+
+plot_interval = 20  # plot every 20 steps
+plot_callback = VisualizationCallback(
+    semi;
+    interval=plot_interval,
+    solution_variables=cons2cons,
+    plot_data_creator=PlotData1D,
+    plot_creator=Trixi.show_plot,
+)
+
+callbacks = CallbackSet(
+    alive_callback,
+    stepsize_callback,
+    plot_callback,
+)
+
+#= solve =#
+sol = solve(
+    ode, 
+    CarpenterKennedy2N54(
+        williamson_condition = false
+    );
+    dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+    ode_default_options()...,
+    callback = callbacks,
+);
+
+summary_callback()
+
+# Post-Processing
+n_equations = 10
+u_final = sol.u[end]
+L = length(u_final)
+Nloc = L ÷ (n_equations)
+Fmat = reshape(u_final, n_equations, Nloc)
+x = range(x_lower, x_upper, length=Nloc)
+
+u = []
+for i in 1:n_equations
+    push!(u, Fmat[i, :])
+end
+
+rho = u[1];
+v = u[2] ./ u[1];
+theta = 1 ./ (3 .* rho) .* (u[3] .+ 2 .* u[4] .- rho .* v.^2);
+p = rho .* theta;
+
+# Visualization
+p1 = plot(xlims = (-1.0, 1.0));
+plot!(p1, x, rho, color=:blue, label=&quot;Density&quot;, legend=:topleft)
+plot!(twinx(p1), x, v, color=:red, label=&quot;Velocity&quot;, legend=:topright)
+plot!(p1, x, p, color=:green, label=&quot;Pressure&quot;)</code></pre><p><img src="../assets/1D3D_ShockTube.svg" alt="ShockStructure"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../1D1D_ShockStructure/">« 1D1D - Shock Structure Example</a><a class="docs-footer-nextpage" href="../../reference/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 12 March 2026 15:12">Thursday 12 March 2026</span>. Using Julia version 1.11.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
