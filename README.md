@@ -1,5 +1,7 @@
 # ExtGram.jl
 
+[![Build Status](https://github.com/JanHab/ExtGram.jl/actions/workflows/documentation.yml/badge.svg)](https://github.com/JanHab/ExtGram.jl/actions)
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://JanHab.github.io/ExtGram.jl/)
 <!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15388656.svg)](https://doi.org/10.5281/zenodo.15388656)
 [![GitLab Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://git.rwth-aachen.de/janhab/fxdgm/-/tags)
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](https://git.rwth-aachen.de/janhab/fxdgm/-/blob/main/LICENSE?ref_type=heads) -->
