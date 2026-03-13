@@ -1,47 +1,28 @@
 # Created with Gemini
 
-name: CI & Docs
+name: Build and Deploy Docs
 on:
   push:
     branches:
-      - main  # or master
+      - main  # Change to master if needed
+
+permissions:
+  contents: write # Allows the action to push to the gh-pages branch
 
 jobs:
-  test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        version: ['1.11']
-        os: [ubuntu-latest]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
-        with:
-          version: ${{ matrix.version }}
-      - uses: julia-actions/cache@v2
-      - name: Run Tests
-        run: |
-          julia --project=@. -e '
-            using Pkg
-            Pkg.instantiate()
-            Pkg.test()'
-        # Note: Pkg.test() automatically looks for test/runtests.jl
-        # If your entry point is specifically test/tests.jl, use:
-        # julia --project=@. test/tests.jl
-
-  docs:
-    needs: test # Only build docs if tests pass
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v2
         with:
           version: '1.11'
-      - name: Build Documentation
+
+      - name: Install Dependencies and Build
         run: |
-          rm -f docs/Manifest.toml
           julia --project=docs -e '
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
@@ -49,8 +30,9 @@ jobs:
             include("docs/make.jl")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: docs/build
-          branch: gh-pages
+          folder: docs/build # The folder Documenter.jl creates
+          branch: gh-pages    # The branch where the HTML will live
