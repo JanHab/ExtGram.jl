@@ -121,7 +121,18 @@ Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?re
 ## Referencing 
 
 ```bibtex
-Placeholder
+@software{jan_habscheid_2026_18998361,
+  author       = {Jan Habscheid and
+                  Yilmaz, Eda and
+                  Torrilhon, Manuel},
+  title        = {ExtGram.jl},
+  month        = mar,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {1.0.0},
+  doi          = {10.5281/zenodo.18998361},
+  url          = {https://doi.org/10.5281/zenodo.18998361},
+}
 ```
 
 ## Contact
