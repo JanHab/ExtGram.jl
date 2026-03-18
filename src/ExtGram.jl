@@ -40,9 +40,8 @@ include("vlasov_poisson.jl")
 export vlasov_poisson_callback, vlasov_poisson_source, InitialConditionsLandauDamping, InitialConditionsTwoStream
 
 # TrixiTree2Triangulation
-# This module implements the triangulation of a 2D TreeMesh with subsequent
+# This module implements an OrdinaryDiffEq callback for the triangulation of a 2D TreeMesh with subsequent
 # writing of the mesh and solution into a basic file readable by external visualization programs.
-# The intended use is as callback and is therefore simple to use.
 # Required packages: Trixi, OrdinaryDiffEq, HDF5, WriteVTK, (LinearAlgebra, Printf)
 include("TrixiTree2Triangulation/TrixiTree2Triangulation.jl")
 export SaveTriangulationCallback

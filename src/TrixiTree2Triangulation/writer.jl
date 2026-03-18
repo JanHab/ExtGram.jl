@@ -1,18 +1,8 @@
 #=
-Author: Matthias Geratz | Matthias.Geratz@rwth-aachen.de
-May 2023
-
 File output of the triangulation matrices created in converter.jl
 Supports functions for different file formats.
 Used in converter.jl convertMeshAndSolution()
 =#
-
-
-using Printf
-using HDF5
-using WriteVTK
-
-
 
 #=
 Write the triangulated mesh and solution into a file.

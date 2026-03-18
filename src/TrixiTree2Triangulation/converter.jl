@@ -1,13 +1,6 @@
 #=
-Author: Matthias Geratz | Matthias.Geratz@rwth-aachen.de
-March 2023
-
-
 Triangulation of a 2D TreeMesh including solution transfer to the new unique vertices and subsequent output as file.
-
-For assumptions/requirements of the code and for notes on performance see the bottom of this file.
 Note: triangle normal definitions might be weird/inconsistent due to the order of the vertices
-
 
 Useful Trixi files:
 https://github.com/trixi-framework/Trixi.jl/blob/main/src/meshes/abstract_tree.jl
@@ -17,11 +10,6 @@ not used, but seems relevant:
 https://github.com/trixi-framework/Trixi.jl/blob/24a03e360ce730aa0fc8b6ddbe509f1a64ef7351/utils/trixi2txt.jl
 there is also a to vtk method somewhere.
 =#
-
-using Trixi
-using LinearAlgebra
-
-
 
 
 
@@ -164,10 +152,10 @@ end
 Inverts the mapping i_active_cell->vertices to obtain the mapping of a given i_vertex
 to all the cells it is contained within.
 The mapping vertex->cells is a matrix where [i_vertex, :] = [9]
-Where [1:4] are the cell indices (in active cells) of conected cells
+Where [1:4] are the cell indices (in active cells) of connected cells
 (Vertex maximally part of four cells, if less, then the rest of the four entires is =0).
 [5:8] Give the local position (1-8) inside the respective cell ([5] gives pos in [1]).
-[9=end] gives the number of cells the vertex is contained within (usefull for iteration and solution averaging).
+[9=end] gives the number of cells the vertex is contained within (useful for iteration and solution averaging).
 =#
 function generateActiveVerticesToCellsMap(active_cells_to_vertices, n_vertices)
   active_vertices_to_cells = zeros(Int, n_vertices, 9)
@@ -260,7 +248,7 @@ function triangulateMesh(active_cells_to_vertices)
     vertices = active_cells_to_vertices[i, :]
     n_triangles = n_triangles_per_cell[i]
     # depending on the vertex signature ([i, :] > 0) of the cell,
-    # select the triangluation of the cell, substitute the vertice position with their index and add to connectivity matrix
+    # select the triangulation of the cell, substitute the vertex positions with their index and add to connectivity matrix
     connectivity[:, i_conn:i_conn+n_triangles-1] = vertices[triangulation_table[table_index[((vertices[5:8] .> 0) .+1)...]]]'
     i_conn += n_triangles
   end
@@ -272,7 +260,7 @@ end
 
 
 
-# evaluates the Lagrange basis function for a set of roots at a point x
+# evaluates the Lagrange basis function for a set of roots at a point x | naive implementation
 function lagrangeBasisEvaluation(n_roots, roots, x)
   l = ones(n_roots)
   for j=1:n_roots
@@ -325,7 +313,7 @@ function collectSolutionVariables(integrator, active_cells_to_vertices, active_v
   #  9 10 11 12
   #  5  6  7  8
   #  1  2  3  4
-  # indexing vectors to exctract corner and edge values from the vector of element variable values
+  # indexing vectors to extract corner and edge values from the vector of element variable values
   corner_node_positions = [1, nnodes, nodes_per_cell-nnodes+1, nodes_per_cell]
   edge_node_positions = [[1:nnodes:nodes_per_cell...], # left
                          [nnodes:nnodes:nodes_per_cell...], # right
@@ -335,7 +323,7 @@ function collectSolutionVariables(integrator, active_cells_to_vertices, active_v
 
 
   # create the coefficients to Lagrange-interpolate the midpoint on the edges
-  # (i.e. lagrange basis functions evaluated at x=0 (the edge midpoint in referece space))
+  # (i.e. lagrange basis functions evaluated at x=0 (the edge midpoint in reference space))
   roots = Trixi.LobattoLegendreBasis(polydeg).nodes
   coeffs = lagrangeBasisEvaluation(nnodes, roots, 0.0)
 
@@ -387,52 +375,3 @@ function collectSolutionVariables(integrator, active_cells_to_vertices, active_v
 
   return variables
 end
-
-
-
-
-
-
-
-
-#=
-
-####### assumptions on the mesh | requirements #######
-
-The mesh is a 2D TreeMesh
-
-For all pairs of diagonal neighbors:
-One of their shared neighbors active (leaf) cell index is between or lower than the two indices of the diagonal neighbors.
-This ensures that the index of a corner vertex is propagated though the cardinal neighbors to the diagonal ones.
-For a refined mesh, the same should be true for coarse-fine diagonal neighbors.
-
-There are no interfaces that interface a finer and a coarser cell at once. (Alway max one level difference between cells)
-This is auto-satisfied for a tree mesh.
-
-Satisfied by the Trixi framework, TreeMesh and AMR procedure (state Q1 2023):
-Corner vertices are nodes of the nodal DG discretization (Gauss-Lobatto quadrature).
-A neighboring cell's resolution is at most one level different that the current cell's resolution.
-Uniform discretization order (p-conforming).
-A reasonable mesh (e.g. no one-cell meshes -> all active leaf cells have a parent)
-No inverted coordinate system: x_min=x_left < x_right=x_max (and same for y)
-Active cell id (Trixi.leaf_cells(tree)) is is monotonically ascending
-An active cell can only have two coarser active neighbors, both connecting to the same corner (true for a TreeMesh)
-
-
-
-
-####### performance #######
-Trixi.leaf_cells(tree) used in mapping creation and coordinate creation. -> could get one and pass
-use views somewhere?
-coordinates: get Trixi.length_at_cell(tree, cell_id) for each level in tree once and store in helper vector
-periodic check is done for all cells, irrespective of if the mesh is even periodic
-pre-calculate connectivity length when constructing the cell-> vertex mapping or just overestimate size
-the triangulation lookup table can be rearranged so that the initial lookup 4D matrix matches 1:16 and can be replaced with a simple function
-for repeated execution, a struct storing triangulation tables and the mapping matrices (overestimated size because AMR) would be beneficial
-including a dummy row in the mapping matrices at the beginning would eliminate some if > 0 -> just write to i+1 row
-major simplifications and performance uplift may be obtained by accounting for to order of active cells in the 2d tree mesh (only need to read left and down and write right and up).
-Is the piecewise writing of data to the file slow or fast enough?
-
-
-=#
-
