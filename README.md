@@ -91,7 +91,7 @@ mkdir out/VlasovPoisson/TwoStreamInstability
 Clone the repository and execute the testing pipeline with:
 
 ``` bash
-julia test/tests.jl
+julia --project test/tests.jl
 ```
 
 Further, you can test the installation by running a shock tube example with:
