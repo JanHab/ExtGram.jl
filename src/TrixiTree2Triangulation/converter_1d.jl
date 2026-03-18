@@ -74,4 +74,4 @@ function collect1dTreeArrays(semi, u_ode, solution_variables)
   return connectivity, coordinates, variables
 end
 
-collect1dTreeArrays(integrator, solution_variables) = collect1dTreeArrays(integrator.p, integrator.u_ode, solution_variables)
+collect1dTreeArrays(integrator, solution_variables) = collect1dTreeArrays(integrator.p, integrator.u, solution_variables)
