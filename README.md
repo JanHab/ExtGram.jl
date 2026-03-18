@@ -5,7 +5,7 @@
 [![Build](https://img.shields.io/github/actions/workflow/status/JanHab/ExtGram.jl/documentation.yml?label=build)](https://github.com/JanHab/ExtGram.jl/actions)
 [![GitLab Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://git.rwth-aachen.de/janhab/ExtGram.jl/-/tags)
 [![License](https://img.shields.io/badge/license-CCBY4.0-blue)](https://git.rwth-aachen.de/janhab/ExtGram.jl/-/blob/main/LICENSE?ref_type=heads)
-<!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15388656.svg)](https://doi.org/10.5281/zenodo.15388656) -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18998361.svg)](https://doi.org/10.5281/zenodo.18998361)
 
 *A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl.*
 
@@ -100,14 +100,6 @@ Further, you can test the installation by running a shock tube example with:
 julia --project examples/ShockTubeExample.jl
 ```
 
-## Documentation
-
-Generate the docs with:
-
-``` bash
-julia --project docs/make.jl
-```
-
 ## Usage
 
 Find the package source code in [src](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/src?ref_type=heads), which implements the momentum closure and the system of PDEs.
@@ -122,6 +114,7 @@ The folder [examples](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/e
 The results are stored in `out`.
 Note that this folder is in `.gitignore`. 
 The visualizations will only work if you have the necessary data.
+You can find minimal working data archived with Zenodo here:  [https://doi.org/10.5281/zenodo.18998361](https://doi.org/10.5281/zenodo.18998361)  
 
 Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?ref_type=heads) contains a small testing pipeline.
 
