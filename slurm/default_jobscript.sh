@@ -9,7 +9,6 @@
 #SBATCH --time=aot
 #SBATCH --mem=mem_req
 #
-#SBATCH -A thes2188
 
 if [ -r /usr/local_host/etc/bashrc ]; then
     . /usr/local_host/etc/bashrc
