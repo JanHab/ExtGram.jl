@@ -1,6 +1,5 @@
 # ExtGram.jl
 
-<!-- [![Build Status](https://github.com/JanHab/ExtGram.jl/actions/workflows/documentation.yml/badge.svg)](https://github.com/JanHab/ExtGram.jl/actions) -->
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://JanHab.github.io/ExtGram.jl/)
 [![Build](https://img.shields.io/github/actions/workflow/status/JanHab/ExtGram.jl/documentation.yml?label=build)](https://github.com/JanHab/ExtGram.jl/actions)
 [![GitLab Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://git.rwth-aachen.de/janhab/ExtGram.jl/-/tags)
