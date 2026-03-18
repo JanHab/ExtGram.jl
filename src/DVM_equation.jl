@@ -148,7 +148,7 @@ end
     - `p::Vector{Float64}`: Pressure at each spatial coordinate.
 """
 function ρ_v_θ_p_DVM(semi, sol, equations::DVMEquations1D)
-    _, coords, variables = collect1DTreeArrays(semi, sol.u[end], cons2cons)
+    _, coords, variables = collect1dTreeArrays(semi, sol.u[end], cons2cons)
     x = coords[2:end-1]
     Fmat = variables[2:end-1, :]'  # First column is density
     ρ = dc(equations) * sum(Fmat, dims=1)
