@@ -1,7 +1,7 @@
 #=
 Wraps the triangulation and output functionality implemented in converter.jl in a callback object.
 
-Modeled after and copies sections from SaveSolutionCallback{SolutionVariables} in Trixi: save_solution.jl
+Modeled after and mirrors sections from SaveSolutionCallback{SolutionVariables} in Trixi: save_solution.jl
 
 Useful Trixi files:
 https://github.com/trixi-framework/Trixi.jl/blob/main/src/callbacks_step/save_solution.jl
@@ -10,10 +10,6 @@ https://github.com/trixi-framework/Trixi.jl/blob/main/src/callbacks_step/save_so
 https://github.com/trixi-framework/Trixi.jl/blob/24a03e360ce730aa0fc8b6ddbe509f1a64ef7351/examples/tree_2d_dgsem/elixir_advection_callbacks.jl
 =#
 
-using Trixi
-using OrdinaryDiffEq: DiscreteCallback, u_modified!
-using DiffEqCallbacks: PeriodicCallback, PeriodicCallbackAffect
-
 
 """
 Callback struct that triangulates and writes the 2D tree mesh and the solution variables.
@@ -21,7 +17,7 @@ Can also be used for 1D Tree meshes, in which case a continuous piecewise linear
 
 #Configuration:
 
--`solution_variables`: The set of solution variables to write (via Trixi solution variables function, such as 'cons2prim')\n
+-`solution_variables`: The set of solution variables to write (via Trixi solution variables function, such as 'cons2prim')
 -`interval`: Save every interval time-steps. An interval <= 0 means do not save interval-based.
 
 -`time_interval`: Save at every simulation time multiple of the time interval.
@@ -30,7 +26,7 @@ The callback guarantees that the interval multiples are hit by reducing the time
 
 -`save_initial_solution`, `save_final_solution`, `output_directory`
 
--`file_format`: supported file-formats are "dat", "szplt", "vtu" "h5".
+-`file_format`: supported file-formats are "dat", "szplt", "vtu" and "h5".
   '.dat' is the Tecplot Tabular data file written in ascii, readable by both Tecplot and Paraview.
   '.szplt' is the Tecplot proprietary format only readable by Tecplot.
     Use of szplt writing requires the LD_LIBRARY_PATH to contain the libtecio.so shared library file.
@@ -169,9 +165,9 @@ function SaveTriangulationCallback(; solution_variables=Trixi.cons2cons,
                                      name="solution",
                                      info="")
 
-  # if configured, use the standard trixi output callback instead of the triangulation
+  # if configured, use the standard Trixi output callback instead of the triangulation
   if file_format=="trixi"
-    # clear the output directory here, since SaveSolutionCallback can not
+    # clear the output directory here, since SaveSolutionCallback cannot
     manage_output_directory(output_directory, clear_out_dir, verbose)
     # switch to the purely the Trixi callback
     if verbose

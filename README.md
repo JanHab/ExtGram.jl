@@ -102,7 +102,6 @@ julia --project examples/ShockTubeExample.jl
 ## Usage
 
 Find the package source code in [src](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/src?ref_type=heads), which implements the momentum closure and the system of PDEs.
-The subfolder [src/TrixiTree2Triangulation](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/src/TrixiTree2Triangulation?ref_type=heads) is a subpackage developed by Matthias Geratz for storing the solution in a *.tsv file.
 
 The folder [examples](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/examples?ref_type=heads) contains the main files for physically relevant benchmark problems.
 [slurm](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/slurm?ref_type=heads) gives shell scripts for executing the benchmark problems either on your local laptop or on a HPC server with a slurm script. You need to either comment out the `os.system(command)` or the `createsbatch` file, depending on your system.
@@ -142,7 +141,7 @@ Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?re
   - ACoM - Applied and Computational Mathematics
   - RWTH Aachen University
   - [yilmaz@acom.rwth-aachen.de](mailto:yilmaz@acom.rwth-aachen.de)
-- **Matthias Geratz** (Initial Development)
+- **Matthias Geratz** (Initial Development, TrixiTree2Triangulation)
   - ACoM - Applied and Computational Mathematics
   - RWTH Aachen University
   - [geratz@acom.rwth-aachen.de](mailto:geratz@acom.rwth-aachen.de)

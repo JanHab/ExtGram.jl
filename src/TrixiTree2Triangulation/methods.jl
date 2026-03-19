@@ -3,13 +3,6 @@ Entry point of the triangulation callback into the underlying method calls.
 Unifies the 2D and 1D conversion (tree flattening and continuous solution creation) and writing functionality.
 =#
 
-# 2D
-include("converter.jl")
-include("writer.jl") # file writing outsourced to separate file
-# 1D
-include("converter_1d.jl")
-include("writer_1d.jl")
-
 
 #= Main converter function | uses multiple dispatch / specializations to call the corresponding 2D or 1D function =#
 function convertMeshAndSolution(integrator, write_options, triangulation_callback)
