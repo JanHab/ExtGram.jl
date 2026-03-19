@@ -119,8 +119,8 @@ Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?re
 ## Referencing 
 
 ```bibtex
-@software{jan_habscheid_2026_18998361,
-  author       = {Jan Habscheid and
+@software{habscheid_2026_18998361,
+  author       = {Habscheid, Jan and
                   Yilmaz, Eda and
                   Geratz, Matthias and
                   Torrilhon, Manuel},
