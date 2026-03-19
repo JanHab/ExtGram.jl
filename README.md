@@ -122,6 +122,7 @@ Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?re
 @software{jan_habscheid_2026_18998361,
   author       = {Jan Habscheid and
                   Yilmaz, Eda and
+                  Geratz, Matthias and
                   Torrilhon, Manuel},
   title        = {ExtGram.jl},
   month        = mar,
