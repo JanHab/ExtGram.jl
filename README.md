@@ -136,9 +136,11 @@ Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?re
 
 ## Contact
 
-- **Jan Habscheid** (Thesis)
-  - [Jan.Habscheid@rwth-aachen.de](mailto:Jan.Habscheid@rwth-aachen.de)
-- **Eda Yilmaz** (Supervisor)
+- **Jan Habscheid**
+  - TIMA - Applied Mathematics
+  - Linköping University
+  - [Jan.Habscheid@liu.se](mailto:Jan.Habscheid@liu.se)
+- **Eda Yilmaz**
   - ACoM - Applied and Computational Mathematics
   - RWTH Aachen University
   - [yilmaz@acom.rwth-aachen.de](mailto:yilmaz@acom.rwth-aachen.de)
@@ -146,7 +148,7 @@ Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?re
   - ACoM - Applied and Computational Mathematics
   - RWTH Aachen University
   - [geratz@acom.rwth-aachen.de](mailto:geratz@acom.rwth-aachen.de)
-- **Prof. Dr. Manuel Torrilhon** (Supervising Professor)
+- **Prof. Dr. Manuel Torrilhon**
   - ACoM - Applied and Computational Mathematics
   - RWTH Aachen University
   - [mt@acom.rwth-aachen.de](mailto:mt@acom.rwth-aachen.de)
