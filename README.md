@@ -144,7 +144,7 @@ Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?re
   - ACoM - Applied and Computational Mathematics
   - RWTH Aachen University
   - [yilmaz@acom.rwth-aachen.de](mailto:yilmaz@acom.rwth-aachen.de)
-- **Matthias Geratz** (Initial Development, TrixiTree2Triangulation)
+- **Matthias Geratz**
   - ACoM - Applied and Computational Mathematics
   - RWTH Aachen University
   - [geratz@acom.rwth-aachen.de](mailto:geratz@acom.rwth-aachen.de)
