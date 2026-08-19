@@ -58,4 +58,8 @@ export plot_ρ_v_p, plot_λ_max, conservation, readsol, readfile
 include("DVM_equation.jl")
 export setupDVM1DShockTube, InitialConditionsDVM, ρ_v_θ_p_DVM, setupDVM1DShockTube, plot_ρ_v_p_DVM
 
+# 1D-3V full implementation
+include("1D3V_full.jl")
+export U_t_index, U_x_index
+
 end # module ExtGram
