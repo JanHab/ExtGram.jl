@@ -290,9 +290,10 @@ surface_flux = flux_lax_friedrichs
 domain = (-2.0, 2.0)
 base_tree_level = 4 # ! Increase later
 source = zero_source
-T_end = 0.05 #! Increase later 0.3
+T_end = 0.025 #! Increase later 0.3
 cfl = 0.99 # ? Decrease later? 0.45
 time_interval = 10 # ? Increase later? 10
+name = "out"
 
 equations = GramianMomentEquations1D3V(M, Kn, "ExtGram", theta=theta, phi=phi)
 
@@ -337,28 +338,29 @@ alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
 stepsize_callback = StepsizeCallback(cfl=cfl)
 
-# save_solution_cons = SaveTriangulationCallback(
-#     time_interval=tspan[2]/time_interval,
-#     save_initial_solution=true,
-#     file_format="tsv",
-#     append_solution=true,
-#     solution_variables = cons2cons,
-#     clear_out_dir=false,
-#     name=name * "_cons",
-#     info="basis = $(Base.typename(typeof(basis)).wrapper)"
-# )
-# save_solution_prim = SaveTriangulationCallback(
-#     time_interval=tspan[2]/time_interval,
-#     save_initial_solution=true,
-#     file_format="tsv",
-#     append_solution=true,
-#     solution_variables = cons2prim,
-#     clear_out_dir=false,
-#     name=name * "_prim",
-#     info="basis = $(Base.typename(typeof(basis)).wrapper)"
-# )
+save_solution_cons = SaveTriangulationCallback(
+    time_interval=tspan[2]/time_interval,
+    save_initial_solution=true,
+    file_format="tsv",
+    append_solution=true,
+    solution_variables = cons2cons,
+    clear_out_dir=false,
+    name=name * "_cons",
+    info="basis = $(Base.typename(typeof(basis)).wrapper)"
+)
+save_solution_prim = SaveTriangulationCallback(
+    time_interval=tspan[2]/time_interval,
+    save_initial_solution=true,
+    file_format="tsv",
+    append_solution=true,
+    solution_variables = cons2prim,
+    clear_out_dir=false,
+    name=name * "_prim",
+    info="basis = $(Base.typename(typeof(basis)).wrapper)"
+)
 callbacks = CallbackSet(
-    alive_callback, summary_callback, stepsize_callback
+    alive_callback, summary_callback, stepsize_callback,
+    save_solution_cons, save_solution_prim
 )
 
 #= solve =#
@@ -374,17 +376,17 @@ sol = solve(
 );
 
 
-sol_end_cons = sol.u[end]
-sol_end_prim = cons2prim(sol_end_cons, equations)
-x = vec(semi.cache.elements.node_coordinates)
+# sol_end_cons = sol.u[end]
+# sol_end_prim = cons2prim(sol_end_cons, equations)
+# x = vec(semi.cache.elements.node_coordinates)
 
-ρ = sol_end_cons[1]
-v = sol_end_cons[2] / ρ
-P_200 = sol_end_prim[5]
-P_020 = sol_end_prim[8]
-P_002 = sol_end_prim[10]
-θ = 1 / (3 * ρ) * (P_200 + P_020 + P_002 - ρ * v^2)
+# ρ = sol_end_cons[1]
+# v = sol_end_cons[2] / ρ
+# P_200 = sol_end_prim[5]
+# P_020 = sol_end_prim[8]
+# P_002 = sol_end_prim[10]
+# θ = 1 / (3 * ρ) * (P_200 + P_020 + P_002 - ρ * v^2)
 
 
 
-p = plot(sol.t, [ρ, v, θ], label=["Density" "Velocity" "Temperature"], xlabel="Time", ylabel="Values", title="Shock Tube Evolution", lw=2)
+# p = plot(sol.t, [ρ, v, θ], label=["Density" "Velocity" "Temperature"], xlabel="Time", ylabel="Values", title="Shock Tube Evolution", lw=2)
