@@ -244,31 +244,31 @@ function raw_moment_1d(k::Integer, u::Real, σ::Real)
     return m
 end
 
-maxwellian_moment(idx, ρ, u, σ) =
-    ρ * prod(raw_moment_1d(idx[d], u[d], σ[d]) for d in 1:3)
+# maxwellian_moment(idx, ρ, u, σ) =
+#     ρ * prod(raw_moment_1d(idx[d], u[d], σ[d]) for d in 1:3)
 
-const ρ_test = 1.7
-const u_test = (0.35, -0.8, 0.15)
-const σ_test = (1.1, 0.7, 1.3)
+# const ρ_test = 1.7
+# const u_test = (0.35, -0.8, 0.15)
+# const σ_test = (1.1, 0.7, 1.3)
 
-maxwellian_moments(indices) = [maxwellian_moment(i, ρ_test, u_test, σ_test) for i in indices]
+# maxwellian_moments(indices) = [maxwellian_moment(i, ρ_test, u_test, σ_test) for i in indices]
 
-shift_x(idx) = idx .+ [1, 0, 0]
+# shift_x(idx) = idx .+ [1, 0, 0]
 
-struct InitialConditionsShockTube{N}
+struct InitialConditionsShockTube1D3V{N}
     left::SVector{N}
     right::SVector{N}
 
-    function InitialConditionsShockTube(eqns::GramianMomentEquations1D3V{Mp1}) where {Mp1}
-        left = SVector{eqns.N_equations}([maxwellian_moment(i, ρ_test, u_test, σ_test) for i in eqns._U_t_index])
-        right = SVector{eqns.N_equations}([maxwellian_moment(i, ρ_test-1, u_test, σ_test) for i in eqns._U_t_index])
-        # ToDo: verbose=false
-        # @assert check_realizability(left, verbose=false) && check_realizability(right, verbose=false)
-        return new{Mp1}(left, right)
+    function InitialConditionsShockTube1D3V(f_left, f_right, M, eqns::GramianMomentEquations1D3V{Mp1}) where {Mp1}
+        # Compute convective moments
+        left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
+        right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
+
+        return new{length(left)}(left, right)
     end
 end
 
-function (ic::InitialConditionsShockTube)(coords, t, equations::GramianMomentEquations1D3V)
+function (ic::InitialConditionsShockTube1D3V)(coords, t, equations::GramianMomentEquations1D3V)
     if coords[1] < 0.0; return ic.left; else; return ic.right; end
 end
 
@@ -297,9 +297,13 @@ name = "out"
 
 equations = GramianMomentEquations1D3V(M, Kn, "ExtGram", theta=theta, phi=phi)
 
-initial_condition = InitialConditionsShockTube(
-    # f_left, # Density, velocity, temperature
-    # f_right, # Shock in density, but not velocity, temperature initially
+f_left = Maxwellian1D3D(7.0, (0.0, 0.0, 0.0), 1.0)
+f_right = Maxwellian1D3D(1.0, (0.0, 0.0, 0.0), 1.0)
+
+initial_condition = InitialConditionsShockTube1D3V(
+    f_left, # Density, velocity, temperature
+    f_right, # Shock in density, but not velocity, temperature initially
+    M,
     equations
 )
 
