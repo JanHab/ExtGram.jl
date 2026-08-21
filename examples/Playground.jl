@@ -8,13 +8,6 @@ using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
 
 
 
-M = 4
-U_t_index_ = U_t_index(M, true)
-U_x_index_ = U_x_index(M, true)
-
-
-V = [@SVector[A[i,1], A[i,2], A[i,3], A[i,4]] for i in axes(A,1)]
-
 # * The angles -> t.b.d.
 # theta_Nmax = [3.14159, 0.463648, 0.684719, 3.14159, 2.25552, 0.61548, 2.03444, 2.18628, 0.0000534309, 1.5708, 1.5708, 1.5708]
 # phi_Nmax = [1.5708, 4.71239, 4.71239, 0.886077, 4.71239, 4.02767, 1.5708, 0.886077, 3.60524, 4.71084, 4.02767, 3.60524]
@@ -26,10 +19,10 @@ V = [@SVector[A[i,1], A[i,2], A[i,3], A[i,4]] for i in axes(A,1)]
 # phi_det = [5.00082, 1.67262, 1.40439, 0.223503, 5.77741, 1.60421, 2.47911, 2.27102, 1.08665, 4.49793, 3.89513, 2.46093]
 
 # Slab-geometry angles
-theta_Nmax = [3.14159, 0.684719, 2.034440, 2.186280]
-phi_Nmax = [1.5708, 4.71239, 1.570800, 0.886077]
+# theta_Nmax = [3.14159, 0.684719, 2.034440, 2.186280]
+# phi_Nmax = [1.5708, 4.71239, 1.570800, 0.886077]
 
-theta, phi = theta_Nmax, phi_Nmax 
+# theta, phi = theta_Nmax, phi_Nmax 
 
 M = 4
 Kn = 1.0
@@ -37,14 +30,18 @@ polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
 domain = (-2.0, 2.0)
-base_tree_level = 4 # ! Increase later
-source = zero_source
-T_end = 0.025 #! Increase later 0.3
+base_tree_level = 8 # ! Increase later
+source = relaxation_source #zero_source
+T_end = 0.3 #! Increase later 0.3
 cfl = 0.99 # ? Decrease later? 0.45
 time_interval = 10 # ? Increase later? 10
 name = "out"
 
-equations = GramianMomentEquations1D3V(M, Kn, "ExtGram", theta=theta, phi=phi, slab_geometry=true)
+# ? theta = [0.042978, 2.86589, 1.76672, 1.62279, 0.599645, 2.28761, 2.84739, 0.25247, 0.194722, 2.28605, 0.00700916, 2.83612, 2.00972, 2.7489, 2.16911]
+# ? phi = [3.77752, 3.82357, 1.1951, 5.16362, 1.54305, 5.36209, 4.51818, 2.59034, 2.02184, 3.98618, 4.83726, 5.44366, 3.69455, 3.42223, 4.85428]
+
+# ? equations = GramianMomentEquations1D3V(M, Kn, "ExtGram", theta=theta, phi=phi)
+equations = GramianMomentEquations1D3V(M, Kn, "ExtGram") #!, theta=theta, phi=phi, slab_geometry=true)
 
 f_left = Maxwellian1D3D(7.0, (0.0, 0.0, 0.0), 1.0)
 f_right = Maxwellian1D3D(1.0, (0.0, 0.0, 0.0), 1.0)
@@ -129,17 +126,30 @@ sol = solve(
 );
 
 
-# sol_end_cons = sol.u[end]
-# sol_end_prim = cons2prim(sol_end_cons, equations)
-# x = vec(semi.cache.elements.node_coordinates)
+#= ---------- final state: ρ, v, p, θ over x ---------- =#
+u_end = Array(Trixi.wrap_array(sol.u[end], semi))          # (nvars, nnodes, nelements)
+x     = vec(Array(semi.cache.elements.node_coordinates))   # same (node, element) ordering
 
-# ρ = sol_end_cons[1]
-# v = sol_end_cons[2] / ρ
-# P_200 = sol_end_prim[5]
-# P_020 = sol_end_prim[8]
-# P_002 = sol_end_prim[10]
-# θ = 1 / (3 * ρ) * (P_200 + P_020 + P_002 - ρ * v^2)
+nvars = nvariables(equations)
+prim  = vec([cons2prim(SVector{nvars}(u_end[:, i, e]), equations)
+             for i in axes(u_end, 2), e in axes(u_end, 3)])
 
+i200, i020, i002 = equations._pressure_index      # (5, 8, 10) for M = 4
 
+ρ   = [p[1] for p in prim]
+v_x   = [p[2] for p in prim]
+v_y = [p[3] for p in prim]
+v_z = [p[4] for p in prim]
+θ   = [(p[i200] + p[i020] + p[i002]) / (3 * p[1]) for p in prim]
+prs = ρ .* θ                                       # scalar pressure p = ρθ
 
-# p = plot(sol.t, [ρ, v, θ], label=["Density" "Velocity" "Temperature"], xlabel="Time", ylabel="Values", title="Shock Tube Evolution", lw=2)
+perm = sortperm(x); xs = x[perm]
+plt = plot(
+    plot(xs, ρ[perm], ylabel="ρ", title="density"),
+    plot(xs, [v_x[perm] v_y[perm] v_z[perm]], label=["v_x" "v_y" "v_z"], title="velocity", legend=:topright),
+    plot(xs, prs[perm], ylabel="p", title="pressure"),
+    plot(xs, θ[perm], ylabel="θ", title="temperature"),
+    layout=(2,2), size=(900,600), xlabel="x", lw=2, legend=false,
+    plot_title="1D-3V  M=$M  Kn=$Kn  t=$(round(sol.t[end], digits=3))"
+)
+display(plt)
