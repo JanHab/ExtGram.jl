@@ -22,7 +22,7 @@ struct GramianMomentEquations1D3V{Mp1, N, NC, RealT <: Real} <: GramianMomentEqu
     # Multi-indices of the closing moments, in the order the closure must return them
     _closure_index::Vector{Vector{Int}}
     # Rotational matrix for the closure moments
-    T_tilde::MMatrix{NC, NC, RealT}
+    T_tilde_inv::MMatrix{NC, NC, RealT}
     # Angles for the rotational matrix
     theta::Vector{RealT}
     phi::Vector{RealT}
@@ -80,7 +80,7 @@ struct GramianMomentEquations1D3V{Mp1, N, NC, RealT <: Real} <: GramianMomentEqu
         # src/gramian_moment_equations.jl), so it must be N_equations, not M+1.
         new{N_equations, n, N_closure, typeof(Knudsen)}(inv(Knudsen), χ, M, n, N_equations, N_closure,
                                                         closure_value, _U_t_index, _U_x_index,
-                                                        _flux_index, _closure_index, T_tilde,
+                                                        _flux_index, _closure_index, inv(T_tilde),
                                                         convert(Vector{RealT}, theta),
                                                         convert(Vector{RealT}, phi))
     end
@@ -124,7 +124,7 @@ function closure_moments(u, equations::GramianMomentEquations1D3V{Mp1, N, NC}) w
         U_tilde_full[i] = U_tilde_Mp1
     end
 
-    U_Mp1 = equations.T_tilde \ U_tilde_full
+    U_Mp1 = equations.T_tilde_inv * U_tilde_full
 
     return U_Mp1
 end
@@ -201,6 +201,7 @@ Trixi.cons2prim(u, eqns::GramianMomentEquations1D3V) = moment_cons2prim(u, eqns)
 """
     λ_max = v_x ± γ √(θ), with γ=5
 """
+# ToDo: Rewrite if reduce to 1D-2V or 1D-3V slab-geometry
 function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::GramianMomentEquations1D3V)
     ρ_l = u_l[1]; ρ_r = u_r[1]
 
@@ -211,7 +212,7 @@ function Trixi.max_abs_speed_naive(u_l, u_r, orientation::Integer, equations::Gr
     P_020_l = p_prim_l[8]; P_020_r = p_prim_r[8] # P_yy
     P_002_l = p_prim_l[10]; P_002_r = p_prim_r[10] # P_zz
 
-    v_kl = p_prim_l[2]; v_kr = p_prim_r[2] # velocity in x-direction (slab geometry)
+    v_kl = p_prim_l[2]; v_kr = p_prim_r[2] # velocity in x-direction
     
     # Temperature theta = (U_200 + U_020 + U_002) / (3 * rho)
     θ_l = 1 / (3 * ρ_l) * (P_200_l + P_020_l + P_002_l - ρ_l * v_kl^2)
@@ -226,7 +227,26 @@ end
 # ? How can we use the one from above?
 function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3V)
     # For the moment hard coded, not ideal
-    return 10.0 
+    # return 10.0 
+
+    ρ = u[1]
+
+    # Calculate Central Moments P (needed for Temperature)
+    p_prim = cons2prim(u, equations)
+    
+    P_200 = p_prim[5] # P_xx
+    P_020 = p_prim[8] # P_yy
+    P_002 = p_prim[10] # P_zz
+
+    v_k = p_prim[2] # velocity in x-direction
+    
+    # Temperature theta = (U_200 + U_020 + U_002) / (3 * rho)
+    θ = 1 / (3 * ρ) * (P_200 + P_020 + P_002 - ρ * v_k^2)
+    
+    γ = 5.0
+    λ_l = ρ_l + γ * sqrt(θ_l)
+
+    return λ_l
 end
 
 
@@ -276,11 +296,16 @@ end
 
 
 # * Setting up the PDE and running some first tests
+theta_Nmax = [3.14159, 0.463648, 0.684719, 3.14159, 2.25552, 0.61548, 2.03444, 2.18628, 0.0000534309, 1.5708, 1.5708, 1.5708]
+phi_Nmax = [1.5708, 4.71239, 4.71239, 0.886077, 4.71239, 4.02767, 1.5708, 0.886077, 3.60524, 4.71084, 4.02767, 3.60524]
 
+theta_Arc = [0.0, 0.244979, 0.588003, 3.14159, 0.982794, 2.67795, 1.81578, 1.10715, 0.0, 1.5708, 1.5708, 1.5708]
+phi_Arc = [1.5708, 4.71239, 1.5708, 0.981359, 4.71239, 2.30207, 4.71239, 2.30207, 6.2795, 4.71239, 5.30183, 6.2795]
 
-# theta, phi = 0.2, 0.2 # * Placeholder for the moment
-theta = [0.05, 0.1, 0.15, 0.2, 0.264, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-phi = [0.03, 0.06, 0.09, 0.12, 0.15, 0.18, 0.21, 0.24, 0.27, 0.30, 0.33, 0.36, 0.39, 0.42, 0.45]
+theta_det = [0.973951, 0.399601, 0.587204, 2.84498, 2.08866, 1.77566, 0.33008, 2.32745, 1.78321, 2.78056, 0.206615, 2.83077]
+phi_det = [5.00082, 1.67262, 1.40439, 0.223503, 5.77741, 1.60421, 2.47911, 2.27102, 1.08665, 4.49793, 3.89513, 2.46093]
+
+theta, phi = theta_Nmax, phi_Nmax 
 
 M = 4
 Kn = 1.0
