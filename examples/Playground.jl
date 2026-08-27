@@ -40,8 +40,11 @@ name = "out"
 # ? theta = [0.042978, 2.86589, 1.76672, 1.62279, 0.599645, 2.28761, 2.84739, 0.25247, 0.194722, 2.28605, 0.00700916, 2.83612, 2.00972, 2.7489, 2.16911]
 # ? phi = [3.77752, 3.82357, 1.1951, 5.16362, 1.54305, 5.36209, 4.51818, 2.59034, 2.02184, 3.98618, 4.83726, 5.44366, 3.69455, 3.42223, 4.85428]
 
-# ? equations = GramianMomentEquations1D3V(M, Kn, "ExtGram", theta=theta, phi=phi)
-equations = GramianMomentEquations1D3V(M, Kn, "ExtGram") #!, theta=theta, phi=phi, slab_geometry=true)
+theta21 = [2.84178, 2.25739, 2.83628, 2.27054, 1.51937, 1.55188, 2.50057, 0.396858, 1.92276, 1.27198, 1.01401, 0.739861, 1.09696, 0.332375, 2.21655, 1.58578, 1.62733, 0.779441, 0.126096, 3.09066, 2.97756]
+phi21 = [4.38201, 5.52717, 1.89082, 3.76511, 4.05576, 1.45790, 2.99889, 4.45293, 3.41820, 4.91036, 2.76854, 4.70358, 4.48148, 3.88086, 4.72682, 2.42491, 1.96357, 1.95470, 1.57480, 5.33683, 1.10492]
+
+equations = GramianMomentEquations1D3V(M, Kn, "ExtGram", theta=theta21, phi=phi21)
+# equations = GramianMomentEquations1D3V(M, Kn, "ExtGram") #!, theta=theta, phi=phi, slab_geometry=true)
 
 f_left = Maxwellian1D3D(7.0, (0.0, 0.0, 0.0), 1.0)
 f_right = Maxwellian1D3D(1.0, (0.0, 0.0, 0.0), 1.0)
