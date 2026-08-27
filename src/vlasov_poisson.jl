@@ -61,7 +61,7 @@ end
 """
     Solve the Poisson equation ∂E/∂x = ρ - ⟨ρ⟩ with periodic boundary conditions using FFT
 """
-function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real})
+function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real}, field)
     n = length(ρ) # number of spatial points
     ρ̃  = ρ .- mean(ρ)  # neutralizing background
     ρk = fft(ρ̃)
@@ -69,7 +69,7 @@ function solve_poisson_periodic_fft(ρ::AbstractVector{<:Real})
     # build wavenumbers k consistent with FFT ordering
     # k = 0, 1, ..., floor(n/2), -ceil((n-1)/2), ..., -1
     k_int = [0:div(n,2); -div(n-1,2):-1]
-    kx = (2π / ELECTRIC_FIELD.Lx) .* k_int
+    kx = (2π / field.Lx) .* k_int
 
     # Solve for E in Fourier space
     Ek = similar(ρk)
@@ -107,7 +107,7 @@ function vlasov_poisson_callback(integrator)
     ρ = variables[2:end-1, 1]  # First column is density 
     
     # Solve Poisson equation globally
-    E = solve_poisson_periodic_fft(ρ)
+    E = solve_poisson_periodic_fft(ρ, ELECTRIC_FIELD)
     
     # Store the electric field
     ELECTRIC_FIELD.E = copy(E)
