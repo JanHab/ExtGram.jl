@@ -20,3 +20,7 @@ end
 @testset "1D3D" begin
     include("1D3D/TestTransformations.jl")
 end
+
+@testset "1D3V - Moment Transformations" begin
+    include("1D3D/angles.jl")
+end
