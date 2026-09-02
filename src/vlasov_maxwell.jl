@@ -69,7 +69,7 @@ function vlasov_maxwell_source(u, x, t, equations::GramianMomentEquations1D3V{Mp
         #   B_z: l u_{l-1, m+1, n} - m u_{l+1, m-1, n}
         source[k] += (
             α * (
-                VLASOV_MAXWELL_FIELD.Bx * moment_or_zero(u, equations, α - 1, β + 1, γ) - VLASOV_MAXWELL_FIELD.By * moment_or_zero(u, equations, α - 1, β, γ + 1)
+                VLASOV_MAXWELL_FIELD.Bz * moment_or_zero(u, equations, α - 1, β + 1, γ) - VLASOV_MAXWELL_FIELD.By * moment_or_zero(u, equations, α - 1, β, γ + 1)
             ) + β * (
                 VLASOV_MAXWELL_FIELD.Bx * moment_or_zero(u, equations, α, β - 1, γ + 1) - VLASOV_MAXWELL_FIELD.Bz * moment_or_zero(u, equations, α + 1, β - 1, γ)
             ) + γ * (
@@ -86,18 +86,18 @@ end
     Callback function to solve the Vlasov-Maxwell equation and store electric field data
 """
 function vlasov_maxwell_callback(integrator)
-    u = integrator.u
+    # u = integrator.u
     t = integrator.t
 
     _, coordinates, variables = collect1dTreeArrays(integrator, cons2cons) # cons2cons only relevant for connectivity (first return argument) -> not relevant here
     if !VLASOV_MAXWELL_FIELD.initialized
-        VLASOV_MAXWELL_FIELD.x_range = vec(coordinates[2:end-1])  # exclude ghost cells
+        VLASOV_MAXWELL_FIELD.x_range = vec(coordinates[1:end-1])  # exclude ghost cells
         VLASOV_MAXWELL_FIELD.initialized = true
     end
 
     # Extract density from solution variables
     # Helps for higher polynomial degrees, but could be optimized further
-    ρ = variables[2:end-1, 1]  # First column is density 
+    ρ = variables[1:end-1, 1]  # First column is density 
     # println("ρ at time $t: ", ρ)
 
     # Solve Poisson equation globally

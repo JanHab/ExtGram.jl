@@ -449,5 +449,25 @@ end
 
 function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3D)
     # For the moment hard coded, not ideal
-    return 10.0 
+    # return 10.0 
+
+    ρ = u[1]
+
+    # Calculate Central Moments P (needed for Temperature)
+    p_prim = cons2prim(u, equations);
+
+    P_200 = p_prim[3] # P_xx
+    P_020 = p_prim[4] # P_yy
+
+    # Slab Geometry: Transverse symmetry P_zz = P_yy (P_002 = P_020)
+    P_002 = P_020
+
+    v_k = p_prim[2] # velocity in x-direction (slab geometry)
+
+    # Temperature theta = (U_200 + U_020 + U_002) / (3 * rho)
+    θ = 1 / (3 * ρ) * (P_200 + P_020 + P_002 - ρ * v_k^2)
+
+    γ = 5.0
+    λ = ρ + γ * sqrt(θ)
+    return λ
 end

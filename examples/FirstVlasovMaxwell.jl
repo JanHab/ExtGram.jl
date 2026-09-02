@@ -6,11 +6,11 @@ end # Runs in environment setup
 using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
 
 M = 4
-Kn = 1.0
+Kn = 1.0 # * Doesn't really matter here
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
-base_tree_level = 6 # ! Increase later
+base_tree_level = 10 # ! Increase later
 source = vlasov_maxwell_source 
 T_end = 20.0
 cfl = 0.99 # ? Decrease later? 0.45
@@ -66,7 +66,8 @@ sol = solve(
     # saveat = range(tspan[1], tspan[2], length=100)
 );
 
-plot(ExtGram.VLASOV_MAXWELL_FIELD.times, ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2, xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time")
+# plot(ExtGram.VLASOV_MAXWELL_FIELD.times, ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2, xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time")
+plot(ExtGram.VLASOV_MAXWELL_FIELD.times[1:end-2], ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2[1:end-2], xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time")
 savefig("L2_norm_Electric_Field.png")
 
 #= ---------- initial state: ρ, v, p, θ over x ---------- =#
@@ -100,7 +101,7 @@ savefig("Initial_State.png")
 
 
 #= ---------- Final state: ρ, v, p, θ over x ---------- =#
-u_end = Array(Trixi.wrap_array(sol.u[end], semi))          # (nvars, nnodes, nelements)
+u_end = Array(Trixi.wrap_array(sol.u[end-50], semi))          # (nvars, nnodes, nelements)
 x     = vec(Array(semi.cache.elements.node_coordinates))   # same (node, element) ordering
 
 nvars = nvariables(equations)
