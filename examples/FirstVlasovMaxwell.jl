@@ -48,27 +48,29 @@ ode = ODEProblem(rhs_vlasov_maxwell!, ode.u0, tspan, semi)
 
 alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
-stepsize_callback = StepsizeCallback(cfl=cfl)
+# stepsize_callback = StepsizeCallback(cfl=cfl)
 
 callbacks = CallbackSet(
-    alive_callback, summary_callback, stepsize_callback,
+    alive_callback, summary_callback,# stepsize_callback,
     vlasov_maxwell_callback(;Bx, By, Bz, M, mesh, domain)
 )
 
 #= solve =#
 sol = solve(
     ode, 
-    CarpenterKennedy2N54(
-        williamson_condition = false
-    );
-    dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+    # CarpenterKennedy2N54(
+    #     williamson_condition = false
+    # );
+    # dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+    RDPK3SpFSAL49(); # See: https://github.com/trixi-framework/Trixi.jl/blob/main/examples/p4est_3d_dgsem/elixir_euler_baroclinic_instability.jl
+    abstol = 1.0e-6, reltol = 1.0e-6,
     ode_default_options()..., 
     callback = callbacks,
     # saveat = range(tspan[1], tspan[2], length=100)
 );
 
 # plot(ExtGram.VLASOV_MAXWELL_FIELD.times, ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2, xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time")
-plot(ExtGram.VLASOV_MAXWELL_FIELD.times[1:end-50], ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2[1:end-50], xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time", yscale=:log10)
+plot(ExtGram.VLASOV_MAXWELL_FIELD.times[1:end], ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2[1:end], xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time", yscale=:log10)
 savefig("L2_norm_Electric_Field.png")
 
 #= ---------- initial state: ρ, v, p, θ over x ---------- =#
@@ -102,7 +104,7 @@ savefig("Initial_State.png")
 
 
 #= ---------- Final state: ρ, v, p, θ over x ---------- =#
-u_end = Array(Trixi.wrap_array(sol.u[end-50], semi))          # (nvars, nnodes, nelements)
+u_end = Array(Trixi.wrap_array(sol.u[end], semi))          # (nvars, nnodes, nelements)
 x     = vec(Array(semi.cache.elements.node_coordinates))   # same (node, element) ordering
 
 nvars = nvariables(equations)
