@@ -62,6 +62,6 @@ export setupDVM1DShockTube, InitialConditionsDVM, ρ_v_θ_p_DVM, setupDVM1DShock
 include("1D3V_full.jl")
 export U_t_index, U_x_index, GramianMomentEquations1D3V, InitialConditionsShockTube1D3V
 include("vlasov_maxwell.jl")
-export vlasov_maxwell_callback, vlasov_maxwell_source, InitialConditionsVlasovMaxwellLandauDamping
+export vlasov_maxwell_callback, vlasov_maxwell_source, rhs_vlasov_maxwell!, InitialConditionsVlasovMaxwellLandauDamping
 
 end # module ExtGram

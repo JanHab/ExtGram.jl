@@ -85,34 +85,27 @@ end
 """
     Callback function to solve the Vlasov-Maxwell equation and store electric field data
 """
-function vlasov_maxwell_callback(integrator)
-    # u = integrator.u
-    t = integrator.t
-
-    _, coordinates, variables = collect1dTreeArrays(integrator, cons2cons) # cons2cons only relevant for connectivity (first return argument) -> not relevant here
+function update_electric_field!(semi, u_ode)
+    _, coordinates, variables = collect1dTreeArrays(semi, u_ode, cons2cons)
     if !VLASOV_MAXWELL_FIELD.initialized
-        VLASOV_MAXWELL_FIELD.x_range = vec(coordinates[1:end-1])  # exclude ghost cells
+        VLASOV_MAXWELL_FIELD.x_range = vec(coordinates[1:end-1])
         VLASOV_MAXWELL_FIELD.initialized = true
     end
+    VLASOV_MAXWELL_FIELD.Ex = solve_poisson_periodic_fft(variables[1:end-1, 1], VLASOV_MAXWELL_FIELD)
+    return nothing
+end
 
-    # Extract density from solution variables
-    # Helps for higher polynomial degrees, but could be optimized further
-    ρ = variables[1:end-1, 1]  # First column is density 
-    # println("ρ at time $t: ", ρ)
+function rhs_vlasov_maxwell!(du_ode, u_ode, semi, t)
+    update_electric_field!(semi, u_ode)   # E belongs to *this* stage's state
+    Trixi.rhs!(du_ode, u_ode, semi, t)
+    return nothing
+end
 
-    # Solve Poisson equation globally
-    Ex = solve_poisson_periodic_fft(ρ, VLASOV_MAXWELL_FIELD)
-    # Store the electric field
-    VLASOV_MAXWELL_FIELD.Ex = copy(Ex)
-
-    # L2-norm of electric field
-    # Energy = ||E(t,⋅)||_L2 = (∫ |E(t,x)|² dx)^(1/2)  (approximated via trapezoidal rule)
-    Ex_L2 = trapz(VLASOV_MAXWELL_FIELD.x_range, Ex.^2)^(1/2)
-    push!(VLASOV_MAXWELL_FIELD.Ex_L2, Ex_L2)
-    push!(VLASOV_MAXWELL_FIELD.times, t)  # Store the actual time
-
-    # println("Time: $t, L2-norm of E_x: $Ex_L2")
-    
+function vlasov_maxwell_diagnostics(integrator)
+    update_electric_field!(integrator.p, integrator.u)  # E for u(t_n), not the last stage
+    Ex = VLASOV_MAXWELL_FIELD.Ex
+    push!(VLASOV_MAXWELL_FIELD.Ex_L2, trapz(VLASOV_MAXWELL_FIELD.x_range, Ex.^2)^(1/2))
+    push!(VLASOV_MAXWELL_FIELD.times, integrator.t)
     return nothing
 end
 
@@ -139,9 +132,9 @@ function vlasov_maxwell_callback(;Bx, By, Bz, M, mesh, domain)
     
     return DiscreteCallback(
         (u, t, integrator) -> true,  # Always trigger at every step
-        vlasov_maxwell_callback,
-        save_positions=(true, true), # ?(false, false),
-        initialize = (c, u, t, integrator) -> vlasov_maxwell_callback(integrator)  # Call at initialization
+        vlasov_maxwell_diagnostics,
+        save_positions=(false, false),  # the field solve lives in rhs_vlasov_maxwell!, nothing to save around
+        initialize = (c, u, t, integrator) -> vlasov_maxwell_diagnostics(integrator)  # seeds E(u_0) and records t = 0
     )
 end
 

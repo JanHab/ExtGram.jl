@@ -10,10 +10,10 @@ Kn = 1.0 # * Doesn't really matter here
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
-base_tree_level = 10 # ! Increase later
+base_tree_level = 8 # ! Increase later
 source = vlasov_maxwell_source 
 T_end = 20.0
-cfl = 0.99 # ? Decrease later? 0.45
+cfl = 0.45 # ? Decrease later? 0.45
 time_interval = 10 # ? Increase later? 10
 name = "out"
 
@@ -44,6 +44,7 @@ semi = SemidiscretizationHyperbolic(
 #= set up ODE =#
 tspan = (0.0, T_end)
 ode = semidiscretize(semi, tspan)
+ode = ODEProblem(rhs_vlasov_maxwell!, ode.u0, tspan, semi)
 
 alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
@@ -67,7 +68,7 @@ sol = solve(
 );
 
 # plot(ExtGram.VLASOV_MAXWELL_FIELD.times, ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2, xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time")
-plot(ExtGram.VLASOV_MAXWELL_FIELD.times[1:end-2], ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2[1:end-2], xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time")
+plot(ExtGram.VLASOV_MAXWELL_FIELD.times[1:end-50], ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2[1:end-50], xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time", yscale=:log10)
 savefig("L2_norm_Electric_Field.png")
 
 #= ---------- initial state: ρ, v, p, θ over x ---------- =#
