@@ -63,6 +63,22 @@ function U_x_index(nmax::Integer, slab_geometry::Bool=false)
     return [U_t[i] .+ [1, 0, 0] for i in 1:length(U_t)]
 end
 
+"""
+    slab_scatter_matrix(full_indices, slab_indices)
+
+    A moment with odd β or γ vanishes (zero row), every other moment equals its representative
+    U_(α, max(β,γ), min(β,γ)). The returned matrix S is the linear map from the full moment vector to the slab-symmetric one, i.e. S * u_slab = u_full
+"""
+function slab_scatter_matrix(full_indices::Vector{Vector{Int}}, slab_indices::Vector{Vector{Int}})
+    position = Dict(ix => j for (j, ix) in enumerate(slab_indices))
+    S = zeros(Float64, length(full_indices), length(slab_indices))
+    for (p, ix) in enumerate(full_indices)
+        (iseven(ix[2]) && iseven(ix[3])) || continue
+        S[p, position[[ix[1], max(ix[2], ix[3]), min(ix[2], ix[3])]]] = 1.0
+    end
+    return S
+end
+
 
 ##########################################################
 ################ Direction (angle) helpers ###############
@@ -149,6 +165,7 @@ struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real} <: GramianM
     N_closure::Int  # number of moments the closure has to supply to the flux
     N_shell::Int    # number of order-(M+1) moments solved for (N_closure of which are used)
     closure::Symbol
+    slab_geometry::Bool
     _U_t_index::Vector{Vector{Int}}
     _U_x_index::Vector{Vector{Int}}
     # Flux lookup table, one entry per equation i:
@@ -179,14 +196,6 @@ struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real} <: GramianM
     )
         @assert M > 1 "M must be greater than 1, got M = $M."
         @assert length(theta) == length(phi) "theta and phi must have equal length, got $(length(theta)) and $(length(phi))."
-        if slab_geometry
-            error(
-                "slab_geometry is not supported by GramianMomentEquations1D3V yet. " *
-                "The index bookkeeping (U_t_index/U_x_index) already handles it, but the " *
-                "closure would need the mirror-aware scatter into full moment space. " *
-                "Use GramianMomentEquations1D3D for the slab system in the meantime."
-            )
-        end
 
         RealT = float(typeof(Knudsen))
 
@@ -209,8 +218,8 @@ struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real} <: GramianM
             error("Unknown closure type: $closure. Supported types are \"Gram\", \"ExtGram\", and \"Grad\".\n.")
         end
 
-        _U_t_index = U_t_index(M, false)
-        _U_x_index = U_x_index(M, false)
+        _U_t_index = U_t_index(M, slab_geometry)
+        _U_x_index = U_x_index(M, slab_geometry)
         N_equations = length(_U_t_index)
 
         # Resolve every flux moment U_(α+1, β, γ) against the evolved moments U_(α, β, γ).
@@ -232,7 +241,7 @@ struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real} <: GramianM
 
         # The order-(M+1) shell. _closure_index is exactly its α ≥ 1 prefix, because
         # index(M+1) is ordered by descending multi-index.
-        shell = index(M + 1)
+        shell = slab_geometry ? index(M + 1)[index_1d(M + 1)] : index(M + 1) # ?index(M + 1)
         N_shell = length(shell)
         @assert _closure_index == shell[1:N_closure] "closure moments are not the leading block of index(M+1); the prefix assumption in closure_moments() is violated."
         # ? shell = index(M)
@@ -244,15 +253,19 @@ struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real} <: GramianM
         end
         @assert length(theta) == N_shell "the closure needs exactly N_shell = $N_shell directions for M = $M (the full order-$(M+1) shell), got $(length(theta))."
 
+        N_full = length(mainmomindex(M))
+        S_state = slab_geometry ? slab_scatter_matrix(mainmomindex(M), _U_t_index) : Matrix{Float64}(I, N_full, N_full)
+        S_shell = slab_geometry ? slab_scatter_matrix(index(M + 1), shell) : Matrix{Float64}(I, N_shell, N_shell)
+
         # Per-direction rotation of the evolved moments onto the directional moments
         # ∫ f (v·n)^k dv, k = 0…M, which are located at rows nidx(M) of the full rotation.
         target_rows = nidx(M)
-        _P = [Matrix{RealT}(rot(M, theta[i], phi[i])[target_rows, :]) for i in 1:N_shell]
+        _P = [Matrix{RealT}(rot(M, theta[i], phi[i])[target_rows, :] * S_state) for i in 1:N_shell]
 
         # Linear map from the order-(M+1) shell onto the directional closure values
         T_shell = Matrix{RealT}(undef, N_shell, N_shell)
         for i in 1:N_shell
-            T_shell[i, :] = tensor_transformation(M + 1, theta[i], phi[i])[1, :]
+            T_shell[i, :] = S_shell' * tensor_transformation(M + 1, theta[i], phi[i])[1, :]
             # ? T_shell[i, :] = tensor_transformation(M, theta[i], phi[i])[1, :]
         end
         κ = cond(T_shell)
@@ -268,16 +281,31 @@ struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real} <: GramianM
         for (p, ix) in enumerate(_U_t_index)
             _pos[ix[1] + 1, ix[2] + 1, ix[3] + 1] = p
         end
-        # cons2prim writes the three velocity components into slots 2:4, which assumes the
-        # order-1 block sits there in the canonical order.
-        @assert _pow[1] == (0, 0, 0) && _pow[2] == (1, 0, 0) && _pow[3] == (0, 1, 0) && _pow[4] == (0, 0, 1) "unexpected moment ordering; cons2prim/prim2cons assume U_(000), U_(100), U_(010), U_(001) in slots 1:4."
+        if slab_geometry
+            # Mirror-aware lookup: a non-evolved moment with β, γ even equals its
+            # representative U_(α, max(β,γ), min(β,γ)); moments with an odd power vanish
+            # by symmetry and keep position 0. moment_val / moment_or_zero / temperature
+            # (via _pressure_index below) then work in slab mode without any changes.
+            for ix in mainmomindex(M)
+                (iseven(ix[2]) && iseven(ix[3])) || continue
+                _pos[ix[1] + 1, ix[2] + 1, ix[3] + 1] =
+                    _pos[ix[1] + 1, max(ix[2], ix[3]) + 1, min(ix[2], ix[3]) + 1]
+            end
+        end
+        # cons2prim/prim2cons rely on ρ and ρ v_x occupying the first two slots (in full
+        # mode additionally ρ v_y, ρ v_z in slots 3:4).
+        if slab_geometry
+            @assert _pow[1] == (0, 0, 0) && _pow[2] == (1, 0, 0) "unexpected moment ordering; slab mode assumes U_(000), U_(100) in slots 1:2."
+        else
+            @assert _pow[1] == (0, 0, 0) && _pow[2] == (1, 0, 0) && _pow[3] == (0, 1, 0) && _pow[4] == (0, 0, 1) "unexpected moment ordering; cons2prim/prim2cons assume U_(000), U_(100), U_(010), U_(001) in slots 1:4."
+        end
         _pressure_index = (_pos[3, 1, 1], _pos[1, 3, 1], _pos[1, 1, 3])
 
         # NOTE: the first type parameter is Trixi's NVARS (see the abstract type in
         # src/gramian_moment_equations.jl), so it must be N_equations, not M+1.
         new{N_equations, n, M + 1, N_closure, N_shell, RealT}(
             RealT(inv(Knudsen)), RealT(χ), Int(M), n, N_equations, N_closure, N_shell,
-            closure_value, _U_t_index, _U_x_index, Tuple(flux_index), _closure_index,
+            closure_value, slab_geometry, _U_t_index, _U_x_index, Tuple(flux_index), _closure_index,
             _P, _T_closure,
             convert(Vector{RealT}, theta), convert(Vector{RealT}, phi),
             _pow, _pos, _pressure_index)
@@ -301,26 +329,6 @@ Trixi.density(u, eqns::GramianMomentEquations1D3V) = u[1]
 ##########################################################
 ######################## Closure #########################
 ##########################################################
-
-"""
-    matvec(A, u, ::Val{R})
-
-    `SVector{R}(A * u)` without allocating and without unrolling `A` into a static array,
-    which keeps compile times bounded for the larger moment systems.
-"""
-# @inline function matvec(A::AbstractMatrix, u, ::Val{R}) where {R}
-#     size(A, 1) == R && size(A, 2) == length(u) ||
-#         throw(DimensionMismatch("matvec: A is $(size(A)) but expected ($R, $(length(u)))."))
-#     T = promote_type(eltype(A), eltype(u))
-#     return SVector(ntuple(Val(R)) do i
-#         s = zero(T)
-#         @inbounds for j in eachindex(u)
-#             s += A[i, j] * u[j]
-#         end
-#         s
-#     end)
-# end
-
 """
     closure_moments(u, equations::GramianMomentEquations1D3V)
 
@@ -387,9 +395,11 @@ function relaxation_source(u, x, t, equations::GramianMomentEquations1D3V{Mp1}) 
     p_eq = MVector{Mp1, T}(undef)
     p_eq[1] = ρ
     p_eq[2] = prim[2]; p_eq[3] = prim[3]; p_eq[4] = prim[4]   # velocity components
-    @inbounds for idx in 5:Mp1
+    @inbounds for idx in 1:Mp1
         i, j, k = equations._pow[idx]
-        if isodd(i) || isodd(j) || isodd(k)
+        if i + j + k <= 1 # handle slab-geometry
+            p_eq[idx] = prim[idx]   # ρ and the velocity components are shared with u_eq
+        elseif isodd(i) || isodd(j) || isodd(k)
             p_eq[idx] = zero(T)
         else
             # (i-1)!! (j-1)!! (k-1)!! θ^((i+j+k)/2); the exponent is exact since i+j+k is even
@@ -457,19 +467,28 @@ function moment_cons2prim(u_cons, equations::GramianMomentEquations1D3V{Mp1}) wh
     prim = MVector{Mp1, T}(undef)
 
     ρ = u_cons[1]
-    v_x = u_cons[2] / ρ; v_y = u_cons[3] / ρ; v_z = u_cons[4] / ρ
-    prim[1] = ρ
-    prim[2] = v_x; prim[3] = v_y; prim[4] = v_z
+    # A velocity moment that is not evolved (slab mode) vanishes by symmetry.
+    v_x = moment_val(u_cons, 1, 0, 0, equations) / ρ
+    v_y = moment_val(u_cons, 0, 1, 0, equations) / ρ
+    v_z = moment_val(u_cons, 0, 0, 1, equations) / ρ
 
-    @inbounds for idx in 5:Mp1
+    @inbounds for idx in 1:Mp1
         i, j, k = equations._pow[idx]
-        val = zero(T)
-        for l in 0:i, m in 0:j, p in 0:k
-            coef = binomial(i, l) * binomial(j, m) * binomial(k, p)
-            val += coef * (-v_x)^(i - l) * (-v_y)^(j - m) * (-v_z)^(k - p) *
-                   moment_val(u_cons, l, m, p, equations)
+        s = i + j + k
+        if s == 0
+            prim[idx] = ρ
+        elseif s == 1
+            # the slots of the order-1 block hold the velocity components
+            prim[idx] = (i == 1 ? v_x : (j == 1 ? v_y : v_z))
+        else
+            val = zero(T)
+            for l in 0:i, m in 0:j, p in 0:k
+                coef = binomial(i, l) * binomial(j, m) * binomial(k, p)
+                val += coef * (-v_x)^(i - l) * (-v_y)^(j - m) * (-v_z)^(k - p) *
+                    moment_val(u_cons, l, m, p, equations)
+            end
+            prim[idx] = val
         end
-        prim[idx] = val
     end
 
     return SVector(prim)
@@ -485,19 +504,30 @@ function moment_prim2cons(u_prim, equations::GramianMomentEquations1D3V{Mp1}) wh
     cons = MVector{Mp1, T}(undef)
 
     ρ = u_prim[1]
-    v_x = u_prim[2]; v_y = u_prim[3]; v_z = u_prim[4]
-    cons[1] = ρ
-    cons[2] = ρ * v_x; cons[3] = ρ * v_y; cons[4] = ρ * v_z
+    # In prim space the order-1 slots hold the velocities themselves; a component whose
+    # moment is not evolved (slab mode) is zero by symmetry.
+    p_y = moment_position(equations, 0, 1, 0)
+    p_z = moment_position(equations, 0, 0, 1)
+    v_x = u_prim[2]
+    v_y = p_y == 0 ? zero(T) : @inbounds u_prim[p_y]
+    v_z = p_z == 0 ? zero(T) : @inbounds u_prim[p_z]
 
-    @inbounds for idx in 5:Mp1
+    @inbounds for idx in 1:Mp1
         i, j, k = equations._pow[idx]
-        val = zero(T)
-        for l in 0:i, m in 0:j, p in 0:k
-            coef = binomial(i, l) * binomial(j, m) * binomial(k, p)
-            val += coef * v_x^(i - l) * v_y^(j - m) * v_z^(k - p) *
-                   central_moment_val(u_prim, l, m, p, equations)
+        s = i + j + k
+        if s == 0
+            cons[idx] = ρ
+        elseif s == 1
+            cons[idx] = ρ * (i == 1 ? v_x : (j == 1 ? v_y : v_z))
+        else
+            val = zero(T)
+            for l in 0:i, m in 0:j, p in 0:k
+                coef = binomial(i, l) * binomial(j, m) * binomial(k, p)
+                val += coef * v_x^(i - l) * v_y^(j - m) * v_z^(k - p) *
+                    central_moment_val(u_prim, l, m, p, equations)
+            end
+            cons[idx] = val
         end
-        cons[idx] = val
     end
 
     return SVector(cons)
@@ -510,50 +540,9 @@ Trixi.prim2cons(u, eqns::GramianMomentEquations1D3V) = moment_prim2cons(u, eqns)
 # Convert conservative variables to entropy (necessary dummy)
 Trixi.cons2entropy(u, equations::GramianMomentEquations1D3V) = u
 
-
-##########################################################
-###################### Jacobians #########################
-##########################################################
-
-# """
-#     Derivative of the closure moments w.r.t. the moments u (forward differences)
-# """
-# function dCdu(u, equations::GramianMomentEquations1D3V{Mp1, N, MC, NC}, h::Real=1e-6) where {Mp1, N, MC, NC}
-#     grad = zeros(eltype(u), NC, length(u))
-#     u_aux = collect(u)
-#     C0 = closure_moments(u, equations)
-#     for i in eachindex(u_aux)
-#         u_aux[i] += h
-#         grad[:, i] = (closure_moments(SVector{Mp1}(u_aux), equations) - C0) / h
-#         u_aux[i] = u[i]
-#     end
-#     return grad
-# end
-
-# """
-#     Jacobian of the flux function
-# """
-# function flux_jacobian(u, equations::GramianMomentEquations1D3V{Mp1}) where {Mp1}
-#     A = zeros(eltype(u), Mp1, Mp1)
-#     grad = dCdu(u, equations)
-#     for i in 1:Mp1
-#         j = equations._flux_index[i]
-#         if j > 0
-#             A[i, j] = one(eltype(u))
-#         else
-#             A[i, :] .= @view grad[-j, :]
-#         end
-#     end
-#     return A
-# end
-
-
 ##########################################################
 #################### Maximum speeds ######################
 ##########################################################
-
-# Safety factor on the thermal speed; the moment system's characteristic speeds spread
-# further than the Euler ones, so a plain sound speed is not enough.
 const SPEED_FACTOR_1D3V = 5.0
 
 """
@@ -561,7 +550,7 @@ const SPEED_FACTOR_1D3V = 5.0
 
     θ = (P_(200) + P_(020) + P_(002)) / (3ρ) from a *primitive* (central-moment) vector.
 """
-# ToDo: Check if this is not the conservative ones?
+# ToDo: Check if this are not the conservative ones?
 @inline function temperature(prim, equations::GramianMomentEquations1D3V)
     i200, i020, i002 = equations._pressure_index
     return @inbounds (prim[i200] + prim[i020] + prim[i002]) / (3 * prim[1])
@@ -573,7 +562,6 @@ end
 @inline function max_abs_speed_1d3v(u, equations::GramianMomentEquations1D3V)
     prim = cons2prim(u, equations)
     θ = temperature(prim, equations)
-    # A limiter can push a cell out of the realizable set; clamp rather than return NaN.
     return abs(prim[2]) + SPEED_FACTOR_1D3V * sqrt(max(θ, zero(θ)))
 end
 
@@ -603,6 +591,9 @@ end
 
 function InitialConditionsShockTube1D3V(f_left, f_right, equations::GramianMomentEquations1D3V{Mp1}) where {Mp1}
     M = equations.M
+    if equations.slab_geometry
+        @assert f_left.v[2] == f_left.v[3] == 0 && f_right.v[2] == f_right.v[3] == 0 "slab geometry requires v_y = v_z = 0 in the initial data."
+    end
     full = multi_index_list(M)
     position_in_full = Dict(ix => i for (i, ix) in enumerate(full))
     gather = [position_in_full[ix] for ix in equations._U_t_index]
