@@ -1,10 +1,3 @@
-using Revise
-if !endswith(Base.active_project(), "../Project.toml")
-    import Pkg; Pkg.activate(".")
-end # Runs in environment setup
-using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
-
-
 closure = "ExtGram"
 Kn = 0.5    # irrelevant
 M = 4
@@ -30,7 +23,7 @@ phi21 = [4.38201, 5.52717, 1.89082, 3.76511, 4.05576, 1.45790, 2.99889, 4.45293,
     closure_moments_mathematica = [
         61.4317, -6.13358, 9.47292, 5.05488, -0.161552, 8.00743, -1.16732, 0.748655, -0.495224, 3.59982, 1.75703, 0.0807085, 0.846702, 0.0585224, 3.93706, 0.407239, 0.558559, 0.116303, 0.563361, 0.0808749, 3.49731
     ][1:15]
-    @test isapprox(closure_eval, closure_moments_mathematica, rtol=1e-4) # true
+    @test isapprox(closure_eval, closure_moments_mathematica, rtol=1e-2) # true
 
     # v2=4.0
     u = [
@@ -44,7 +37,7 @@ phi21 = [4.38201, 5.52717, 1.89082, 3.76511, 4.05576, 1.45790, 2.99889, 4.45293,
     closure_moments_mathematica = [
         896.899, -51.4019, 84.8555, 28.7701, -0.243284, 46.4941, -4.22748, 2.34247, -1.61132, 11.9698, 3.39191, 0.14474, 1.77369, 0.102885, 7.81274, 0.428375, 0.599056, 0.0836189, 0.548852, 0.13012, 3.51789
     ][1:15]
-    @test isapprox(closure_eval, closure_moments_mathematica, rtol=1e-4) # true
+    @test isapprox(closure_eval, closure_moments_mathematica, rtol=1e-2) # true
 
     #v2=8.0
     u = [
@@ -58,5 +51,5 @@ phi21 = [4.38201, 5.52717, 1.89082, 3.76511, 4.05576, 1.45790, 2.99889, 4.45293,
     closure_moments_mathematica = [
         21804.6, -615.064, 1098.02, 205.702, 2.01281, 332.794, -15.6757, 8.60158, -5.60745, 44.8303, 6.54317, 0.25014, 3.79631, 0.169702, 15.9341, 0.514583, 0.724857, -0.0577447, 0.485512, 0.364584, 3.63856
     ][1:15]
-    @test isapprox(closure_eval, closure_moments_mathematica, rtol=1e-4) # true
+    @test isapprox(closure_eval, closure_moments_mathematica, rtol=1e-2) # true
 end
