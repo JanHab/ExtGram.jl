@@ -66,16 +66,30 @@ end
 """
     slab_scatter_matrix(full_indices, slab_indices)
 
-    A moment with odd β or γ vanishes (zero row), every other moment equals its representative
-    U_(α, max(β,γ), min(β,γ)). The returned matrix S is the linear map from the full moment vector to the slab-symmetric one, i.e. S * u_slab = u_full
+    Mathematica-notebook convention (generate1D in BimodalSlab_Generic_orig.nb): only a
+    representative index (β, γ even and β ≥ γ) receives its own value; every other moment --
+    including the nonzero mirrors U_(α, γ, β) -- gets a zero row. The returned matrix S is
+    the linear map from the slab moment vector to the full one, i.e. u_full = S * u_slab.
+
+    NOTE: this drops the mirror moments instead of folding them onto their representative
+    (U_(α, γ, β) = U_(α, β, γ) in slab symmetry), so it reproduces the notebook's A-matrix
+    and directional moments, not the exact slab reduction. The exact (orbit-folded) version
+    uses the condition `iseven(ix[2]) && iseven(ix[3])` and the column
+    `position[[ix[1], max(ix[2], ix[3]), min(ix[2], ix[3])]]`.
 """
 function slab_scatter_matrix(full_indices::Vector{Vector{Int}}, slab_indices::Vector{Vector{Int}})
     position = Dict(ix => j for (j, ix) in enumerate(slab_indices))
     S = zeros(Float64, length(full_indices), length(slab_indices))
+    # My way
     for (p, ix) in enumerate(full_indices)
         (iseven(ix[2]) && iseven(ix[3])) || continue
         S[p, position[[ix[1], max(ix[2], ix[3]), min(ix[2], ix[3])]]] = 1.0
     end
+    # Eda's way
+    # for (p, ix) in enumerate(full_indices)
+    #     (iseven(ix[2]) && iseven(ix[3]) && ix[2] >= ix[3]) || continue
+    #     S[p, position[ix]] = 1.0
+    # end
     return S
 end
 
@@ -273,6 +287,7 @@ struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real} <: GramianM
             @warn "The closure direction set is badly conditioned (cond = $κ); the recovered order-$(M+1) moments will be inaccurate. Antipodal directions are degenerate for odd M+1 -- keep all directions on one hemisphere." M κ
         end
         # Only the α ≥ 1 prefix of the solution is ever used, so keep only those rows.
+        println(T_shell)
         _T_closure = Matrix{RealT}(inv(T_shell)[1:N_closure, :])
 
         # Fast (α,β,γ) -> position lookup, and the powers as tuples
