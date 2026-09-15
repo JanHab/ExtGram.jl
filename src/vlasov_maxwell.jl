@@ -40,7 +40,10 @@ end
 
 function vlasov_maxwell_source(u, x, t, equations::GramianMomentEquations1D3V{Mp1, N, MC, NC, NS}) where {Mp1, N, MC, NC, NS}
     # ToDo: Move this out of the source term to only call it once, not multiple times
-    Ex_field = linear_interpolation(VLASOV_MAXWELL_FIELD.x_range, VLASOV_MAXWELL_FIELD.Ex, extrapolation_bc = Interpolations.Line())
+    x_ext = vcat(VLASOV_MAXWELL_FIELD.x_range, VLASOV_MAXWELL_FIELD.Lx)
+    Ex_ext = vcat(VLASOV_MAXWELL_FIELD.Ex, VLASOV_MAXWELL_FIELD.Ex[1])
+    # Ex_field = linear_interpolation(VLASOV_MAXWELL_FIELD.x_range, VLASOV_MAXWELL_FIELD.Ex, extrapolation_bc = Interpolations.Line())
+    Ex_field = linear_interpolation(x_ext, Ex_ext)
     # Ignore for the moment, as it is set to zero
     # Ey_field = linear_interpolation(VLASOV_MAXWELL_FIELD.x_range, VLASOV_MAXWELL_FIELD.Ey, extrapolation_bc = Interpolations.Line())
     # Ez_field = linear_interpolation(VLASOV_MAXWELL_FIELD.x_range, VLASOV_MAXWELL_FIELD.Ez, extrapolation_bc = Interpolations.Line())
@@ -152,6 +155,9 @@ struct InitialConditionsVlasovMaxwellLandauDamping{N}
 
     function InitialConditionsVlasovMaxwellLandauDamping(v1::Float64, v2::Float64, v3::Float64, α::Float64, k::Float64, equations::GramianMomentEquations1D3V{Mp1}) where {Mp1}
         M = equations.M
+        if equations.slab_geometry
+            @assert v2 == 0.0 && v3 == 0.0 "slab geometry requires v_2 = v_3 = 0."
+        end
         full = multi_index_list(M)
         position_in_full = Dict(ix => i for (i, ix) in enumerate(full))
         gather = [position_in_full[ix] for ix in equations._U_t_index]
