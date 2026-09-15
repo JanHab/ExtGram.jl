@@ -10,7 +10,7 @@ closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = parse(Float64, ARGS[3])
 source_string = ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source 
-angle_name = ARGS[5] # "Max", "Arc", "Det"
+angle_name = ARGS[5] # "Max", "Arc", "Det", "Fibonacci"
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
@@ -66,8 +66,10 @@ elseif angle_name == "Arc"
 elseif angle_name == "Det"
     theta = theta_Det[M ÷ 2 - 1]
     phi = phi_Det[M ÷ 2 - 1]
+elseif angle_name == "Fibonacci"
+    theta, phi = fibonacci_hemisphere_angles(M)
 else
-    error("Invalid angle_name: $angle_name. Must be one of \"Max\", \"Arc\", or \"Det\".")
+    error("Invalid angle_name: $angle_name. Must be one of \"Max\", \"Arc\", \"Det\", or \"Fibonacci\".")
 end
 
 equations = GramianMomentEquations1D3V(M, Kn, "ExtGram", slab_geometry=slab_geometry, theta=theta, phi=phi)
