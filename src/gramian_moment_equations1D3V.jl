@@ -379,6 +379,20 @@ function zero_source(u, x, t, equations::GramianMomentEquations1D3V{Mp1}) where 
 end
 
 """
+    double_factorial(n)
+
+    n!! = n (n-2) (n-4) ⋯ (down to 1 or 2), with n!! = 1 for n ≤ 0. The even central moments of
+    a Maxwellian are ρ (α-1)!! (β-1)!! (γ-1)!! θ^((α+β+γ)/2).
+"""
+function double_factorial(n::Integer)
+    val = 1.0
+    for k in n:-2:1
+        val *= k
+    end
+    return val
+end
+
+"""
     relaxation_source(u, x, t, equations::GramianMomentEquations1D3V)
 
     BGK relaxation towards the local Maxwellian, RHS = -1/Kn (u - u_eq).

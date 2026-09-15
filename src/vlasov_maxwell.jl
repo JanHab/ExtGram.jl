@@ -162,7 +162,7 @@ struct InitialConditionsVlasovMaxwellLandauDamping{N}
         position_in_full = Dict(ix => i for (i, ix) in enumerate(full))
         gather = [position_in_full[ix] for ix in equations._U_t_index]
 
-        unit_moments = convective_moments_1D3D(M, 1.0, (v1, v2, v3), 1.0)[gather]
+        unit_moments = convective_moments_1D3V(M, 1.0, (v1, v2, v3), 1.0)[gather]
         @assert length(unit_moments) == Mp1 == equations.N_equations
 
         return new{Mp1}(v1, v2, v3, α, k, SVector{Mp1, Float64}(unit_moments), equations)

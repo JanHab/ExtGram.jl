@@ -17,7 +17,7 @@ makedocs(
     remotes = nothing,
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", "false") == "true",
-        repolink = "https://git.rwth-aachen.de/JanHab/ExtGram.jl",  
+        repolink = "https://github.com/JanHab/ExtGram.jl",  
         edit_link = "main"
     ),
     pages = [
@@ -25,7 +25,7 @@ makedocs(
         "Tutorials" => [
             "1D1D - Shock Tube Example" => "examples/1D1D_ShockTube.md",
             "1D1D - Shock Structure Example" => "examples/1D1D_ShockStructure.md",
-            "1D3D - Shock Tube Example" => "examples/1D3D_ShockTube.md",
+            "1D3V - Shock Tube Example" => "examples/1D3V_ShockTube.md",
         ],
         "API Reference" => "reference.md",
     ],

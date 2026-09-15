@@ -22,7 +22,7 @@ export GramianMomentEquations1D, gramian, closure, moment_prim2cons, moment_cons
 export InitialConditionsShockTube, Maxwellian, convective_moments, primitive_moments, InitialConditionsTwoShocks, ElectronHole, InitialConditionsElectronHole
 export test_closure, check_realizability
 
-export U_t_index, U_x_index, GramianMomentEquations1D3V, InitialConditionsShockTube1D3V
+export U_t_index, U_x_index, GramianMomentEquations1D3V, InitialConditionsShockTube1D3V, Maxwellian1D3V, convective_moments_1D3V
 
 # Vlasov-Poisson implementation
 # implemented via a callback

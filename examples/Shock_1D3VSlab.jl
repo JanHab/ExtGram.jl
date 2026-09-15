@@ -72,8 +72,8 @@ end
 
 equations = GramianMomentEquations1D3V(M, Kn, "ExtGram", slab_geometry=slab_geometry, theta=theta, phi=phi)
 
-f_left = Maxwellian1D3D(7.0, (0.0, 0.0, 0.0), 1.0)
-f_right = Maxwellian1D3D(1.0, (0.0, 0.0, 0.0), 1.0)
+f_left = Maxwellian1D3V(7.0, (0.0, 0.0, 0.0), 1.0)
+f_right = Maxwellian1D3V(1.0, (0.0, 0.0, 0.0), 1.0)
 
 initial_condition = InitialConditionsShockTube1D3V(
     f_left, # Density, velocity, temperature

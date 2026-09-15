@@ -2,13 +2,13 @@
 
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://JanHab.github.io/ExtGram.jl/)
 [![Build](https://img.shields.io/github/actions/workflow/status/JanHab/ExtGram.jl/documentation.yml?label=build)](https://github.com/JanHab/ExtGram.jl/actions)
-[![GitLab Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://git.rwth-aachen.de/janhab/ExtGram.jl/-/tags)
-[![License](https://img.shields.io/badge/license-CCBY4.0-blue)](https://git.rwth-aachen.de/janhab/ExtGram.jl/-/blob/main/LICENSE?ref_type=heads)
+[![GitLab Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/JanHab/ExtGram.jl/releases/tag/1.0.0)
+[![License](https://img.shields.io/badge/license-CCBY4.0-blue)](https://github.com/JanHab/ExtGram.jl/blob/main/LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18998361.svg)](https://doi.org/10.5281/zenodo.18998361)
 
 *A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl.*
 
-## Abstract (from the thesis)
+## Abstract
 The classical continuum mechanical equations of Navier-Stokes and Fourier (NSF) accurately describe gases with a high collision frequency, measured by a small Knudsen number (Kn).
 However, the NSF equations fail for gases with a high Knudsen number and, consequently, a small collision frequency.
 Directly solving Boltzmann's equation is an alternative approach of high accuracy, but is computationally very demanding due to its high dimensionality.
