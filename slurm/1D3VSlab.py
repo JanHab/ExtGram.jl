@@ -7,7 +7,7 @@ closure = "ExtGram"
 Knudsen = [0.1, 1.0, 10.0]
 sources = ["relaxation_source", "relaxation_source", "zero_source"]
 
-angle_names = ["Max", "Arc", "Det", "Fibonacci"]
+angle_names = ["Max", "Arc", "Det"]#
 
 # SLURM job parameters
 threads = 1

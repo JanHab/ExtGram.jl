@@ -17,7 +17,7 @@ surface_flux = flux_lax_friedrichs
 domain = (-2.0, 2.0)
 base_tree_level = 10
 T_end = 0.3 
-cfl = 0.99 # ? Decrease later? 0.45
+cfl = 0.45
 time_interval = 10 # ? Increase later? 10
 slab_geometry = true # ? false
 
@@ -66,10 +66,8 @@ elseif angle_name == "Arc"
 elseif angle_name == "Det"
     theta = theta_Det[M ÷ 2 - 1]
     phi = phi_Det[M ÷ 2 - 1]
-elseif angle_name == "Fibonacci"
-    theta, phi = fibonacci_hemisphere_angles(M)
 else
-    error("Invalid angle_name: $angle_name. Must be one of \"Max\", \"Arc\", \"Det\", or \"Fibonacci\".")
+    error("Invalid angle_name: $angle_name. Must be one of \"Max\", \"Arc\", \"Det\".")
 end
 
 equations = GramianMomentEquations1D3V(M, Kn, "ExtGram", slab_geometry=slab_geometry, theta=theta, phi=phi)
