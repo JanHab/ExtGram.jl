@@ -184,12 +184,13 @@ end
     Compiles the function to get the transformed higher order moments for given degree.
 """
 function compile_fp(degree::Int)
-    target_index = nidx(degree)[end]
-    shell_positions = shell_slab_positions(degree)
+    shell_full = index(degree)
+    shell_slab = shell_full[index_1d(degree)]
+    S_shell = slab_scatter_matrix(shell_full, shell_slab)
     function fp(theta::Real, phi::Real)
-        R = rot(degree, theta, phi)
-        R[target_index, shell_positions]
+        return S_shell' * tensor_transformation(degree, theta, phi)[1, :]
     end
+    return fp
 end
 
 """

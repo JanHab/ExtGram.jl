@@ -17,7 +17,7 @@ end
     include("closure/ExtendedGramian.jl")
 end
 
-@testset "1D3D" begin
+@testset "1D3 - Matrix Transformations" begin
     include("1D3V/TestTransformations.jl")
 end
 

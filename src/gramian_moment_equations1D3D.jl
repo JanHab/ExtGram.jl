@@ -16,13 +16,11 @@
 struct Constants{F<:Function}
     fp_func::F
     Angles::Vector{Tuple{Float64,Float64}}
-    A_matrix::Matrix{Float64}
+    A_matrix::Matrix{Float64}                      # kept for inspection / conditioning checks
+    A_inv::SMatrix{4,4,Float64,16}                 # A_matrix \ rhs, precomputed
     slab_indices::Vector{Int}
     target_indices::Vector{Int}
-    rotations::AbstractVector{<:AbstractMatrix{Float64}}
-    function Constants(fp_func::F, Angles::Vector{Tuple{Float64,Float64}}, A_matrix::Matrix{Float64}, slab_indices::Vector{Int}, target_indices::Vector{Int}, rotations::AbstractVector{<:AbstractMatrix{Float64}}) where {F<:Function}
-        new{F}(fp_func, Angles, A_matrix, slab_indices, target_indices, rotations)
-    end
+    rotations::NTuple{4, SMatrix{5,10,Float64,50}} # the directional-moment maps P_i
 end
 
 """
@@ -41,22 +39,29 @@ function init_constants(M::Int, angles::Vector{Tuple{Float64,Float64}} = [
         (2.03444, 1.5708),
         (2.18628, 0.886077)
     ])
+    @assert M == 4 "init_constants is written for M = 4 (literal SMatrix sizes)."
+    @assert length(angles) == 4 "M = 4 slab needs exactly 4 closure directions."
+
     # Compile the function
     fp_func = compile_fp(M+1)
+    A_matrix = Matrix(hcat([fp_func(theta, phi) for (theta, phi) in angles]...)')
     
-    # Compute Matrix A immediately
-    results = [fp_func(theta, phi) for (theta, phi) in angles]
-    A_matrix = Matrix(hcat(results...)')
-    
-    # Get valid indices
     slab_indices = get_valid_indices(M)
-    target_indices = nidx(M) # What we use for the closure
+    target_indices = nidx(M)
 
-    # Precompute rotation matrices
-    size_moments_full = length(mainmomindex(M))
-    rotations = SVector{4}([SMatrix{size_moments_full, size_moments_full}(rot(M, theta, phi)) for (theta, phi) in angles])
+    # Get valid indices
+    full_indices = mainmomindex(M)
+    S_state = slab_scatter_matrix(full_indices, full_indices[slab_indices])
+    rotations = ntuple(i -> begin
+        theta, phi = angles[i]
+        SMatrix{5,10,Float64}(rot(M, theta, phi)[target_indices, :] * S_state)
+    end, 4) # Use U_002 = U_020 for the transformations
 
-    return Constants(fp_func, angles, A_matrix, slab_indices, target_indices, rotations) # What we use for the closure)
+    return Constants(
+        fp_func, angles, 
+        A_matrix, SMatrix{4,4,Float64}(inv(A_matrix)), 
+        slab_indices, target_indices, rotations
+    )
 end
 
 
@@ -173,39 +178,8 @@ end
     - `SVector{4, Float64}`: Transformed moments after applying closure.
 """
 function closure_transform(u, equations)
-    # ToDo: Make generic for arbitrary M
-    M = 4
-
-    # Reallocate the moments into the whole geometry with 0 moments for slab
-    moments_full = zeros(Float64, length(mainmomindex(M))) # The full set of moments 
-    j = 1
-    for i in equations.constants.slab_indices
-        moments_full[i] = u[j]
-        j += 1
-    end
-
-    # Initialize rhs and target_indices
-    target_indices = equations.constants.target_indices
-    rhs = Float64[] # To store the rhs
-
-    # Loop over angles
-    for (i, (theta, phi)) in enumerate(equations.constants.Angles)
-        # Get Rotation Matrix
-        R = equations.constants.rotations[i]
-        # Rotate
-        rotated_moments_full = R * moments_full
-
-        # Extract (m0, m1, m2, m3, m4)
-        substituted = rotated_moments_full[target_indices]
-
-        # Apply closure
-        val = closure(substituted, equations)
-        push!(rhs, val)
-    end
-
-    # Solve for transformed moments
-    transformed_moments = equations.constants.A_matrix \ rhs;
-    return SVector{4, Float64}(transformed_moments)
+    rhs = ntuple(i -> closure(equations.constants.rotations[i] * u, equations), 4)
+    return equations.constants.A_inv * SVector{4}(rhs)
 end
 
 

@@ -69,13 +69,14 @@ for angle_name in ["Max", "Arc", "Det"]
     end
 
     equations = GramianMomentEquations1D3V(M, Kn, closure, slab_geometry=true, theta=theta, phi=phi)
-    # evaluate the closure
     closure_eval = ExtGram.closure_moments(u, equations)
-    # @test isapprox(closure_eval, closure_moments_mathematica, rtol=1e-4) # true
-    # println("Angle pair: $angle_name, Closure eval: $closure_eval, Mathematica reference: $(closure_moments_mathematica[M ÷ 2 - 1])")
 
-    # println(isapprox(closure_eval, closure_moments_mathematica[M ÷ 2 - 1], rtol=1e-2))
+    angles_slab = [(theta[i], phi[i]) for i in 1:length(theta)]
+    equations_slab = GramianMomentEquations1D3D(M, Kn, closure, angles=angles_slab)
+    closure_eval_slab = ExtGram.closure_transform(u, equations_slab)
+
     @test isapprox(closure_eval, closure_moments_mathematica[M ÷ 2 - 1], rtol=1e-2)
+    @test isapprox(closure_eval_slab, closure_moments_mathematica[M ÷ 2 - 1], rtol=1e-2)
 end
 
 # v2=1.0 and M=6
@@ -111,12 +112,8 @@ for angle_name in ["Max", "Arc", "Det"]
     end
 
     equations = GramianMomentEquations1D3V(M, Kn, closure, slab_geometry=true, theta=theta, phi=phi)
-    # evaluate the closure
     closure_eval = ExtGram.closure_moments(u, equations)
-    # @test isapprox(closure_eval, closure_moments_mathematica, rtol=1e-4) # true
-    # println("Angle pair: $angle_name, Closure eval: $closure_eval, Mathematica reference: $(closure_moments_mathematica[M ÷ 2 - 1])")
 
-    # println(isapprox(closure_eval, closure_moments_mathematica[M ÷ 2 - 1], rtol=1e-2))
     @test isapprox(closure_eval, closure_moments_mathematica[M ÷ 2 - 1], rtol=1e-2)
 end
 
@@ -156,11 +153,7 @@ for angle_name in ["Max", "Arc", "Det"]
     end
 
     equations = GramianMomentEquations1D3V(M, Kn, closure, slab_geometry=true, theta=theta, phi=phi)
-    # evaluate the closure
     closure_eval = ExtGram.closure_moments(u, equations)
-    # @test isapprox(closure_eval, closure_moments_mathematica, rtol=1e-4) # true
-    # println("Angle pair: $angle_name, Closure eval: $closure_eval, Mathematica reference: $(closure_moments_mathematica[M ÷ 2 - 1])")
 
-    # println(isapprox(closure_eval, closure_moments_mathematica[M ÷ 2 - 1], rtol=1e-2))
     @test isapprox(closure_eval, closure_moments_mathematica[M ÷ 2 - 1], rtol=1e-2)
 end
