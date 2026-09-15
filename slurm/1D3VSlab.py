@@ -20,11 +20,11 @@ for i in range(len(Knudsen)):
     source = sources[i]
     for M in Moments:
         for angle_name in angle_names:
-            command = f"julia examples/1D3VSlab.jl {M} {closure} {Kn} {source} {angle_name}"
+            command = f"julia examples/Shock_1D3VSlab.jl {M} {closure} {Kn} {source} {angle_name}"
             # os.system(command)
             createsbatch(
                 command, 
                 nproc=threads, nnodes=nnodes, 
                 time=time, mem=memory_request, 
-                output_file=f"out/1D3D/1D3D_angles/slurm_output_1D3D_M{M}_closure{closure}_Kn{Kn}_source{source}_anglepair{angle_name}.out"
+                output_file=f"out/1D3V/1D3V_angles/slurm_output_1D3V_M{M}_closure{closure}_Kn{Kn}_source{source}_anglepair{angle_name}.out"
             )

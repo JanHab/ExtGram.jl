@@ -21,8 +21,8 @@ end
     include("1D3V/TestTransformations.jl")
 end
 
-@testset "1D3V - Moment Transformations" begin
-    include("1D3V/angles.jl")
+@testset "1D3V - full" begin
+    include("1D3V/1D3V_full.jl")
 end
 
 @testset "1D3V - Reduction to Slab-geometry" begin

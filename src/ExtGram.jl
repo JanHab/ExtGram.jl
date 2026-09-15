@@ -13,7 +13,7 @@ include("testing.jl")
 using LinearAlgebra
 using Distributions
 include("1D3D_Transformations.jl")
-include("gramian_moment_equations1D3D.jl")
+include("gramian_moment_equations1D3V.jl")
 
 include("initial_conditions.jl")
 
@@ -22,9 +22,7 @@ export GramianMomentEquations1D, gramian, closure, moment_prim2cons, moment_cons
 export InitialConditionsShockTube, Maxwellian, convective_moments, primitive_moments, InitialConditionsTwoShocks, ElectronHole, InitialConditionsElectronHole
 export test_closure, check_realizability
 
-
-export GramianMomentEquations1D3D
-export InitialConditionsShockTube1D3D, convective_moments_1D3D, Maxwellian1D3D
+export U_t_index, U_x_index, GramianMomentEquations1D3V, InitialConditionsShockTube1D3V
 
 # Vlasov-Poisson implementation
 # implemented via a callback
@@ -58,9 +56,6 @@ export plot_ρ_v_p, plot_λ_max, conservation, readsol, readfile
 include("DVM_equation.jl")
 export setupDVM1DShockTube, InitialConditionsDVM, ρ_v_θ_p_DVM, setupDVM1DShockTube, plot_ρ_v_p_DVM
 
-# 1D-3V full implementation
-include("1D3V_full.jl")
-export U_t_index, U_x_index, GramianMomentEquations1D3V, InitialConditionsShockTube1D3V
 include("vlasov_maxwell.jl")
 export vlasov_maxwell_callback, vlasov_maxwell_source, rhs_vlasov_maxwell!, InitialConditionsVlasovMaxwellLandauDamping
 

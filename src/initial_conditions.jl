@@ -72,19 +72,19 @@ end
 
 
 #######################################
-########### 1D3D Maxwellian ###########
+########### 1D3V Maxwellian ###########
 #######################################
 """
     Maxwellian distribution function in 3D velocity space (1D spatial)
 """
-struct Maxwellian1D3D
+struct Maxwellian1D3V
     ρ::Real
     v::NTuple{3,Real}
     θ::Real # defined here as ∫ C^2 f dc (no factor 1/2)
-    Maxwellian1D3D(ρ, v, θ) = new(ρ, v, θ)
+    Maxwellian1D3V(ρ, v, θ) = new(ρ, v, θ)
 end
 
-(f::Maxwellian1D3D)(cx::Real, cy::Real, cz::Real) = f.ρ/(2*π*f.θ)^(3/2) * exp(-((cx-f.v[1])^2 + (cy-f.v[2])^2 + (cz-f.v[3])^2) / (2*f.θ)) # note: normalized in 1D velocity space 
+(f::Maxwellian1D3V)(cx::Real, cy::Real, cz::Real) = f.ρ/(2*π*f.θ)^(3/2) * exp(-((cx-f.v[1])^2 + (cy-f.v[2])^2 + (cz-f.v[3])^2) / (2*f.θ)) # note: normalized in 1D velocity space 
 
 """
     index3D(total_degree)
@@ -110,13 +110,13 @@ function multi_index_list(M::Integer)
 end
 
 """
-    convective_moments_1D3D(M; rho=1.0, u=(0,0,0), theta=1.0, q=8)
+    convective_moments_1D3V(M; rho=1.0, u=(0,0,0), theta=1.0, q=8)
 
     Compute the velocity moments up to `M` (all multi-indices with i+j+k <= M)
     using tensor-product Gauss–Hermite with `q` nodes per dimension. Returns a Vector{Float64}
     with the same ordering as `multi_index_list(M)`.
 """
-function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0.0,0.0,0.0), theta::Real=1.0; q::Integer=35+1)
+function convective_moments_1D3V(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0.0,0.0,0.0), theta::Real=1.0; q::Integer=35+1)
     # 35+1 is max degree in the test cases for M=4 (hard-coded)
     # quadrature nodes and weights for ∫ e^{-x^2} g(x) dx
     ξ, w = gausshermite(q)
@@ -156,29 +156,40 @@ function convective_moments_1D3D(M::Integer, rho::Real=1.0, u::NTuple{3,Real}=(0
 end
 
 """
-    Shock tube initial conditions with left and right distribution functions in 1D3D
+    Shock tube initial conditions with left and right distribution functions in 1D3V
 """
-struct InitialConditionsShockTube1D3D{N}
-    left::SVector{N}
-    right::SVector{N}
-
-    function InitialConditionsShockTube1D3D(f_left, f_right, M, eqns::GramianMomentEquations1D3D{Mp1}) where {Mp1}
-
-        # Compute full convective moments
-        left = convective_moments_1D3D(M, f_left.ρ, f_left.v, f_left.θ)
-        right = convective_moments_1D3D(M, f_right.ρ, f_right.v, f_right.θ)
-
-        # Reduce to slab indices only
-        slab_indices = get_valid_indices(M)
-        left_reduced = SVector{length(slab_indices)}(left[slab_indices])
-        right_reduced = SVector{length(slab_indices)}(right[slab_indices])
-
-        return new{length(slab_indices)}(left_reduced, right_reduced)
-    end
+struct InitialConditionsShockTube1D3V{N}
+    left::SVector{N, Float64}
+    right::SVector{N, Float64}
 end
 
-function (ic::InitialConditionsShockTube1D3D)(coords, t, equations::GramianMomentEquations1D3D)
-    if coords[1] < 0.0; return ic.left; else; return ic.right; end
+function InitialConditionsShockTube1D3V(f_left, f_right, equations::GramianMomentEquations1D3V{Mp1}) where {Mp1}
+    M = equations.M
+    if equations.slab_geometry
+        @assert f_left.v[2] == f_left.v[3] == 0 && f_right.v[2] == f_right.v[3] == 0 "slab geometry requires v_y = v_z = 0 in the initial data."
+    end
+    full = multi_index_list(M)
+    position_in_full = Dict(ix => i for (i, ix) in enumerate(full))
+    gather = [position_in_full[ix] for ix in equations._U_t_index]
+
+    left = convective_moments_1D3V(M, f_left.ρ, f_left.v, f_left.θ)[gather]
+    right = convective_moments_1D3V(M, f_right.ρ, f_right.v, f_right.θ)[gather]
+    @assert length(left) == Mp1 == equations.N_equations
+
+    return InitialConditionsShockTube1D3V{Mp1}(
+        SVector{Mp1, Float64}(left),
+        SVector{Mp1, Float64}(right)
+    )
+end
+
+# Convenience method keeping the explicit `M` argument; it must agree with the equations.
+function InitialConditionsShockTube1D3V(f_left, f_right, M::Integer, equations::GramianMomentEquations1D3V)
+    @assert M == equations.M "initial condition built for M = $M but the equations use M = $(equations.M)."
+    return InitialConditionsShockTube1D3V(f_left, f_right, equations)
+end
+
+function (ic::InitialConditionsShockTube1D3V)(coords, t, equations::GramianMomentEquations1D3V)
+    return coords[1] < 0.0 ? ic.left : ic.right
 end
 
 

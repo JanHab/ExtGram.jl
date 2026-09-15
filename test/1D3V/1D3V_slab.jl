@@ -71,12 +71,7 @@ for angle_name in ["Max", "Arc", "Det"]
     equations = GramianMomentEquations1D3V(M, Kn, closure, slab_geometry=true, theta=theta, phi=phi)
     closure_eval = ExtGram.closure_moments(u, equations)
 
-    angles_slab = [(theta[i], phi[i]) for i in 1:length(theta)]
-    equations_slab = GramianMomentEquations1D3D(M, Kn, closure, angles=angles_slab)
-    closure_eval_slab = ExtGram.closure_transform(u, equations_slab)
-
     @test isapprox(closure_eval, closure_moments_mathematica[M ÷ 2 - 1], rtol=1e-2)
-    @test isapprox(closure_eval_slab, closure_moments_mathematica[M ÷ 2 - 1], rtol=1e-2)
 end
 
 # v2=1.0 and M=6
