@@ -8,9 +8,9 @@ using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
 M = parse(Int, ARGS[1])
 closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = parse(Float64, ARGS[3])
-source_string = ARGS[4]
+source_string = !ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source 
-angle_name = ARGS[5] # "Max", "Arc", "Det", "Fibonacci"
+angle_name = ARGS[5] # "Max", "Arc", "Det", "Bad"
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
@@ -75,7 +75,14 @@ phi_Det = [
     [5.32313, 4.40688, 5.47647, 5.13619, 0.599894, 5.59516, 2.9642, 1.72031, 2.16574], # M=8, mirrored
 ]
 
-for M in [4, 6, 8]
+theta_Bad = [
+    0.0, 1.0, 2.0, 3.0
+]
+phi_Bad = [
+    π*1/4, π*2/4, π*3/4, π*4/4
+]
+
+for M in [4]#![4, 6, 8]
     if angle_name == "Max"
         theta = theta_Max[M ÷ 2 - 1]
         phi = phi_Max[M ÷ 2 - 1]
@@ -85,6 +92,9 @@ for M in [4, 6, 8]
     elseif angle_name == "Det"
         theta = theta_Det[M ÷ 2 - 1]
         phi = phi_Det[M ÷ 2 - 1]
+    elseif (angle_name == "Bad" && M == 4)
+        theta = theta_Bad
+        phi = phi_Bad
     else
         error("Invalid angle_name: $angle_name. Must be one of \"Max\", \"Arc\", \"Det\".")
     end

@@ -3,15 +3,18 @@ using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
+using ExtGram, Trixi, OrdinaryDiffEq
+using Plots, LinearAlgebra, StaticArrays
 
 # M = parse(Int, ARGS[1])
-M_vec = [4, 6, 8] # = parse(Int, ARGS[1])
-closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
-Kn = parse(Float64, ARGS[3])
-source_string = ARGS[4]
-source = source_string == "relaxation_source" ? relaxation_source : zero_source 
-angle_index = parse(Int, ARGS[5]) # 0, 1, 2
+# ! M_vec = [4, 6, 8] # = parse(Int, ARGS[1])
+M = 4#!8
+closure = "ExtGram" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
+Kn = 1.0 #!parse(Float64, ARGS[3])
+Kn_vec = [1.0]#![0.1, 1.0, 10.0]
+# source_string = "relaxation_source" #!ARGS[4]
+# source = source_string == "relaxation_source" ? relaxation_source : zero_source 
+angle_index = 3 #!parse(Int, ARGS[5]) # 0, 1, 2
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
@@ -54,7 +57,7 @@ angles_M4 = [
     4.06094], [1.81686, 3.71516], [0.0398945, 0.266854], [2.02831,
     4.82252], [2.13016, 4.43117], [0.898094, 2.74962], [2.16795,
     4.77464], [1.1442, 4.92946], [2.53793, 4.3777], [2.34389,
-    2.62256], [1.65089, 4.44429], [1.97118, 6.123], [3.1372, 2.24354]]
+    2.62256], [1.65089, 4.44429], [1.97118, 6.123], [3.1372, 2.24354]],
 ]
 
 angles_M6 = [
@@ -158,7 +161,20 @@ angles_M8 = [
     1.35077], [1.2399, 3.02313]]
 ]
 
-for M in M_vec
+# for M in M_vec
+for Kn in Kn_vec
+    if Kn == 0.1
+        source = relaxation_source
+        source_string = "relaxation_source"
+    elseif Kn == 1.0
+        source = relaxation_source
+        source_string = "relaxation_source"
+    elseif Kn == 10.0
+        source = zero_source
+        source_string = "zero_source"
+    else
+        error("Kn must be 0.1, 1.0, or 10.0")
+    end
     if M == 4
         angles = angles_M4[angle_index]
     elseif M == 6
@@ -245,16 +261,18 @@ for M in M_vec
     )
 
     #= solve =#
-    sol = solve(
-        ode, 
-        CarpenterKennedy2N54(
-            williamson_condition = false
+    @time begin
+        sol = solve(
+            ode, 
+            CarpenterKennedy2N54(
+                # williamson_condition = false
+            );
+            dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+            ode_default_options()..., 
+            callback = callbacks,
+            # saveat = range(tspan[1], tspan[2], length=100)
         );
-        dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
-        ode_default_options()..., 
-        callback = callbacks,
-        # saveat = range(tspan[1], tspan[2], length=100)
-    );
+    end
 
 
     # #= ---------- Final state: ρ, v, p, θ over x ---------- =#
