@@ -12,7 +12,7 @@ angle_name = "Max"
 # SLURM job parameters
 threads = 1
 nnodes = 1
-time = '04:00:00'
+time = '02:00:00'
 memory_request = '16G'
 
 for i in range(len(Knudsen)):
