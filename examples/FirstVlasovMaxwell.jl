@@ -13,12 +13,12 @@ surface_flux = flux_lax_friedrichs
 base_tree_level = 8 # ! Increase later
 source = vlasov_maxwell_source 
 T_end = 20.0
-cfl = 0.45 # ? Decrease later? 0.45
+# cfl = 0.45 # * Not in use anymore
 time_interval = 10 # ? Increase later? 10
 name = "out"
 
 Bx, By, Bz = 0.0, 0.0, 0.0 # * Vanishing magnetic contributions for the moment
-v1, v2, v3, α, k = 0.0, 0.0, 0.0, 0.5, 0.4
+v1, v2, v3, α, k = 0.0, 0.0, 0.0, 0.01, 0.4
 domain = (0.0, 2.0*π/k)
 
 equations = GramianMomentEquations1D3V(M, Kn, "ExtGram")
@@ -68,6 +68,8 @@ sol = solve(
     callback = callbacks,
     # saveat = range(tspan[1], tspan[2], length=100)
 );
+
+summary_callback()
 
 # plot(ExtGram.VLASOV_MAXWELL_FIELD.times, ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2, xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time")
 plot(ExtGram.VLASOV_MAXWELL_FIELD.times[1:end], ExtGram.VLASOV_MAXWELL_FIELD.Ex_L2[1:end], xlabel="Time", ylabel="L2-norm of E_x", title="L2-norm of Electric Field over Time", yscale=:log10)
