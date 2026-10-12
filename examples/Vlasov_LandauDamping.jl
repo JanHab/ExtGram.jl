@@ -64,16 +64,54 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     time_interval = 500, # save at 500 time intervals
     name="VlasovPoisson/LandauDamping/moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_rho_0$(ρ_0)_v_0$(v_0)_theta_0$(θ_0)_epsilon$(ϵ)_k$(k)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name used for output
 )
+
+alive_callback = AliveCallback(analysis_interval=100)
+summary_callback = SummaryCallback()
+
+plot_callback = VisualizationCallback(
+    semi;
+    interval=20,
+    solution_variables=cons2cons,
+    plot_data_creator=PlotData1D,
+    plot_creator=Trixi.show_plot
+)
+
+save_solution = SaveTriangulationCallback(
+    time_interval=tspan[2]/20,
+    save_initial_solution=true,
+    file_format="tsv",
+    append_solution=true,
+    solution_variables = cons2cons,
+    clear_out_dir=false,
+    name="gram_solution" * "_cons",
+    info="basis = $(Base.typename(typeof(basis)).wrapper)"
+)
+
+save_solution_prim = SaveTriangulationCallback(
+    time_interval=tspan[2]/20,
+    save_initial_solution=true,
+    file_format="tsv",
+    append_solution=true,
+    solution_variables = cons2prim,
+    clear_out_dir=false,
+    name="gram_solution" * "_prim",
+    info="basis = $(Base.typename(typeof(basis)).wrapper)"
+)
+
 # Add Vlasov-Poisson callback
-callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, mesh, domain))
+callbacks = CallbackSet(
+    alive_callback,
+    plot_callback,
+    save_solution,
+    save_solution_prim,
+    vlasov_poisson_callback(;M, mesh, domain)
+)
 
 #= solve =#
 sol = solve(
     ode, 
-    CarpenterKennedy2N54(
-        williamson_condition = false
-    );
-    dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+    RDPK3SpFSAL49(); # See: https://github.com/trixi-framework/Trixi.jl/blob/main/examples/p4est_3d_dgsem/elixir_euler_baroclinic_instability.jl
+    abstol = 1.0e-6, reltol = 1.0e-6,
     ode_default_options()..., 
     save_everystep=true,
     callback = callbacks,

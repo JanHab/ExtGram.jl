@@ -91,7 +91,7 @@ function check_realizability(u; verbose=true)
         n = Int((M+1)/2) - 1
     end
     # if verbose println("M: $M, n: $n, length(u): $(length(u))") end
-    spd = all(eigen(gramian(u, n)).values .>= 0.0) #  all eigenvalues of gramian(u, n) should be positive (and real) for the matrix to be (semi-)positive definite
+    spd = all(eigen(gramian(u, Val(n))).values .>= 0.0) #  all eigenvalues of gramian(u, n) should be positive (and real) for the matrix to be (semi-)positive definite
     if verbose println("Gramian positive semi-definite: ", spd) end
 
     if length(u) == 5

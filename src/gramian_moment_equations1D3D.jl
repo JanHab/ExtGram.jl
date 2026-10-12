@@ -24,6 +24,14 @@ struct Constants{F<:Function}
         new{F}(fp_func, Angles, A_matrix, slab_indices, target_indices, rotations)
     end
 end
+struct Constants{F<:Function, A<:AbstractMatrix{Float64}, TI<:AbstractVector{Int}, R<:AbstractVector{<:AbstractMatrix{Float64}}}
+    fp_func::F
+    Angles::Vector{Tuple{Float64,Float64}}
+    A_matrix::A           # SMatrix: small square system, solved in every flux evaluation
+    slab_indices::Vector{Int}
+    target_indices::TI    # SVector{M+1, Int}
+    rotations::R          # SVector of SMatrix
+end
 
 """
     Initialize constants for Gramian moment equations in 1D with 3D velocity.
@@ -86,12 +94,12 @@ Constructs a `GramianMomentEquations1D` system with `M` moments and specified Kn
 - The system has `M+1` variables in total
 - The parameter `χ` is calculated differently depending on whether `M` is even or odd
 """
-struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real} <: GramianMomentEquations{Mp1, N, RealT}
+struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real, C, CT <: Constants} <: GramianMomentEquations{Mp1, N, RealT, C}
     inv_Kn::RealT # 1/Kn (Kn = Knudsen number) | used by the relaxation source term
     χ::RealT
     n::Int
     closure::Symbol
-    constants::Constants
+    constants::CT # concrete type parameter: field access is type stable
 
     function GramianMomentEquations1D3D(M::Integer, Knudsen::Real, closure::String="ExtGram"; χ_set="optimal", angles::Vector{Tuple{Float64,Float64}} = [
         (3.14159, 1.5708),
@@ -126,7 +134,7 @@ struct GramianMomentEquations1D3D{Mp1, N, RealT <: Real} <: GramianMomentEquatio
         # Setup the Constants
         constants = init_constants(M, angles)
 
-        new{10, n, typeof(Knudsen)}(inv(Knudsen), χ, n, closure_value, constants)
+        return new{10, n, typeof(Knudsen), closure_value, typeof(constants)}(inv(Knudsen), χ, n, closure_value, constants)
     end
 end
 
