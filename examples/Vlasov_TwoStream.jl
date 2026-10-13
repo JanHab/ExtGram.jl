@@ -20,7 +20,6 @@ x_lower = 0.0; x_upper = 4.0*π
 domain = (x_lower, x_upper)
 
 Kn = 1.0 # doesn't matter, as zero-relaxation in the vlasov_poisson_source_term
-source = vlasov_poisson_source
 
 
 
@@ -46,10 +45,11 @@ mesh = TreeMesh(
     periodicity=true
 )
 
+vlasov = VlasovPoissonCache(mesh, solver)   # buffers, FFT plans and field history for this run
 semi = SemidiscretizationHyperbolic(
     mesh, equations, 
     initial_condition, solver, 
-    source_terms=source
+    source_terms=VlasovPoissonSource(vlasov)
 )
 
 #= set up ODE =#
@@ -64,7 +64,7 @@ callbacks, summary_callback = callbacksGramianMomentEquations(
     name="VlasovPoisson/TwoStreamInstability/moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_epsilon$(ϵ)_k$(k)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name used for output
 )
 # Add Vlasov-Poisson callback
-callbacks = CallbackSet(callbacks, vlasov_poisson_callback(;M, mesh, domain))
+callbacks = CallbackSet(callbacks, vlasov_poisson_callback(vlasov))
 
 #= solve =#
 sol = solve(
@@ -81,8 +81,8 @@ sol = solve(
 summary_callback()
 
 # Access the energy history
-E_L2_history = ExtGram.ELECTRIC_FIELD.E_L2;
-time_callback = ExtGram.ELECTRIC_FIELD.times;  # Use actual times from callback
+E_L2_history = vlasov.E_L2
+time_callback = vlasov.times
 
 # store to csv file
 CSV.write(
