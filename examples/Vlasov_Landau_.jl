@@ -8,7 +8,7 @@ end # Runs in environment setup
 using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LaTeXStrings
 
 # Access arguments by index
-M_vector = [48] #![4, 8, 12, 16, 20, 24, 28, 32, 64] #!parse.(Int, ARGS[1]) # Vector of M values to test
+M_vector = [4, 8, 12, 16, 20, 24, 28, 32, 40] #!parse.(Int, ARGS[1]) # Vector of M values to test
 closure = "ExtGram" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 T_end = 50 #!parse(Float64, ARGS[3])
 base_tree_level = 8 #!parse(Int, ARGS[4]) # e.g. 10
