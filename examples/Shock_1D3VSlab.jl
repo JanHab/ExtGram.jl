@@ -6,7 +6,7 @@ end # Runs in environment setup
 using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
 
 M = 4 #!parse(Int, ARGS[1])
-closure = "Grad" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
+closure = "ExtGram" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = 1.0 #!parse(Float64, ARGS[3])
 source_string = "relaxation_source" #!ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source 
@@ -58,13 +58,15 @@ phi_Det = [
 ]
 
 theta_Bad = [ # M=4
+    # 0.0, 1.0, 2.0, 3.0
     0.0, 1.0, 2.0, 3.0
 ]
 phi_Bad = [ # M=4
-    π*1/4, π*2/4, π*3/4, π*4/4
+    # π*1/4, π*2/4, π*3/4, π*4/4
+    π*1/4, π*2/4, π*3/4, π*7/8
 ]
 
-for rho_L in [7.0, 15.0, 30.0]
+for rho_L in [7.0]#!, 15.0, 30.0]
     if angle_name == "Max"
         theta = theta_Max[M ÷ 2 - 1]
         phi = phi_Max[M ÷ 2 - 1]
