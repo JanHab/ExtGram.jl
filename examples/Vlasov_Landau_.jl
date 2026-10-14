@@ -8,12 +8,12 @@ end # Runs in environment setup
 using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LaTeXStrings
 
 # Access arguments by index
-M_vector = [4, 8, 12, 16, 20, 24, 28, 32, 40] #!parse.(Int, ARGS[1]) # Vector of M values to test
+M_vector = [20, 24, 28, 32, 40]#![4, 8, 12, 16] #![4, 8, 12, 16, 20, 24, 28, 32, 40] #!parse.(Int, ARGS[1]) # Vector of M values to test
 closure = "ExtGram" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 T_end = 50 #!parse(Float64, ARGS[3])
-base_tree_level = 8 #!parse(Int, ARGS[4]) # e.g. 10
-polydeg = 1 #!parse(Int, ARGS[5]) # e.g. 1
-ϵ = 0.01 #!parse(Float64, ARGS[6]) # 0.01
+base_tree_level = 10 # * 8 #!parse(Int, ARGS[4]) # e.g. 10
+polydeg = 1 # *1 #!parse(Int, ARGS[5]) # e.g. 1
+ϵ = 0.5 # ? 0.01 #!parse(Float64, ARGS[6]) # 0.01
 k = 0.5 #!parse(Float64, ARGS[7]) # 0.5
 
 x_lower = 0.0; x_upper = 4.0*π
@@ -41,9 +41,22 @@ for M in M_vector
 
     surface_flux = flux_lax_friedrichs
     volume_flux = flux_central
-    volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+    # volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
+
+    # solver = DGSEM(basis, surface_flux, volume_integral)
+    indicator_sc = IndicatorHennemannGassner(
+        equations, basis,
+        variable = (u, eqns)->u[1]*u[3]
+    )
+
+    volume_integral = VolumeIntegralShockCapturingHG(
+        indicator_sc;
+        volume_flux_dg = volume_flux,
+        volume_flux_fv = surface_flux
+    )
 
     solver = DGSEM(basis, surface_flux, volume_integral)
+
 
     mesh = TreeMesh(
         (domain[1],), (domain[2],), 
@@ -62,23 +75,57 @@ for M in M_vector
     tspan = (0.0, T_end)
     ode = semidiscretize(semi, tspan)
 
-    callbacks, summary_callback = callbacksGramianMomentEquations(
-        semi, tspan, basis; 
-        cfl = 0.99,          # Maximum cfl number
-        plot_interval = 20,  # plot every 20 steps
-        time_interval = 500, # save at 500 time intervals
-        name="VlasovPoisson/LandauDamping/moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_rho_0$(ρ_0)_v_0$(v_0)_theta_0$(θ_0)_epsilon$(ϵ)_k$(k)_base_tree_level$(base_tree_level)_polydeg$(polydeg)", # name used for output
+    plot_interval = 20  # plot every 20 steps
+    time_interval = 10 # save at 500 time intervals
+
+    alive_callback = AliveCallback(analysis_interval=100)
+    summary_callback = SummaryCallback()
+
+    plot_callback = VisualizationCallback(
+        semi;
+        interval=20,
+        solution_variables=cons2cons,
+        plot_data_creator=PlotData1D,
+        plot_creator=Trixi.show_plot
     )
+
+    name="VlasovPoisson/LandauDamping/moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_rho_0$(ρ_0)_v_0$(v_0)_theta_0$(θ_0)_epsilon$(ϵ)_k$(k)_base_tree_level$(base_tree_level)_polydeg$(polydeg)" # name used for output
+    save_solution = SaveTriangulationCallback(
+        time_interval=tspan[2]/20,
+        save_initial_solution=true,
+        file_format="tsv",
+        append_solution=true,
+        solution_variables = cons2cons,
+        clear_out_dir=false,
+        name=name * "_cons",
+        info="basis = $(Base.typename(typeof(basis)).wrapper)"
+    )
+
+    save_solution_prim = SaveTriangulationCallback(
+        time_interval=tspan[2]/20,
+        save_initial_solution=true,
+        file_format="tsv",
+        append_solution=true,
+        solution_variables = cons2prim,
+        clear_out_dir=false,
+        name=name * "_prim",
+        info="basis = $(Base.typename(typeof(basis)).wrapper)"
+    )
+
     # Add Vlasov-Poisson callback
-    callbacks = CallbackSet(callbacks, vlasov_poisson_callback(vlasov))
+    callbacks = CallbackSet(
+        alive_callback,
+        plot_callback,
+        save_solution,
+        save_solution_prim,
+        vlasov_poisson_callback(vlasov)
+    )
 
     #= solve =#
     sol = solve(
         ode, 
-        CarpenterKennedy2N54(
-            williamson_condition = false
-        );
-        dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+        RDPK3SpFSAL49(); # See: https://github.com/trixi-framework/Trixi.jl/blob/main/examples/p4est_3d_dgsem/elixir_euler_baroclinic_instability.jl
+        abstol = 1.0e-6, reltol = 1.0e-6,
         ode_default_options()..., 
         save_everystep=true,
         callback = callbacks,
