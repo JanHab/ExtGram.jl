@@ -37,7 +37,7 @@ export InitialConditionsShockTube1D3D, convective_moments_1D3D, Maxwellian1D3D
 # needed dependencies: StaticArrays, Interpolations
 using FFTW, Trapz
 include("vlasov_poisson.jl")
-export vlasov_poisson_callback, vlasov_poisson_source, InitialConditionsLandauDamping, InitialConditionsTwoStream
+export VlasovPoissonCache, VlasovPoissonSource, vlasov_poisson_callback, InitialConditionsLandauDamping, InitialConditionsTwoStream
 
 # TrixiTree2Triangulation
 # This module implements an OrdinaryDiffEq callback for the triangulation of a 2D TreeMesh with subsequent

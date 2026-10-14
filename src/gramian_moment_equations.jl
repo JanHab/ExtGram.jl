@@ -1,4 +1,5 @@
 
+using StaticArrays: SUnitRange
 """
 This file defines the GramianMomentEquations type and the 1D-1D closure relations
 The GramianMomentEquations type is a subtype of Trixi.AbstractEquations and represents the system of equations for the Gramian moments.
@@ -11,20 +12,16 @@ Abstract type for the Gramian Moment Equations. This type is a subtype of Trixi.
 This class serves as a marker for the Gramian Moment Equations and does not contain any fields. The specific implementation of the equations is done in the subtypes, such as GramianMomentEquations and GramianMomentEquations3D.
 It allows to use different closures.
 """
-abstract type GramianMomentEquations{Mp1, N, RealT <: Real} <: Trixi.AbstractEquations{1, Mp1}end
+abstract type GramianMomentEquations{Mp1, N, RealT <: Real, C} <: Trixi.AbstractEquations{1, Mp1} end
 
-
-
-
-########################## Closure ##########################
-
-# Overloading to determine Gram/ExtGram/Grad and even/odd case
 """
     closure(u, equations::GramianMomentEquations)
 
-    Decides which closure implementation is used based on the equations.closure value
+    Decides which closure implementation is used based on the closure type parameter `C` of the equations
 """
-closure(u, equations::GramianMomentEquations) = closure(u, equations, Val(equations.closure))
+@inline function closure(u, equations::GramianMomentEquations{Mp1, N, RealT, C}) where {Mp1, N, RealT, C}
+    return closure(u, equations, Val(C))
+end
 
 # -------------------------
 # Gramian closure 
@@ -36,14 +33,10 @@ closure(u, equations::GramianMomentEquations) = closure(u, equations, Val(equati
 
     Gramian closure for the even case
 """
-function closure(u, equations::GramianMomentEquations, ::Val{:GramEven})
-    M = length(u)-1 # u[0, ..., M]
-    @assert iseven(M)
-    n = equations.n 
-    invG_nm1 = inv(gramian(u, n-1))
-    return @views(
-        u[n+2:2n+1]'*invG_nm1*u[n+1:2n]
-    )
+function closure(u, equations::GramianMomentEquations{Mp1, n}, ::Val{:GramEven}) where {Mp1, n}
+    @assert iseven(length(u) - 1) # u[0, ..., M]
+    invG_nm1 = inv(gramian(u, Val(n-1)))
+    return u[SUnitRange(n+2, 2n+1)]' * invG_nm1 * u[SUnitRange(n+1, 2n)]
 end
 
 """
@@ -51,20 +44,22 @@ end
 
     Extended Gramian closure for the even case
 """
-function closure(u, equations::GramianMomentEquations, ::Val{:ExtGramEven})
-    M = length(u)-1 # u[0, ..., M]
-    @assert iseven(M)
-    n = equations.n 
-    invG_nm1 = inv(gramian(u, n-1))
-    invG_nm2 = inv(gramian(u, n-2))
-    return @views (
-        u[n+2:2n+1]'*invG_nm1*u[n+1:2n]
+function closure(u, equations::GramianMomentEquations{Mp1, n}, ::Val{:ExtGramEven}) where {Mp1, n}
+    @assert iseven(length(u) - 1) # u[0, ..., M]
+    invG_nm1 = inv(gramian(u, Val(n-1)))
+    invG_nm2 = inv(gramian(u, Val(n-2)))
+    u_np_2n    = u[SUnitRange(n+1, 2n)]   # (u_n, …, u_{2n-1})
+    u_np2_2np1  = u[SUnitRange(n+2, 2n+1)] # (u_{n+1}, …, u_{2n})
+    u_n_2nm2  = u[SUnitRange(n, 2n-2)]   # (u_{n-1}, …, u_{2n-3})
+    u_np1_2nm1 = u[SUnitRange(n+1, 2n-1)] # (u_n, …, u_{2n-2})
+    return (
+        u_np2_2np1' * invG_nm1 * u_np_2n
     ) + equations.χ * (
-        u[2n+1] - u[n+1:2n]'*invG_nm1*u[n+1:2n]
+        u[2n+1] - u_np_2n' * invG_nm1 * u_np_2n
     ) / (
-        u[2n-1] - u[n:2n-2]'*invG_nm2*u[n:2n-2]
+        u[2n-1] - u_n_2nm2' * invG_nm2 * u_n_2nm2
     ) * (
-        u[2n] - u[n+1:2n-1]'*invG_nm2*u[n:2n-2]
+        u[2n] - u_np1_2nm1' * invG_nm2 * u_n_2nm2
     )
 end
 
@@ -74,14 +69,11 @@ end
 
     Gramian closure for the odd case
 """
-function closure(u, equations::GramianMomentEquations, ::Val{:GramOdd})
-    M = length(u)-1 # u[0, ..., M]
-    @assert isodd(M)
-    n = equations.n
-    invG_nm1 = inv(gramian(u, n-1))
-    return @views (
-        u[n+1:2n]'*invG_nm1*u[n+1:2n]
-    )
+function closure(u, equations::GramianMomentEquations{Mp1, n}, ::Val{:GramOdd}) where {Mp1, n}
+    @assert isodd(length(u) - 1) # u[0, ..., M]
+    invG_nm1 = inv(gramian(u, Val(n-1)))
+    u_n = u[SUnitRange(n+1, 2n)] # (u_n, …, u_{2n-1})
+    return u_n' * invG_nm1 * u_n
 end
 
 """
@@ -89,59 +81,49 @@ end
 
     Extended Gramian closure for the odd case
 """
-function closure(u, equations::GramianMomentEquations, ::Val{:ExtGramOdd})
-    M = length(u)-1 # u[0, ..., M]
-    @assert isodd(M)
-    n = equations.n
-    s = 1 # shift for index as julia is 1-based
+sigma_nn(u, ::Val{n}) where {n}   = u[2n+1] - u[SUnitRange(n+1, 2n)]' * inv(gramian(u, Val(n-1))) * u[SUnitRange(n+1, 2n)]
+sigma_nmnm(u, ::Val{n}) where {n} = u[2n-1] - u[SUnitRange(n, 2n-2)]' * inv(gramian(u, Val(n-2))) * u[SUnitRange(n, 2n-2)]
+sigma_nmnm(u, ::Val{1}) = u[1] # empty Gramian G_{-1}: the Schur complement is just u_0
+sigma_nnp(u, ::Val{n}) where {n}  = u[2n+2] - u[SUnitRange(n+2, 2n+1)]' * inv(gramian(u, Val(n-1))) * u[SUnitRange(n+1, 2n)]
+sigma_nmn(u, ::Val{n}) where {n}  = u[2n] - u[SUnitRange(n+1, 2n-1)]' * inv(gramian(u, Val(n-2))) * u[SUnitRange(n, 2n-2)]
 
-    sigma_nn(u, n) = u[2n+s] - u[n+s:2n-1+s]'*inv(gramian(u, n-1))*u[n+s:2n-1+s]
-    sigma_nmnm(u, n) = u[2n-2+s] - u[n-1+s:2n-3+s]'*inv(gramian(u, n-2))*u[n-1+s:2n-3+s]
-    sigma_nnp(u, n) = u[2n+1+s] - u[n+1+s:2n+s]'*inv(gramian(u, n-1))*u[n+s:2n-1+s]
-    sigma_nmn(u, n) = u[2n-1+s] - u[n+s:2n-2+s]'*inv(gramian(u, n-2))*u[n-1+s:2n-3+s]
+# Recurrence coefficients α_n, β_n of the orthogonal polynomials
+function an(u, ::Val{n}) where {n}
+    if n == 0
+        return u[2] / u[1]
+    elseif n == 1
+        return sigma_nnp(u, Val(1)) / sigma_nn(u, Val(1)) - u[2] / u[1]
+    else
+        return sigma_nnp(u, Val(n)) / sigma_nn(u, Val(n)) - sigma_nmn(u, Val(n)) / sigma_nmnm(u, Val(n))
+    end
+end
+bn(u, ::Val{0}) = zero(eltype(u))
+bn(u, ::Val{n}) where {n} = sigma_nn(u, Val(n)) / sigma_nmnm(u, Val(n))
 
-    function an(u, n)
-        if n == 0
-            return u[1+s] / u[0+s]
-        elseif n == 1
-            return sigma_nnp(u, n) / sigma_nn(u, n) - u[1+s] / u[0+s]
-        else
-            return sigma_nnp(u, n) / sigma_nn(u, n) - sigma_nmn(u, n) / sigma_nmnm(u, n)
-        end
+# (α_0, …, α_{n-1}) and (β_0, …, β_{n-1}) as tuples. Built recursively so that every `Val(k)` is a
+# compile-time constant (an `ntuple` over `k -> an(u, Val(k-1))` would dispatch at run time and allocate).
+recurrence_coefficients(u, ::Val{0}) = ((), ())
+function recurrence_coefficients(u, ::Val{n}) where {n}
+    α, β = recurrence_coefficients(u, Val(n-1))
+    return ((α..., an(u, Val(n-1))), (β..., bn(u, Val(n-1))))
+end
+
+function closure(u, equations::GramianMomentEquations{Mp1, n}, ::Val{:ExtGramOdd}) where {Mp1, n}
+    @assert isodd(length(u) - 1) # u[0, ..., M]
+
+    # α_k, β_k for k = 0, …, n-1
+    α, β = recurrence_coefficients(u, Val(n))
+
+    β_k = zero(eltype(u))
+    for k in 1:n-1
+        β_k += 2 / (n-1) * β[k+1]
     end
-    function bn(u, n)
-        if n == 0
-            return 0
-        else
-            return sigma_nn(u, n) / sigma_nmnm(u, n)
-        end
+    for l in 0:n-1
+        β_k += 1 / (n-1) * (α[n] - α[l+1])^2
     end
 
-    α = zeros(eltype(u), n)
-    β = zeros(eltype(u), n)
-    α[0+s] = u[1+s] / u[0+s]
-    β[0+s] = 0.0
-    for k=1:n-1
-        α[k+s] = an(u, k)
-        β[k+s] = bn(u, k)
-    end
-    
-    β_k = 0.0
-    for k=1:n-1
-        β_k += 2 / (n-1) * β[k+s]
-    end
-    for l=0:n-1
-        β_k += 1 / (n-1) * (α[n-1+s] - α[l+s])^2
-    end
-    closure = @views(
-        u[n+s:2n-1+s]' * inv(gramian(u, n-1)) * u[n+s:2n-1+s]
-    ) + (
-        sigma_nmnm(u, n)
-    ) * (
-        β_k
-    )
-
-    return closure
+    u_n = u[SUnitRange(n+1, 2n)] # (u_n, …, u_{2n-1})
+    return u_n' * inv(gramian(u, Val(n-1))) * u_n + sigma_nmnm(u, Val(n)) * β_k
 end
 
 
@@ -253,14 +235,10 @@ end
     Gramian matrix
     G_{ij} = u_{i+j}
 """
-function gramian(u, n::Int)
-    G = zeros(eltype(u), n+1,n+1)
-    for i=1:n+1
-        for j=1:n+1
-            G[i,j] = u[i+j-1]
-        end
+@inline function gramian(u, ::Val{n}) where {n}
+    G = MMatrix{n+1, n+1, eltype(u)}(undef)
+    for j in 1:n+1, i in 1:n+1
+        G[i, j] = u[i+j-1]
     end
-    return G
+    return SMatrix(G)
 end
-
-
