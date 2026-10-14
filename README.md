@@ -61,12 +61,12 @@ Install the requirements from the `requirements.txt` file with (tested for Pytho
 ``` bash
 pip install -r requirements.txt
 mkdir out
-mkdir out/1D3D
-mkdir out/1D3D/1D3D_angles
-mkdir out/1D3D/Moments
+mkdir out/1D3V
+mkdir out/1D3V/1D3V_angles
+mkdir out/1D3V/Moments
 mkdir out/CompareClosure
 mkdir out/Figures
-mkdir out/Figures/1D3D
+mkdir out/Figures/1D3V
 mkdir out/Figures/ChiValues
 mkdir out/Figures/CompareClosure
 mkdir out/Figures/EigenvaluesEquilibrium

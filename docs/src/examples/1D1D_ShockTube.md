@@ -1,6 +1,6 @@
 # Shock Tube Example
 
-This tutorial mirrors the setup from examples/Shock_1D1D.jl with parameters chosen for the shock tube test case. 
+This tutorial mirrors the setup from examples/Shock_1D1V.jl with parameters chosen for the shock tube test case. 
 It evolves a one-dimensional shock tube and stores the resulting density/velocity/pressure profile.
 Note: The grid is usually finer, and is coarsened for this example.
 
@@ -112,7 +112,7 @@ plot!(
 display(p1)
 ```
 
-![ShockTube](assets/1D1D_ShockTube.svg)
+![ShockTube](assets/1D1V_ShockTube.svg)
 
 or visualize all the (conservative) moments separately
 
@@ -150,4 +150,4 @@ l = @layout  [grid(3,3)]
 plot(pl..., layout=l, size=(1_200, 600))
 ```
 
-![ShockTube](assets/1D1D_ShockTube_Moments.svg)
+![ShockTube](assets/1D1V_ShockTube_Moments.svg)

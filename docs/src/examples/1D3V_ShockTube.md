@@ -102,7 +102,7 @@ initial_condition = InitialConditionsShockTube1D3V(
 
 ### Set up the numerical solver
 
-The shock capturing indicator uses ``\rho\, U_{(200)}``, the analogue of ``\rho\, U_2`` in the 1D1D setup. `ExtGram.moment_val` looks a moment up by its multi-index and therefore works in both geometries.
+The shock capturing indicator uses ``\rho\, U_{(200)}``, the analogue of ``\rho\, U_2`` in the 1D1V setup. `ExtGram.moment_val` looks a moment up by its multi-index and therefore works in both geometries.
 
 ```julia
 basis = LobattoLegendreBasis(polydeg)

@@ -1,6 +1,6 @@
 
 """
-    Implementation of the Vlasov-Poisson system using Gramian moment equations in 1D1D.
+    Implementation of the Vlasov-Poisson system using Gramian moment equations in 1D1V.
 
     The electric field is computed from the density once per time step in a `DiscreteCallback`
     (`vlasov_poisson_callback`) by solving ∂E/∂x = ρ - ⟨ρ⟩ with periodic boundary conditions in

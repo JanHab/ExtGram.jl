@@ -1,6 +1,6 @@
 # Shock Structure Example
 
-This tutorial mirrors the setup from examples/Shock_1D1D.jl with parameters chosen for the shock structure test case (Ma=1.4). 
+This tutorial mirrors the setup from examples/Shock_1D1V.jl with parameters chosen for the shock structure test case (Ma=1.4). 
 It evolves a one-dimensional shock structure and stores the resulting density/velocity/pressure profile.
 Note: The grid is usually finer, and is coarsened for this example.
 
@@ -88,4 +88,4 @@ plot!(p1, x, (p .- ρ_L * θ_L) ./ (ρ_R * θ_R .- ρ_L * θ_L), label="p (norma
 display(p1)
 ```
 
-![ShockStructure](assets/1D1D_ShockStructure.svg)
+![ShockStructure](assets/1D1V_ShockStructure.svg)

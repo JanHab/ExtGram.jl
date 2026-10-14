@@ -5,7 +5,7 @@ using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, Ordi
 
 # Gramian Moments Implementation
 include("gramian_moment_equations.jl")
-include("gramian_moment_equations1D1D.jl")
+include("gramian_moment_equations1D1V.jl")
 include("testing.jl")
 
 # Gramian Moments Implementation for 1D3V
