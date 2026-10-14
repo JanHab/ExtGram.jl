@@ -7,14 +7,12 @@ using ExtGram, Trixi, OrdinaryDiffEq
 using Plots, LinearAlgebra, StaticArrays
 
 # M = parse(Int, ARGS[1])
-# ! M_vec = [4, 6, 8] # = parse(Int, ARGS[1])
-M = 4#!8
+M_vec = [4, 6, 8] # = parse(Int, ARGS[1])
 closure = "ExtGram" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
-Kn = 1.0 #!parse(Float64, ARGS[3])
-Kn_vec = [1.0]#![0.1, 1.0, 10.0]
-# source_string = "relaxation_source" #!ARGS[4]
-# source = source_string == "relaxation_source" ? relaxation_source : zero_source 
-angle_index = 3 #!parse(Int, ARGS[5]) # 0, 1, 2
+Kn = 0.2 #!parse(Float64, ARGS[3])
+source_string = "relaxation_source" #!ARGS[4]
+source = source_string == "relaxation_source" ? relaxation_source : zero_source 
+angle_index = 1 #!parse(Int, ARGS[5]) # 0, 1, 2
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
@@ -162,19 +160,7 @@ angles_M8 = [
 ]
 
 # for M in M_vec
-for Kn in Kn_vec
-    if Kn == 0.1
-        source = relaxation_source
-        source_string = "relaxation_source"
-    elseif Kn == 1.0
-        source = relaxation_source
-        source_string = "relaxation_source"
-    elseif Kn == 10.0
-        source = zero_source
-        source_string = "zero_source"
-    else
-        error("Kn must be 0.1, 1.0, or 10.0")
-    end
+for M in M_vec
     if M == 4
         angles = angles_M4[angle_index]
     elseif M == 6
