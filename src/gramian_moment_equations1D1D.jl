@@ -26,7 +26,7 @@ Constructs a `GramianMomentEquations1D` system with `M` moments and specified Kn
 - The system has `M+1` variables in total
 - The parameter `χ` is calculated differently depending on whether `M` is even or odd
 """
-struct GramianMomentEquations1D{Mp1, N, RealT <: Real} <: GramianMomentEquations{Mp1, N, RealT}
+struct GramianMomentEquations1D{Mp1, N, RealT <: Real, C} <: GramianMomentEquations{Mp1, N, RealT, C}
     inv_Kn::RealT # 1/Kn (Kn = Knudsen number) | used by the relaxation source term
     χ::RealT
     n::Int
@@ -55,7 +55,7 @@ struct GramianMomentEquations1D{Mp1, N, RealT <: Real} <: GramianMomentEquations
         else
             error("Unknown closure type: $closure. Supported types are \"Gram\", \"ExtGram\", and \"Grad\".\n.")
         end
-        new{M+1, n, typeof(Knudsen)}(inv(Knudsen), χ, n, closure_value)
+        return new{M+1, n, typeof(Knudsen), closure_value}(inv(Knudsen), χ, n, closure_value)
     end
 end
 
@@ -79,7 +79,7 @@ function Trixi.flux(u, orientation::Integer, equations::GramianMomentEquations1D
     ∂_t u^k + ∂_x u^{k+1} = ... (0)
     Last u from closure
     """
-    return SVector(ntuple(i->u[i+1], Mp1-1)..., closure(u, equations, Val(equations.closure)))
+    return SVector(ntuple(i->u[i+1], Val(Mp1-1))..., closure(u, equations))
 end
 
 
@@ -91,7 +91,8 @@ end
 function relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
     prim = cons2prim(u, equations); θ = prim[3]
     # Vector for equilibrium moments (primitive); the first three moments are conserved
-    eq_moments = MVector{Mp1, Float64}(undef); eq_moments[1:3] = prim[1:3]
+    eq_moments = MVector{Mp1, eltype(u)}(undef)
+    eq_moments[1] = prim[1]; eq_moments[2] = prim[2]; eq_moments[3] = prim[3]
     # compute equilibrium values for the higher moments
     val = 0.5
     for k=4:2:Mp1-1
@@ -99,7 +100,7 @@ function relaxation_source(u, x, t, equations::GramianMomentEquations1D{Mp1}) wh
         eq_moments[k+1] = val* (2*θ)^(k/2) # gaussian integrals ∫ C^k exp(...)dC
     end
     for k=3:2:Mp1-1 eq_moments[k+1] = 0.0 end
-    return SVector{Mp1}(-equations.inv_Kn .* (u .- prim2cons(eq_moments, equations)))
+    return SVector{Mp1}(-equations.inv_Kn .* (u .- prim2cons(SVector(eq_moments), equations)))
 end
 
 """ 
@@ -111,7 +112,7 @@ zero_source(u, x, t, eqns::EqT) where {N, EqT <: Trixi.AbstractEquations{1, N}} 
 """
     computes c^n = v^n + 0 + (n over 2) v^(n-2)C^2 + ... + (n over 1) vC^(n-1) + C^n, where u[k] is the primitive moment arising from C^(k-1) 
 """
-function binomial_moment_sum(u, n::Integer=length(u)-1)
+@inline function binomial_moment_sum(u, n::Integer=length(u)-1) 
     @assert length(u) > n > 1
     ρ = u[1]; v = u[2]
     res = v^n
@@ -126,31 +127,30 @@ end
 """
     convert primitive [1, v, C^2, ...] variables to conservative [1, c, c^2, ....] variables
 """
-function moment_prim2cons(u_prim, eqns::GramianMomentEquations1D)
-    m = length(u_prim)
-    @assert m > 2
-    cons = zeros(eltype(u_prim), m)
+function moment_prim2cons(u_prim, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+    @assert length(u_prim) == Mp1 > 2
+    cons = MVector{Mp1, eltype(u_prim)}(undef)
     # u_prim[1] is rho and u_prim[2] is v
     cons[1] = u_prim[1]; cons[2] = u_prim[1]*u_prim[2]
-    for k=3:m
+    for k=3:Mp1
         cons[k] = u_prim[1]*binomial_moment_sum(u_prim, k-1)
     end
-    return cons
+    return SVector(cons)
 end
 
 
 """
     convert conservative to primitive variables
 """
-function moment_cons2prim(u_cons, eqns::GramianMomentEquations1D)
-    m = length(u_cons)
-    @assert m > 2
-    prim = zeros(eltype(u_cons), m)
+function moment_cons2prim(u_cons, eqns::GramianMomentEquations1D{Mp1}) where {Mp1}
+    @assert length(u_cons) == Mp1 > 2
+    # zero-initialized: binomial_moment_sum(prim, k-1) reads prim[k] before it is computed (its coefficient is 1)
+    prim = zeros(MVector{Mp1, eltype(u_cons)})
     prim[1] = u_cons[1]; prim[2] = u_cons[2]/prim[1]
-    for k=3:m
+    for k=3:Mp1
         prim[k] = u_cons[k]/prim[1]- binomial_moment_sum(prim, k-1)
     end
-    return prim
+    return SVector(prim)
 end
 
 Trixi.prim2cons(u, eqns::GramianMomentEquations1D) = moment_prim2cons(u, eqns)
@@ -164,10 +164,9 @@ Trixi.cons2entropy(u, equations::GramianMomentEquations1D) = u
     Derivative of the closure function w.r.t. the moments u
 """
 function dCdu(u, equations::GramianMomentEquations1D)
-    # automatic differentiation
+    # automatic differentiation (allocation-free for SVector input, since the closure is allocation-free)
     closure_wrapped(x) = closure(x, equations)
-    grad = ForwardDiff.gradient(closure_wrapped, u)
-    return ForwardDiff.value(grad)
+    return ForwardDiff.gradient(closure_wrapped, u)
 end
 
 
@@ -198,5 +197,8 @@ end
     Estimate the flux Jacobian eigenvalues by means of Gerschgorin
 """
 function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D)
-    return maximum(abs.(real.(eigen(flux_jacobian(u, equations)).values)))
+    # return maximum(λ -> abs(real(λ)), eigvals(flux_jacobian(u, equations)))
+    prim = cons2prim(u, equations)
+    θ = prim[3]
+    return abs(prim[2]) + 5.0 * sqrt(max(θ, zero(θ)))
 end
