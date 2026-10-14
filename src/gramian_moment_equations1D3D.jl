@@ -13,17 +13,6 @@
     - `target_indices::Vector{Int}`: Indices of moments used for closure.
     - `rotations::AbstractVector{<:AbstractMatrix{Float64}}`: Precomputed rotation matrices for each angle.
 """
-struct Constants{F<:Function}
-    fp_func::F
-    Angles::Vector{Tuple{Float64,Float64}}
-    A_matrix::Matrix{Float64}
-    slab_indices::Vector{Int}
-    target_indices::Vector{Int}
-    rotations::AbstractVector{<:AbstractMatrix{Float64}}
-    function Constants(fp_func::F, Angles::Vector{Tuple{Float64,Float64}}, A_matrix::Matrix{Float64}, slab_indices::Vector{Int}, target_indices::Vector{Int}, rotations::AbstractVector{<:AbstractMatrix{Float64}}) where {F<:Function}
-        new{F}(fp_func, Angles, A_matrix, slab_indices, target_indices, rotations)
-    end
-end
 struct Constants{F<:Function, A<:AbstractMatrix{Float64}, TI<:AbstractVector{Int}, R<:AbstractVector{<:AbstractMatrix{Float64}}}
     fp_func::F
     Angles::Vector{Tuple{Float64,Float64}}
