@@ -170,7 +170,7 @@ end
 
     `theta`/`phi` must hold `NS` directions; if omitted, a Fibonacci hemisphere is used.
 """
-struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real} <: GramianMomentEquations{Mp1, N, RealT}
+struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real, C} <: GramianMomentEquations{Mp1, N, RealT, C}
     inv_Kn::RealT   # 1/Kn (Kn = Knudsen number) | used by the relaxation source term
     χ::RealT
     M::Int          # highest moment order
@@ -318,7 +318,7 @@ struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real} <: GramianM
 
         # NOTE: the first type parameter is Trixi's NVARS (see the abstract type in
         # src/gramian_moment_equations.jl), so it must be N_equations, not M+1.
-        new{N_equations, n, M + 1, N_closure, N_shell, RealT}(
+        new{N_equations, n, M + 1, N_closure, N_shell, RealT, closure_value}(
             RealT(inv(Knudsen)), RealT(χ), Int(M), n, N_equations, N_closure, N_shell,
             closure_value, slab_geometry, _U_t_index, _U_x_index, Tuple(flux_index), _closure_index,
             _P, _T_closure,

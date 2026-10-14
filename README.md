@@ -118,6 +118,23 @@ Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?re
 
 ## Referencing 
 
+If you find these results useful or use the implementations provided here, please cite the corresponding article.
+
+```bibtex
+@thesis{habscheid_modeling_2026,
+  title = {Modeling and analysis of nonlinear closures in hierarchical moment equations using discontinuous {Galerkin} methods},
+  type = {mathesis},
+  institution = {RWTH Aachen University},
+  url = {https://publications.rwth-aachen.de/record/1035026},
+  doi = {10.18154/RWTH-2026-04820},
+  author = {Habscheid, Jan},
+  month = mar,
+  year = {2026},
+}
+```
+
+If you use the implementations provided here, please also cite this repository as
+
 ```bibtex
 @software{habscheid_2026_18998361,
   author       = {Habscheid, Jan and
