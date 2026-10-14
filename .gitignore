@@ -9,3 +9,4 @@ slurm/out/
 docs/build/
 Manifest.toml
 docs/Manifest.toml
+notebooks/verify_DVM.ipynb
