@@ -61,12 +61,12 @@ Install the requirements from the `requirements.txt` file with (tested for Pytho
 ``` bash
 pip install -r requirements.txt
 mkdir out
-mkdir out/1D3D
-mkdir out/1D3D/1D3D_angles
-mkdir out/1D3D/Moments
+mkdir out/1D3V
+mkdir out/1D3V/1D3V_angles
+mkdir out/1D3V/Moments
 mkdir out/CompareClosure
 mkdir out/Figures
-mkdir out/Figures/1D3D
+mkdir out/Figures/1D3V
 mkdir out/Figures/ChiValues
 mkdir out/Figures/CompareClosure
 mkdir out/Figures/EigenvaluesEquilibrium
@@ -117,6 +117,23 @@ You can find minimal working data archived with Zenodo here:  [https://doi.org/1
 Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?ref_type=heads) contains a small testing pipeline.
 
 ## Referencing 
+
+If you find these results useful or use the implementations provided here, please cite the corresponding article.
+
+```bibtex
+@thesis{habscheid_modeling_2026,
+  title = {Modeling and analysis of nonlinear closures in hierarchical moment equations using discontinuous {Galerkin} methods},
+  type = {mathesis},
+  institution = {RWTH Aachen University},
+  url = {https://publications.rwth-aachen.de/record/1035026},
+  doi = {10.18154/RWTH-2026-04820},
+  author = {Habscheid, Jan},
+  month = mar,
+  year = {2026},
+}
+```
+
+If you use the implementations provided here, please also cite this repository as
 
 ```bibtex
 @software{habscheid_2026_18998361,

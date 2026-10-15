@@ -10,7 +10,7 @@ closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = parse(Float64, ARGS[3])
 source_string = ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source 
-angle_name = ARGS[5] # "Max", "Arc", "Det", "Bad"
+angle_name = "Bad" #!ARGS[5] # "Max", "Arc", "Det", "Bad"
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
@@ -70,10 +70,12 @@ phi_Det = [
 ]
 
 theta_Bad = [ # M=4
+    # 0.0, 1.0, 2.0, 3.0
     0.0, 1.0, 2.0, 3.0
 ]
 phi_Bad = [ # M=4
-    π*1/4, π*2/4, π*3/4, π*4/4
+    # π*1/4, π*2/4, π*3/4, π*4/4
+    π*1/4, π*2/4, π*3/4, π*7/8
 ]
 
 rho_L_vec = [7.0, 15.0, 30.0]

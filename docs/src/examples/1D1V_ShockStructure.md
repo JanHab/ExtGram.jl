@@ -1,7 +1,7 @@
-# Shock Tube Example
+# Shock Structure Example
 
-This tutorial mirrors the setup from examples/Shock_1D1D.jl with parameters chosen for the shock tube test case. 
-It evolves a one-dimensional shock tube and stores the resulting density/velocity/pressure profile.
+This tutorial mirrors the setup from examples/Shock_1D1V.jl with parameters chosen for the shock structure test case (Ma=1.4). 
+It evolves a one-dimensional shock structure and stores the resulting density/velocity/pressure profile.
 Note: The grid is usually finer, and is coarsened for this example.
 
 ``` julia
@@ -9,44 +9,32 @@ if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
 using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables
-```
 
-### Setup
-
-Start with the number of moments, closure, and the Knudsen number
-
-``` julia
+# General parameter
 M = 4
 closure = "ExtGram" # possible: "Gram", "ExtGram" or "Grad"
 Kn = 1.0
 source = relaxation_source # if "zero_source" Kn doesn't matter, as no source term
-```
 
-continue with the numerical setting
-``` julia
-T_end = 0.3
+T_end = 25.0
 base_tree_level = 8 # 10 used in thesis, but let's speed it up a bit
 polydeg = 1
-x_lower = -2.0
-x_upper = 2.0
+x_lower = -20.0
+x_upper = 100.0
 
 # Fixed settings
 domain = (x_lower, x_upper)
-```
 
-and the initial conditions
-```julia
-ρ_L = 7.0
-v_L = 0.0
+Ma = 1.4 # Mach number
+
+# Initial conditions
+ρ_L = 1.0
+ρ_R = (2*Ma^2) / (Ma^2 + 1)
+v_L = sqrt(3) * Ma
+v_R = sqrt(3) / 2 * (Ma^2 + 1) / Ma
 θ_L = 1.0
-ρ_R = 1.0
-v_R = 0.0
-θ_R = 1.0
-```
+θ_R = (3*Ma^2 - 1) * (Ma^2 + 1) / (4 * Ma^2)
 
-### Set up the numerical solver
-
-``` julia
 # Setting up everything
 basis, mesh, equations, initial_condition, solver, boundary_conditions = setupGramianMomentEquations1DShockTube(
     M, Kn, closure,
@@ -63,29 +51,20 @@ semi = SemidiscretizationHyperbolic(
     boundary_conditions=boundary_conditions, 
     source_terms=source
 )
-```
 
-with the ode problem
-
-``` julia
+# ODE (time integration)
 tspan = (0.0, T_end)
 ode = semidiscretize(semi, tspan)
-```
 
-and the callbacks
-
-``` julia
+# callbacks
 callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
     cfl = 0.9,          # Maximum cfl number
     plot_interval = 20,  # plot every 20 steps
     name="gram_solution",
 )
-```
 
-### Solve the problem
-
-``` julia
+# solve
 sol = solve(
     ode, 
     CarpenterKennedy2N54(
@@ -98,56 +77,15 @@ sol = solve(
 );
 
 summary_callback()
-```
 
-### Post Processing
-
-Visualize the density, velocity, and pressure
-
-``` julia
+# Visualization
 x, ρ, v, p, p1 = plot_ρ_v_p(sol, M, x_lower, x_upper)
-plot!(
-    p1, xlims = (-1, 1)
-)
+
+p1 = plot(xlims = (-10, 10))
+plot!(p1, x, (ρ .- ρ_L) ./ (ρ_R .- ρ_L), label="ρ (normalized)")
+plot!(p1, x, (v .- v_R) ./ (v_L .- v_R), label="v (normalized)")
+plot!(p1, x, (p .- ρ_L * θ_L) ./ (ρ_R * θ_R .- ρ_L * θ_L), label="p (normalized)")
 display(p1)
 ```
 
-![ShockTube](assets/1D1D_ShockTube.svg)
-
-or visualize all the (conservative) moments separately
-
-``` julia
-u_final = sol.u[end]
-L = length(u_final)
-Nloc = L ÷ (M + 1)
-Fmat = reshape(u_final, M+1, Nloc)
-
-u = []
-for i in 1:(M+1)
-    push!(u, Fmat[i, :])
-end
-
-# Plot first moments
-pl = Vector{Any}(undef, M+1)
-x = range(x_lower, x_upper, length=Nloc)
-
-for i in 1:(M+1)
-    pl[i] = scatter()
-    plot!(
-        pl[i],
-        xlabel="x",
-        ylabel="u^{$(i-1)}",
-    )
-    plot!(
-        pl[i],
-        x, u[i], 
-        label="U$(i-1)",
-    )
-end
-
-display(pl)
-l = @layout  [grid(3,3)]
-plot(pl..., layout=l, size=(1_200, 600))
-```
-
-![ShockTube](assets/1D1D_ShockTube_Moments.svg)
+![ShockStructure](assets/1D1V_ShockStructure.svg)

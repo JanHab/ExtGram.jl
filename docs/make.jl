@@ -23,8 +23,8 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Tutorials" => [
-            "1D1D - Shock Tube Example" => "examples/1D1D_ShockTube.md",
-            "1D1D - Shock Structure Example" => "examples/1D1D_ShockStructure.md",
+            "1D1V - Shock Tube Example" => "examples/1D1V_ShockTube.md",
+            "1D1V - Shock Structure Example" => "examples/1D1V_ShockStructure.md",
             "1D3V - Shock Tube Example" => "examples/1D3V_ShockTube.md",
         ],
         "API Reference" => "reference.md",

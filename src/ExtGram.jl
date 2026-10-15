@@ -5,14 +5,14 @@ using LinearAlgebra, StaticArrays, Trixi, FastGaussQuadrature, ForwardDiff, Ordi
 
 # Gramian Moments Implementation
 include("gramian_moment_equations.jl")
-include("gramian_moment_equations1D1D.jl")
+include("gramian_moment_equations1D1V.jl")
 include("testing.jl")
 
-# Gramian Moments Implementation for 1D3D
+# Gramian Moments Implementation for 1D3V
 # using Symbolics
 using LinearAlgebra
 using Distributions
-include("1D3D_Transformations.jl")
+include("1D3V_Transformations.jl")
 include("gramian_moment_equations1D3V.jl")
 
 include("initial_conditions.jl")
@@ -35,7 +35,7 @@ export U_t_index, U_x_index, fibonacci_hemisphere_angles, GramianMomentEquations
 # needed dependencies: StaticArrays, Interpolations
 using FFTW, Trapz
 include("vlasov_poisson.jl")
-export vlasov_poisson_callback, vlasov_poisson_source, InitialConditionsLandauDamping, InitialConditionsTwoStream
+export VlasovPoissonCache, VlasovPoissonSource, vlasov_poisson_callback, InitialConditionsLandauDamping, InitialConditionsTwoStream
 
 # TrixiTree2Triangulation
 # This module implements an OrdinaryDiffEq callback for the triangulation of a 2D TreeMesh with subsequent

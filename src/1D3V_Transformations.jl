@@ -1,7 +1,7 @@
 """
     Numerical utilities for 1D velocity - 3D moment transformations.
 
-    The (extended) Gramian closure is constructed for the 1D1D system.
+    The (extended) Gramian closure is constructed for the 1D1V system.
     However, we wish to extend this to a slab geometry in 3D moment space.
 
     Therefore, the moments are rotated.
