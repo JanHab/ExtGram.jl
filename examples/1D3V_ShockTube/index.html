@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>1D3V - Shock Tube Example · ExtGram.jl</title><meta name="title" content="1D3V - Shock Tube Example · ExtGram.jl"/><meta property="og:title" content="1D3V - Shock Tube Example · ExtGram.jl"/><meta property="twitter:title" content="1D3V - Shock Tube Example · ExtGram.jl"/><meta name="description" content="Documentation for ExtGram.jl."/><meta property="og:description" content="Documentation for ExtGram.jl."/><meta property="twitter:description" content="Documentation for ExtGram.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ExtGram.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../1D1V_ShockTube/">1D1V - Shock Tube Example</a></li><li><a class="tocitem" href="../1D1V_ShockStructure/">1D1V - Shock Structure Example</a></li><li class="is-active"><a class="tocitem" href>1D3V - Shock Tube Example</a></li></ul></li><li><a class="tocitem" href="../../reference/">API Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>1D3V - Shock Tube Example</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>1D3V - Shock Tube Example</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JanHab/ExtGram.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="1D3V-Shock-Tube-Example"><a class="docs-heading-anchor" href="#1D3V-Shock-Tube-Example">1D3V Shock Tube Example</a><a id="1D3V-Shock-Tube-Example-1"></a><a class="docs-heading-anchor-permalink" href="#1D3V-Shock-Tube-Example" title="Permalink"></a></h1><p>This tutorial mirrors the setup from examples/Shock_1D3VSlab.jl with parameters chosen for the shock tube test case. It evolves a one-dimensional shock tube whose distribution function depends on all three velocity components (&quot;1D3V&quot;). Note: The grid is usually finer, and is coarsened for this example.</p><p>The 1D3V system evolves the moments <span>$U_{(\alpha\beta\gamma)} = \int f\, v_x^\alpha v_y^\beta v_z^\gamma \,\mathrm{d}v$</span> with <span>$\alpha+\beta+\gamma \le M$</span>,</p><p class="math-container">\[\partial_t U_{(\alpha\beta\gamma)} + \partial_x U_{(\alpha+1,\beta\gamma)} = S_{(\alpha\beta\gamma)}.\]</p><p>The moments of total order <span>$M+1$</span> that appear in the flux are supplied by the (extended) Gramian closure, which is evaluated along a set of directions in velocity space (see <a href="../../reference/#ExtGram.GramianMomentEquations1D3V"><code>GramianMomentEquations1D3V</code></a>).</p><h3 id="Load-the-necessary-Packages"><a class="docs-heading-anchor" href="#Load-the-necessary-Packages">Load the necessary Packages</a><a id="Load-the-necessary-Packages-1"></a><a class="docs-heading-anchor-permalink" href="#Load-the-necessary-Packages" title="Permalink"></a></h3><pre><code class="language-julia hljs">if !endswith(Base.active_project(), &quot;../Project.toml&quot;)
+    import Pkg; Pkg.activate(&quot;.&quot;)
+end # Runs in environment setup
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, StaticArrays</code></pre><h3 id="Setup"><a class="docs-heading-anchor" href="#Setup">Setup</a><a id="Setup-1"></a><a class="docs-heading-anchor-permalink" href="#Setup" title="Permalink"></a></h3><p>Start with the number of moments, closure, Knudsen number and source term</p><pre><code class="language-julia hljs">M = 4
+closure = &quot;ExtGram&quot; # possible: &quot;Gram&quot;, &quot;ExtGram&quot; or &quot;Grad&quot;
+Kn = 1.0
+source = relaxation_source # if &quot;zero_source&quot; Kn doesn&#39;t matter, as no source term</code></pre><h3 id="Geometry:-slab-symmetry-or-full-1D3V"><a class="docs-heading-anchor" href="#Geometry:-slab-symmetry-or-full-1D3V">Geometry: slab symmetry or full 1D3V</a><a id="Geometry:-slab-symmetry-or-full-1D3V-1"></a><a class="docs-heading-anchor-permalink" href="#Geometry:-slab-symmetry-or-full-1D3V" title="Permalink"></a></h3><p><a href="../../reference/#ExtGram.GramianMomentEquations1D3V"><code>GramianMomentEquations1D3V</code></a> supports two geometries, selected with the keyword <code>slab_geometry</code>:</p><ul><li><code>slab_geometry = true</code> (slab geometry): the distribution function is assumed to be symmetric under <span>$v_y \to -v_y$</span>, <span>$v_z \to -v_z$</span> and under the swap <span>$v_y \leftrightarrow v_z$</span>. Moments with an odd power of <span>$v_y$</span> or <span>$v_z$</span> vanish, and mirror images such as <span>$U_{(020)}$</span> and <span>$U_{(002)}$</span> coincide, so only the representatives <span>$U_{(\alpha\beta\gamma)}$</span> with <span>$\beta, \gamma$</span> even and <span>$\beta \ge \gamma$</span> are evolved. This is the setting used by examples/Shock<em>1D3VSlab.jl. It requires ``v</em>y = v_z = 0`` in the initial data.</li><li><code>slab_geometry = false</code> (full 1D3V): all moments with <span>$\alpha+\beta+\gamma \le M$</span> are evolved and no symmetry is assumed. Note that this solves a much larger system of PDEs and with that requires much more computational resources.</li></ul><pre><code class="language-julia hljs">slab_geometry = true   # slab geometry: 10 equations for M = 4
+# slab_geometry = false  # full 1D3V:    35 equations for M = 4</code></pre><p>The system sizes for the closure orders used in the examples are</p><table><tr><th style="text-align: center">M</th><th style="text-align: center">equations (full 1D3V)</th><th style="text-align: center">equations (slab)</th><th style="text-align: center">closure directions (full 1D3V)</th><th style="text-align: center">closure directions (slab)</th></tr><tr><td style="text-align: center">4</td><td style="text-align: center">35</td><td style="text-align: center">10</td><td style="text-align: center">21</td><td style="text-align: center">4</td></tr><tr><td style="text-align: center">6</td><td style="text-align: center">84</td><td style="text-align: center">20</td><td style="text-align: center">36</td><td style="text-align: center">6</td></tr><tr><td style="text-align: center">8</td><td style="text-align: center">165</td><td style="text-align: center">35</td><td style="text-align: center">55</td><td style="text-align: center">9</td></tr></table><h3 id="Closure-directions"><a class="docs-heading-anchor" href="#Closure-directions">Closure directions</a><a id="Closure-directions-1"></a><a class="docs-heading-anchor-permalink" href="#Closure-directions" title="Permalink"></a></h3><p>The 1D closure is evaluated along <span>$N_\text{shell}$</span> directions <span>$n(\theta, \varphi)$</span> (the last two columns of the table above). By default a Fibonacci spiral on the hemisphere is used, which is well conditioned:</p><pre><code class="language-julia hljs">equations = GramianMomentEquations1D3V(M, Kn, closure; slab_geometry=slab_geometry)</code></pre><p>Alternatively, the directions can be prescribed with the keywords <code>theta</code> and <code>phi</code>. They must contain exactly <span>$N_\text{shell}$</span> angles, so the angle sets of examples/Shock_1D3VSlab.jl (4 angles for <span>$M = 4$</span>) are only valid in slab geometry:</p><p>&lt;!– skip –&gt;</p><pre><code class="language-julia hljs">theta = [3.14159, 0.684719, 2.03444, 2.18628] # M = 4, slab geometry only
+phi   = [1.5708, 4.71239, 1.5708, 0.886077]
+equations = GramianMomentEquations1D3V(M, Kn, closure; slab_geometry=true, theta=theta, phi=phi)</code></pre><h3 id="Numerical-settings-and-initial-conditions"><a class="docs-heading-anchor" href="#Numerical-settings-and-initial-conditions">Numerical settings and initial conditions</a><a id="Numerical-settings-and-initial-conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Numerical-settings-and-initial-conditions" title="Permalink"></a></h3><pre><code class="language-julia hljs">T_end = 0.3
+base_tree_level = 8 # &gt;=10 is advised, but let&#39;s speed it up a bit
+polydeg = 1
+x_lower = -2.0
+x_upper = 2.0
+
+# Fixed settings
+domain = (x_lower, x_upper)</code></pre><p>The shock tube is initialized with two Maxwellians. Slab geometry requires vanishing transverse velocities.</p><pre><code class="language-julia hljs">ρ_L = 7.0
+v_L = (0.0, 0.0, 0.0) # (v_x, v_y, v_z)
+θ_L = 1.0
+ρ_R = 1.0
+v_R = (0.0, 0.0, 0.0)
+θ_R = 1.0
+
+initial_condition = InitialConditionsShockTube1D3V(
+    Maxwellian1D3V(ρ_L, v_L, θ_L), # Density, velocity, temperature
+    Maxwellian1D3V(ρ_R, v_R, θ_R), # Shock in density, but not velocity, temperature initially
+    M,
+    equations
+)</code></pre><h3 id="Set-up-the-numerical-solver"><a class="docs-heading-anchor" href="#Set-up-the-numerical-solver">Set up the numerical solver</a><a id="Set-up-the-numerical-solver-1"></a><a class="docs-heading-anchor-permalink" href="#Set-up-the-numerical-solver" title="Permalink"></a></h3><p>The shock capturing indicator uses <span>$\rho\, U_{(200)}$</span>, the analogue of <span>$\rho\, U_2$</span> in the 1D1V setup. <code>ExtGram.moment_val</code> looks a moment up by its multi-index and therefore works in both geometries.</p><pre><code class="language-julia hljs">basis = LobattoLegendreBasis(polydeg)
+
+# shock capturing
+indicator_sc = IndicatorHennemannGassner(
+    equations, basis,
+    alpha_max = 0.15, 
+    alpha_min = 0.001, 
+    alpha_smooth = true,  # smoothes with all neighboring indicators to remove numerical artifacts
+    variable = (u, eqns) -&gt; u[1] * ExtGram.moment_val(u, 2, 0, 0, eqns) # ρ U_(200)
+)
+
+surface_flux = flux_lax_friedrichs
+volume_flux = flux_central
+volume_integral = VolumeIntegralShockCapturingHG(
+    indicator_sc;
+    volume_flux_dg = volume_flux,
+    volume_flux_fv = surface_flux
+)
+
+solver = DGSEM(basis, surface_flux, volume_integral)
+
+mesh = TreeMesh(
+    (domain[1],), (domain[2],), 
+    initial_refinement_level=base_tree_level, 
+    n_cells_max=10_000, 
+    periodicity=false
+)
+
+boundary_conditions = (x_neg = BoundaryConditionDirichlet(initial_condition), x_pos = BoundaryConditionDirichlet(initial_condition))
+
+semi = SemidiscretizationHyperbolic(
+    mesh, equations, 
+    initial_condition, solver, 
+    boundary_conditions=boundary_conditions, 
+    source_terms=source
+)</code></pre><p>with the ODE problem</p><pre><code class="language-julia hljs">tspan = (0.0, T_end)
+ode = semidiscretize(semi, tspan)</code></pre><p>and the callbacks. The visualization callback is restricted to a few moments by name, since the full system has 35 variables.</p><pre><code class="language-julia hljs">cfl = 0.99
+
+alive_callback = AliveCallback(analysis_interval=100)
+summary_callback = SummaryCallback()
+stepsize_callback = StepsizeCallback(cfl=cfl)
+
+plot_interval = 20  # plot every 20 steps
+plot_callback = VisualizationCallback(
+    semi;
+    interval=plot_interval,
+    solution_variables=cons2cons,
+    variable_names=[&quot;U_(000)&quot;, &quot;U_(100)&quot;, &quot;U_(200)&quot;],
+    plot_data_creator=PlotData1D,
+    plot_creator=Trixi.show_plot,
+)
+
+callbacks = CallbackSet(
+    summary_callback,
+    alive_callback,
+    stepsize_callback,
+    plot_callback,
+)</code></pre><h3 id="Solve-the-problem"><a class="docs-heading-anchor" href="#Solve-the-problem">Solve the problem</a><a id="Solve-the-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Solve-the-problem" title="Permalink"></a></h3><pre><code class="language-julia hljs">sol = solve(
+    ode, 
+    CarpenterKennedy2N54(
+        williamson_condition = false
+    );
+    dt = 1.0, # solve needs some value here but it will be overwritten by the stepsize_callback
+    ode_default_options()...,
+    callback = callbacks,
+);
+
+summary_callback()</code></pre><h3 id="Post-Processing"><a class="docs-heading-anchor" href="#Post-Processing">Post Processing</a><a id="Post-Processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-Processing" title="Permalink"></a></h3><p>Density, velocity and pressure are obtained from the primitive (central) moments. <code>cons2prim</code> and <code>ExtGram.temperature</code> handle both geometries, so this block does not change with <code>slab_geometry</code>.</p><pre><code class="language-julia hljs">n_equations = nvariables(equations)
+Fmat = reshape(sol.u[end], n_equations, :)
+x = vec(semi.cache.elements.node_coordinates)
+
+prim = [cons2prim(SVector{n_equations}(Fmat[:, i]), equations) for i in axes(Fmat, 2)]
+rho = [w[1] for w in prim]
+v = [w[2] for w in prim]                                   # v_x
+theta = [ExtGram.temperature(w, equations) for w in prim] # (P_(200) + P_(020) + P_(002)) / (3ρ)
+p = rho .* theta
+
+# Visualization
+p1 = plot(xlims = (-1.0, 1.0), xlabel = &quot;x&quot;);
+plot!(p1, x, rho, color=:blue, label=&quot;Density&quot;, legend=:topleft)
+plot!(twinx(p1), x, v, color=:red, label=&quot;Velocity&quot;, legend=:topright)
+plot!(p1, x, p, color=:green, label=&quot;Pressure&quot;)
+display(p1)</code></pre><p>Slab geometry (<code>slab_geometry = true</code>):</p><p><img src="../assets/1D3V_ShockTube_slab.svg" alt="ShockTube slab geometry"/></p><p>Full 1D3V (<code>slab_geometry = false</code>):</p><p><img src="../assets/1D3V_ShockTube_full.svg" alt="ShockTube full 1D3V"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../1D1V_ShockStructure/">« 1D1V - Shock Structure Example</a><a class="docs-footer-nextpage" href="../../reference/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Thursday 15 October 2026 06:50">Thursday 15 October 2026</span>. Using Julia version 1.11.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
