@@ -8,7 +8,7 @@ using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
 M = parse(Int, ARGS[1])
 closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = parse(Float64, ARGS[3])
-source_string = !ARGS[4]
+source_string = ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source 
 angle_name = ARGS[5] # "Max", "Arc", "Det", "Bad"
 polydeg = 1
@@ -31,6 +31,18 @@ phi_Max = [
     [1.5708, 4.39298, 4.71239, 0.886077], # M=4
     [1.5708, 2.02967, 4.71239, 5.27633, 4.71239, 2.28452], # M=6
     [1.5708, 5.01795, 3.98292, 1.07991, 2.52616, 5.32787, 1.5708, 5.44221, 3.98266], # M=8
+]
+
+theta_Max_odd = [
+    [3.14156, 0.39418, 0.955317, 0.785398, 9.07658e-316, 1.5708], # M=5
+    [3.14159, 0.357662, 3.14159, 2.52611, 2.0944, 0.886077, 6.95333e-310, 1.5708, 1.57027], # M=7
+    [3.14159, 0.340691, 3.14159, 0.523599, 0., 2.42787, 2.03444, 0.955287, 2.18628, 3.25075e-315, 1.5708, 1.5708], # M=9
+]
+
+phi_Max_odd = [
+    [1.5708, 2.05657, 1.5708, 0.955317, 9.07658e-316, 0.785398], # M=5
+    [1.5708, 1.17981, 5.49779, 4.18879, 1.5708, 2.22985, 1.5e-323, 2.35624, 0.785253], # M=7
+    [1.5708, 4.39155, 0.886077, 1.10715, 5.59824, 5.29203, 4.71239, 4.02762, 2.25552, 3.25082e-315, 0.477658, 0.785398], # M=9
 ]
 
 theta_Arc = [
@@ -64,14 +76,29 @@ phi_Bad = [ # M=4
     π*1/4, π*2/4, π*3/4, π*4/4
 ]
 
-for rho_L in [7.0, 15.0, 30.0]
+rho_L_vec = [7.0, 15.0, 30.0]
+if closure == "Grad"
+    rho_L_vec = [7.0]
+end
+for rho_L in rho_L_vec
     if angle_name == "Max"
-        theta = theta_Max[M ÷ 2 - 1]
-        phi = phi_Max[M ÷ 2 - 1]
+        if isodd(M)
+            theta = theta_Max_odd[M ÷ 2 - 1]
+            phi = phi_Max_odd[M ÷ 2 - 1]
+        else
+            theta = theta_Max[M ÷ 2 - 1]
+            phi = phi_Max[M ÷ 2 - 1]
+        end
     elseif angle_name == "Arc"
+        if isodd(M)
+            error("Arc angles are not defined for odd M.")
+        end
         theta = theta_Arc[M ÷ 2 - 1]
         phi = phi_Arc[M ÷ 2 - 1]
     elseif angle_name == "Det"
+        if isodd(M)
+            error("Det angles are not defined for odd M.")
+        end
         theta = theta_Det[M ÷ 2 - 1]
         phi = phi_Det[M ÷ 2 - 1]
     elseif (angle_name == "Bad" && M == 4)
