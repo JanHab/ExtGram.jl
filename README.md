@@ -2,13 +2,13 @@
 
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://JanHab.github.io/ExtGram.jl/)
 [![Build](https://img.shields.io/github/actions/workflow/status/JanHab/ExtGram.jl/documentation.yml?label=build)](https://github.com/JanHab/ExtGram.jl/actions)
-[![GitLab Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://git.rwth-aachen.de/janhab/ExtGram.jl/-/tags)
-[![License](https://img.shields.io/badge/license-CCBY4.0-blue)](https://git.rwth-aachen.de/janhab/ExtGram.jl/-/blob/main/LICENSE?ref_type=heads)
+[![GitLab Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/JanHab/ExtGram.jl/releases/tag/1.0.0)
+[![License](https://img.shields.io/badge/license-CCBY4.0-blue)](https://github.com/JanHab/ExtGram.jl/blob/main/LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18998361.svg)](https://doi.org/10.5281/zenodo.18998361)
 
 *A discontinuous Galerkin implementation of the extended Gramian closure for moment equations with Trixi.jl.*
 
-## Abstract (from the thesis)
+## Abstract
 The classical continuum mechanical equations of Navier-Stokes and Fourier (NSF) accurately describe gases with a high collision frequency, measured by a small Knudsen number (Kn).
 However, the NSF equations fail for gases with a high Knudsen number and, consequently, a small collision frequency.
 Directly solving Boltzmann's equation is an alternative approach of high accuracy, but is computationally very demanding due to its high dimensionality.
@@ -61,12 +61,12 @@ Install the requirements from the `requirements.txt` file with (tested for Pytho
 ``` bash
 pip install -r requirements.txt
 mkdir out
-mkdir out/1D3D
-mkdir out/1D3D/1D3D_angles
-mkdir out/1D3D/Moments
+mkdir out/1D3V
+mkdir out/1D3V/1D3V_angles
+mkdir out/1D3V/Moments
 mkdir out/CompareClosure
 mkdir out/Figures
-mkdir out/Figures/1D3D
+mkdir out/Figures/1D3V
 mkdir out/Figures/ChiValues
 mkdir out/Figures/CompareClosure
 mkdir out/Figures/EigenvaluesEquilibrium
@@ -117,6 +117,23 @@ You can find minimal working data archived with Zenodo here:  [https://doi.org/1
 Finally, [test](https://git.rwth-aachen.de/JanHab/ExtGram.jl/-/tree/main/test?ref_type=heads) contains a small testing pipeline.
 
 ## Referencing 
+
+If you find these results useful or use the implementations provided here, please cite the corresponding article.
+
+```bibtex
+@thesis{habscheid_modeling_2026,
+  title = {Modeling and analysis of nonlinear closures in hierarchical moment equations using discontinuous {Galerkin} methods},
+  type = {mathesis},
+  institution = {RWTH Aachen University},
+  url = {https://publications.rwth-aachen.de/record/1035026},
+  doi = {10.18154/RWTH-2026-04820},
+  author = {Habscheid, Jan},
+  month = mar,
+  year = {2026},
+}
+```
+
+If you use the implementations provided here, please also cite this repository as
 
 ```bibtex
 @software{habscheid_2026_18998361,

@@ -8,6 +8,7 @@
 #SBATCH --nodes=numno
 #SBATCH --time=aot
 #SBATCH --mem=mem_req
+#SBATCH --account=naiss2025-22-1599-cpu
 #
 
 if [ -r /usr/local_host/etc/bashrc ]; then
@@ -16,6 +17,6 @@ fi
 
 export PATH=$PATH:/home/$USER/bin
 
-module load Julia
+module load Julia/1.12.2
 
 cmd

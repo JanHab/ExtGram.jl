@@ -17,6 +17,14 @@ end
     include("closure/ExtendedGramian.jl")
 end
 
-@testset "1D3D" begin
-    include("1D3D/TestTransformations.jl")
+@testset "1D3 - Matrix Transformations" begin
+    include("1D3V/TestTransformations.jl")
+end
+
+@testset "1D3V - full" begin
+    include("1D3V/1D3V_full.jl")
+end
+
+@testset "1D3V - Reduction to Slab-geometry" begin
+    include("1D3V/1D3V_slab.jl")
 end

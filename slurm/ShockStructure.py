@@ -39,7 +39,7 @@ for Ma in Mach_numbers:
     # Moment Methods
     for closure in closure_vec:
         for M in Moments:
-            command = f"julia examples/Shock_1D1D.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
+            command = f"julia examples/Shock_1D1V.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
             # os.system(command)
             createsbatch(
                 command, 

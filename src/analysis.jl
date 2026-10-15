@@ -1,5 +1,5 @@
 """
-    This file provides analysis scripts for the 1D1D moment equations
+    This file provides analysis scripts for the 1D1V moment equations
     
     Including: 
         - plot_ρ_v_p: calculates and plots density, velocity and pressure from the solution
