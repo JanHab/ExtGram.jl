@@ -14,6 +14,7 @@
     VlasovPoissonCache(mesh::TreeMesh{1}, solver::DGSEM)
 
     Preallocated workspace shared by `VlasovPoissonSource` and `vlasov_poisson_callback`.
+    Requires a `LobattoLegendreBasis` of `polydeg` 1 or 2, see `check_uniform_vertex_grid`.
 
     # Fields:
     - `x::Vector{Float64}`: Coordinates of all `n+1` mesh vertices, `x[end] = x[1] + Lx`
@@ -41,8 +42,28 @@ mutable struct VlasovPoissonCache{Itp, P, IP}
     times::Vector{Float64}
 end
 
+"""
+    check_uniform_vertex_grid(solver::DGSEM)
+
+    The Poisson solve takes an FFT of the density sampled at the DG nodes, which only works for
+    equispaced samples. Lobatto-Legendre nodes are equispaced for `polydeg` 1 (cell boundaries)
+    and 2 (boundaries plus midpoint); from `polydeg` 3 on the interior nodes cluster towards the
+    cell boundaries and the FFT would see a distorted grid (field error of 0.5 % at 64 cells,
+    decaying only linearly with the mesh width, see docs/plans/vlasov_poisson_nonuniform_nodes.md). Throws an `ArgumentError` for any other basis or degree.
+"""
+function check_uniform_vertex_grid(solver::DGSEM)
+    solver.basis isa LobattoLegendreBasis || throw(ArgumentError(
+        "VlasovPoissonCache needs a LobattoLegendreBasis (nodes on the cell boundaries), got $(typeof(solver.basis))."))
+    p = Trixi.polydeg(solver)
+    p in (1, 2) || throw(ArgumentError(
+        "VlasovPoissonCache needs polydeg 1 or 2: the FFT Poisson solve requires equispaced nodes, " *
+        "and Lobatto-Legendre nodes are only equispaced up to polydeg 2 (got polydeg = $p)."))
+    return nothing
+end
+
 # Global instance
 function VlasovPoissonCache(mesh::TreeMesh{1}, solver::DGSEM)
+    check_uniform_vertex_grid(solver)
     x = vertex_coordinates(mesh, solver)
     n = length(x) - 1                   # samples per period; x[end] is the periodic image of x[1]
     Lx = x[end] - x[1]

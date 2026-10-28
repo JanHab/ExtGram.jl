@@ -8,10 +8,10 @@ end # Runs in environment setup
 using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LaTeXStrings
 
 # Access arguments by index
-M_vector = [20, 24, 28, 32, 40]#![4, 8, 12, 16] #![4, 8, 12, 16, 20, 24, 28, 32, 40] #!parse.(Int, ARGS[1]) # Vector of M values to test
+M_vector = [4, 16, 32, 48, 64, 128]#![4, 8, 12, 16] #![4, 8, 12, 16, 20, 24, 28, 32, 40] #!parse.(Int, ARGS[1]) # Vector of M values to test
 closure = "ExtGram" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 T_end = 50 #!parse(Float64, ARGS[3])
-base_tree_level = 10 # * 8 #!parse(Int, ARGS[4]) # e.g. 10
+base_tree_level = 6 #!10 # * 8 #!parse(Int, ARGS[4]) # e.g. 10
 polydeg = 1 # *1 #!parse(Int, ARGS[5]) # e.g. 1
 ϵ = 0.5 # ? 0.01 #!parse(Float64, ARGS[6]) # 0.01
 k = 0.5 #!parse(Float64, ARGS[7]) # 0.5
@@ -46,7 +46,7 @@ for M in M_vector
     # solver = DGSEM(basis, surface_flux, volume_integral)
     indicator_sc = IndicatorHennemannGassner(
         equations, basis,
-        variable = (u, eqns)->u[1]*u[3]
+        variable = (u, eqns)->u[1]
     )
 
     volume_integral = VolumeIntegralShockCapturingHG(

@@ -15,13 +15,21 @@ using Dates
 const t_loaded = time()     # packages loaded
 
 # ---------------- case parameters ----------------
-const ρL   = parse(Float64, ARGS[2])        # 7.0 or 30.0
+const ρL   = 1.0 #!parse(Float64, ARGS[2])        # 7.0 or 30.0
+const v1_L = 1.0 #!0.0
+const v2_L = 0.0
+const v3_L = 0.0
+const v1_R = -1.0 #!0.0
+const v2_R = 0.0
+const v3_R = 0.0
 const ρR   = 1.0
-const θ0   = 1.0        # temperature on both sides, θ = T
-const Kn   = parse(Float64, ARGS[1])        # 0.2 or 1.0
-const tend = 0.3
-const x0, x1, nx = -2.0, 2.0, parse(Int, ARGS[3]) #!1_024     # double nx once to check grid convergence
-const umax, nu    = 10.0, parse(Int, ARGS[4]) #! 400          # double nu once to check velocity-grid convergence
+const θ0   = 1.0 / 3.0 # !1.0        # temperature on both sides, θ = T
+const Kn   = 1.0 #!parse(Float64, ARGS[1])        # 0.2 or 1.0
+const tend = 15.0
+# const x0, x1, nx = -2.0, 2.0, parse(Int, ARGS[3]) #!1_024     # double nx once to check grid convergence
+const x0, x1, nx = -30.0, 30.0, 1024 #!200     # double nx once to check grid convergence
+# const umax, nu    = 10.0, parse(Int, ARGS[4]) #! 400          # double nu once to check velocity-grid convergence
+const umax, nu    = 10.0, 400 #!100          # double nu once to check velocity-grid convergence
 
 # ---- setup: one distribution function, 3D velocity space ----
 set = Setup(matter = "gas", case = "shocktube",
@@ -40,8 +48,8 @@ nv, nw = 32, 32 # 64, 64
 vs = VSpace3D(-umax, umax, nu, -6.0, 6.0, nv, -6.0, 6.0, nw)
 
 # ---- initial condition: prim = [ρ, v1, v2, v3, λ] ----
-primL = [ρL, 0.0, 0.0, 0.0, 1 / (2θ0)]
-primR = [ρR, 0.0, 0.0, 0.0, 1 / (2θ0)]
+primL = [ρL, v1_L, v2_L, v3_L, 1 / (2θ0)]
+primR = [ρR, v1_R, v2_R, v3_R, 1 / (2θ0)]
 p = (wL = prim_conserve(primL, gas.γ), wR = prim_conserve(primR, gas.γ),
      primL = primL, primR = primR, γ = gas.γ, u = vs.u, v = vs.v, w = vs.w)
 
@@ -79,16 +87,21 @@ const t_solve = time() - t_solve_start   # init_fvm + time stepping (includes co
 # ---------------- output ----------------
 u, v, w, wt = ks.vs.u, ks.vs.v, ks.vs.w, ks.vs.weights     # all 3D arrays
 mom(a, b, c, f) = sum(@. u^a * v^b * w^c * f * wt)          # U_{abc}
-out = zeros(ks.ps.nx, 9)
+out = zeros(ks.ps.nx, 10)
 for i in 1:ks.ps.nx
     ρ, v1, v2, v3, λ = ctr[i].prim
     θ = 1 / (2λ)
     f = ctr[i].f
+    P300 = mom(3,0,0,f) - 3 * v1 * mom(2,0,0,f) + 2 * ρ * v1^3
+    P120 = mom(1,2,0,f) - v1 * mom(0,2,0,f)
+    qx = 1/2 * P300 + P120
+
     # e.g. U500, U320, U140, U122 for the M = 4 closure target
-    out[i, :] = [ks.ps.x[i], ρ, v1, θ, ρ * θ,
+    out[i, :] = [ks.ps.x[i], ρ, v1, θ, ρ * θ, qx,
                  mom(5,0,0,f), mom(3,2,0,f), mom(1,4,0,f), mom(1,2,2,f)]
 end
-writedlm("out/Reference/bgk_3V_rhoL$(ρL)_Kn$(Kn)_nx$(nx)_nu$(nu).csv", out, ',')
+# ToDo: Generic for ShockTube and TwoBeamwritedlm("out/Reference/bgk_3V_rhoL$(ρL)_Kn$(Kn)_nx$(nx)_nu$(nu).csv", out, ',')
+writedlm("out/Reference/bgk_3V_TwoBeam_rhoL$(ρL)_Kn$(Kn)_nx$(nx)_nu$(nu).csv", out, ',')
 
 # ---------------- run-time log ----------------
 # One row per run is appended to a shared CSV, so a parameter sweep (slurm/reference.py) ends up in one table.
@@ -106,7 +119,3 @@ end
 println("run-time: load = $(round(t_loaded - t_start, digits = 2)) s, solve = $(round(t_solve, digits = 2)) s, ",
         "total = $(round(t_total, digits = 2)) s  ->  appended to $timing_file")
 
-# plot(out[:,1], out[:,2], label="ρ", xlabel="x", ylabel="ρ", title="Shock Tube BGK 1D-3V Slab")
-# plot(out[:,1], out[:,3], label="v", xlabel="x", ylabel="v", title="Shock Tube BGK 1D-3V Slab")
-# plot(out[:,1], out[:,4], label="θ", xlabel="x", ylabel="θ", title="Shock Tube BGK 1D-3V Slab")
-# plot(out[:,1], out[:,5], label="ρθ", xlabel="x", ylabel="ρθ", title="Shock Tube BGK 1D-3V Slab")
