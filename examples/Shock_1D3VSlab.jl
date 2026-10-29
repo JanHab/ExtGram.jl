@@ -83,33 +83,13 @@ if closure == "Grad" # Only run reduced case here
     rho_L_vec = [7.0]
 end
 for rho_L in rho_L_vec
-    if angle_name == "Max"
-        if isodd(M)
-            theta = theta_Max_odd[M ÷ 2 - 1]
-            phi = phi_Max_odd[M ÷ 2 - 1]
-        else
-            theta = theta_Max[M ÷ 2 - 1]
-            phi = phi_Max[M ÷ 2 - 1]
-        end
-    elseif angle_name == "Arc"
-        # if isodd(M)
-        error("Arc angles are not defined.")# for odd M.")
-        # end
-        # theta = theta_Arc[M ÷ 2 - 1]
-        # phi = phi_Arc[M ÷ 2 - 1]
-    elseif angle_name == "Det"
-        # if isodd(M)
-        error("Det angles are not defined.")# for odd M.")
-        # end
-        # theta = theta_Det[M ÷ 2 - 1]
-        # phi = phi_Det[M ÷ 2 - 1]
-    elseif (angle_name == "Bad" && M == 4)
-        # theta = theta_Bad
-        # phi = phi_Bad
-        error("Bad angles are not defined.")# for M=4.")
-    else
-        error("Invalid angle_name: $angle_name. Must be one of \"Max\", \"Arc\", \"Det\".")
+    angles = get(SlabAngles, "M$(M)_$(angle_name)", nothing)
+    if angles === nothing
+        error("Invalid angle_name: $angle_name. Must be one of \"Max\", \"Arc\", \"Con\".")
     end
+    theta = [angles[i][1] for i in 1:length(angles)]
+    phi = [angles[i][2] for i in 1:length(angles)]
+    # error("Invalid angle_name: $angle_name. Must be one of \"Max\", \"Arc\", \"Det\".")
 
     equations = GramianMomentEquations1D3V(M, Kn, closure, slab_geometry=slab_geometry, theta=theta, phi=phi)
 

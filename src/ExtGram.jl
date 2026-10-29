@@ -59,4 +59,7 @@ export setupDVM1DShockTube, InitialConditionsDVM, ρ_v_θ_p_DVM, setupDVM1DShock
 include("vlasov_maxwell.jl")
 export vlasov_maxwell_callback, vlasov_maxwell_source, rhs_vlasov_maxwell!, InitialConditionsVlasovMaxwellLandauDamping
 
+include("angles.jl")
+export SlabAngles
+
 end # module ExtGram
