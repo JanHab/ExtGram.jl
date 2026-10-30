@@ -18,12 +18,12 @@ memory_request = '16G'
 for M in Moments:
     command = f"julia --project=. examples/TwoBeam_1D3VSlab.jl {M} {closure} {Kn} {source} {angle_name}"
     os.system(command)
-    createsbatch(
-        command, 
-        nproc=threads, nnodes=nnodes, 
-        time=time, mem=memory_request, 
-        output_file=f"out/1D3V/1D3V_TwoBeam/slurm_output_1D3V_M{M}_closure{closure}_Kn{Kn}_source{source}_anglepair{angle_name}.out"
-    )
+    # createsbatch(
+    #     command, 
+    #     nproc=threads, nnodes=nnodes, 
+    #     time=time, mem=memory_request, 
+    #     output_file=f"out/1D3V/1D3V_TwoBeam/slurm_output_1D3V_M{M}_closure{closure}_Kn{Kn}_source{source}_anglepair{angle_name}.out"
+    # )
 
 # Shock Structure
 # Mach_numbers = [3.8, 6.5]

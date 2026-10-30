@@ -60,6 +60,6 @@ include("vlasov_maxwell.jl")
 export vlasov_maxwell_callback, vlasov_maxwell_source, rhs_vlasov_maxwell!, InitialConditionsVlasovMaxwellLandauDamping
 
 include("angles.jl")
-export SlabAngles
+export SlabAngles, FullAngles
 
 end # module ExtGram
