@@ -54,7 +54,7 @@ semi = SemidiscretizationHyperbolic(
 
 #= set up ODE =#
 tspan = (0.0, T_end)
-ode = semidiscretize(semi, tspan)
+ode = semidiscretize_vlasov_poisson(semi, tspan)   # field solved in every RHS evaluation
 
 callbacks, summary_callback = callbacksGramianMomentEquations(
     semi, tspan, basis; 
@@ -81,14 +81,14 @@ sol = solve(
 summary_callback()
 
 # Access the energy history
-E_L2_history = vlasov.E_L2
+E_energy_history = vlasov.E_energy
 time_callback = vlasov.times
 
 # store to csv file
 CSV.write(
     "out/VlasovPoisson/TwoStreamInstability/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).csv",
     Tables.columntable((
-        time=time_callback, E_L2=E_L2_history, 
-        E_L2_normalized=E_L2_history ./ E_L2_history[1]
+        time=time_callback, E_energy=E_energy_history, 
+        E_energy_normalized=E_energy_history ./ E_energy_history[1]
     ))
 )
