@@ -11,7 +11,7 @@ closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 Kn = parse(Float64, ARGS[3])
 source_string = ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source 
-angle_name = ARGS[5] # "MaxCond"
+angle_name = ARGS[5] # "MinCond"
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs

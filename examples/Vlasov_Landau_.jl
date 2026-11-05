@@ -2,17 +2,18 @@
     Example file for a 1D-1D Two-Stream instability test case.
 """
 
+using Revise
 if !endswith(Base.active_project(), "../Project.toml")
     import Pkg; Pkg.activate(".")
 end # Runs in environment setup
-using Revise, ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LaTeXStrings
+using ExtGram, Trixi, OrdinaryDiffEq, Plots, CSV, Tables, LaTeXStrings
 
 # Access arguments by index
-M_vector = [4, 16, 32, 48, 64, 128]#![4, 8, 12, 16] #![4, 8, 12, 16, 20, 24, 28, 32, 40] #!parse.(Int, ARGS[1]) # Vector of M values to test
+M_vector = [4, 8, 12, 16, 20]#[4, 5, 8, 9, 12, 13, 16, 17, 32, 40, 48] #!parse.(Int, ARGS[1]) # Vector of M values to test
 closure = "ExtGram" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
 T_end = 50 #!parse(Float64, ARGS[3])
 base_tree_level = 6 #!10 # * 8 #!parse(Int, ARGS[4]) # e.g. 10
-polydeg = 1 # *1 #!parse(Int, ARGS[5]) # e.g. 1
+polydeg = 1 #!parse(Int, ARGS[5]) # e.g. 1
 ϵ = 0.5 # ? 0.01 #!parse(Float64, ARGS[6]) # 0.01
 k = 0.5 #!parse(Float64, ARGS[7]) # 0.5
 
@@ -41,20 +42,31 @@ for M in M_vector
 
     surface_flux = flux_lax_friedrichs
     volume_flux = flux_central
+    # volume_flux = flux_ranocha
+    
+    # Linear
     # volume_integral = VolumeIntegralFluxDifferencing(volume_flux)
-
     # solver = DGSEM(basis, surface_flux, volume_integral)
+
+    # Non-linear
     indicator_sc = IndicatorHennemannGassner(
         equations, basis,
+        alpha_max=0.05,
+        # alpha_max=0.5,
+        alpha_smooth=true,
         variable = (u, eqns)->u[1]
     )
-
     volume_integral = VolumeIntegralShockCapturingHG(
         indicator_sc;
         volume_flux_dg = volume_flux,
         volume_flux_fv = surface_flux
     )
-
+    # volume_integral = volume_integral = VolumeIntegralShockCapturingRRG(
+    #     basis, indicator_sc;
+    #     volume_flux_dg=flux_central,
+    #     volume_flux_fv=flux_lax_friedrichs,
+    #     slope_limiter=minmod
+    # )
     solver = DGSEM(basis, surface_flux, volume_integral)
 
 
@@ -73,7 +85,7 @@ for M in M_vector
 
     #= set up ODE =#
     tspan = (0.0, T_end)
-    ode = semidiscretize(semi, tspan)
+    ode = semidiscretize_vlasov_poisson(semi, tspan)
 
     plot_interval = 20  # plot every 20 steps
     time_interval = 10 # save at 500 time intervals
@@ -134,21 +146,21 @@ for M in M_vector
     summary_callback()
 
     # Access the energy history
-    E_L2_history = vlasov.E_L2
+    E_energy_history = vlasov.E_energy
     time_callback = vlasov.times
 
     # store to csv file
     CSV.write(
         "out/VlasovPoisson/LandauDamping/energy_moments_solution_M$(M)_closure$(closure)_Kn$(Kn)_T_end$(T_end)_rho_0$(ρ_0)_v_0$(v_0)_theta_0$(θ_0)_epsilon$(ϵ)_k$(k)_p$(polydeg)_level$(base_tree_level)_x_lower$(x_lower)_x_upper$(x_upper).csv",
         Tables.columntable((
-            time=time_callback, E_L2=E_L2_history, 
-            E_L2_normalized=E_L2_history ./ E_L2_history[1], 
+            time=time_callback, E_energy=E_energy_history, 
+            E_energy_normalized=E_energy_history ./ E_energy_history[1], 
         ))
     )
 
     plot(
-        time_callback, E_L2_history ./ E_L2_history[1], 
-        xlabel = "Time", ylabel = L"$\|E\|_2 / \|E\|_2(t=0)$", 
+        time_callback, E_energy_history ./ E_energy_history[1], 
+        xlabel = "Time", ylabel = L"$W_E(t)/W_E(0),\; W_E = \frac{1}{2}\int E^2\,dx$", 
         title = "Landau Damping: Electric Field Energy History",
         legend = false,
         lw = 2,

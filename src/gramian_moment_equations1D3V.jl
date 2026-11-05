@@ -601,3 +601,62 @@ end
 function Trixi.max_abs_speeds(u, equations::GramianMomentEquations1D3V)
     return (max_abs_speed_1d3v(u, equations),)
 end
+
+
+# const SPEED_FACTOR_1D3V = 5.0   # only used by the commented-out bound below
+
+# """
+#     temperature(prim, equations::GramianMomentEquations1D3V)
+
+#     θ = (P_(200) + P_(020) + P_(002)) / (3ρ) from a *primitive* (central-moment) vector.
+# """
+# @inline function temperature(prim, equations::GramianMomentEquations1D3V)
+#     i200, i020, i002 = equations._pressure_index
+#     return @inbounds (prim[i200] + prim[i020] + prim[i002]) / (3 * prim[1])
+# end
+
+# """
+#     x_hierarchy(u, equations)
+
+#     The moments U_(k,0,0), k = 0…M, as an SVector. With the x-axis among the closure
+#     directions this sub-vector is a closed subsystem: its flux is U_(k+1,0,0) and the closing
+#     moment U_(M+1,0,0) is the plain 1D closure of exactly these moments.
+# """
+# @inline function x_hierarchy(u, equations::GramianMomentEquations1D3V{Mp1, N, MC}) where {Mp1, N, MC}
+#     pos = equations._pos
+#     return SVector{MC}(ntuple(k -> @inbounds(u[pos[k, 1, 1]]), Val(MC)))
+# end
+
+# """
+#     x_flux_jacobian(ux, equations)
+
+#     Jacobian of the x-hierarchy flux (U_(1,0,0), …, U_(M,0,0), closure(ux)) w.r.t. ux: a shift
+#     matrix plus the gradient of the 1D closure in the last row (same form as `flux_jacobian`
+#     in the 1D1V file).
+# """
+# function x_flux_jacobian(ux, equations::GramianMomentEquations1D3V)
+#     m = length(ux)
+#     A = zeros(eltype(ux), m, m)
+#     for i in 1:m-1
+#         A[i, i+1] = 1
+#     end
+#     A[end, :] .= ForwardDiff.gradient(x -> closure(x, equations), ux)
+#     return A
+# end
+
+# """
+#     λ_max = spectral radius of the x-hierarchy flux Jacobian.
+
+#     Exact for the full slab system when the direction set contains the x-axis (Max, Arc):
+#     the x-hierarchy is then an invariant subsystem, and its eigenvalues are a subset of the
+#     full Jacobian's; measured equal to the full radius at Maxwellian states for M = 4, 6.
+#     For direction sets without the x-axis it is a lower bound. Old bound: |v_x| + 5√θ,
+#     which overestimates by 2.04 (M = 4), 1.65 (M = 6), 1.41 (M = 8) at Maxwellian states.
+# """
+# @inline function max_abs_speed_1d3v(u, equations::GramianMomentEquations1D3V)
+#     ux = x_hierarchy(u, equations)
+#     return maximum(λ -> abs(real(λ)), eigvals(x_flux_jacobian(ux, equations)))
+#     # prim = cons2prim(u, equations)
+#     # θ = temperature(prim, equations)
+#     # return abs(prim[2]) + SPEED_FACTOR_1D3V * sqrt(max(θ, zero(θ)))
+# end

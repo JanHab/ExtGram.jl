@@ -2,43 +2,50 @@
 """
     Implementation of the Vlasov-Poisson system using Gramian moment equations in 1D1V.
 
-    The electric field is computed from the density once per time step in a `DiscreteCallback`
-    (`vlasov_poisson_callback`) by solving ∂E/∂x = ρ - ⟨ρ⟩ with periodic boundary conditions in
-    Fourier space. It enters the moment equations through the source term `VlasovPoissonSource`.
-    Buffers, FFT plans, the field interpolant and the energy history live in a `VlasovPoissonCache`
-    that is created once per run and shared by the callback and the source term, so nothing is
-    allocated inside the time loop.
+    The electric field is computed from the density of the state being differentiated, once per
+    RHS evaluation (`rhs_vlasov_poisson!`, installed by `semidiscretize_vlasov_poisson`), by
+    solving ∂E/∂x = ρ - ⟨ρ⟩ with periodic boundary conditions in Fourier space. It enters the
+    moment equations through the source term `VlasovPoissonSource`, which reads the field at a
+    DG node by direct lookup on the equispaced vertex grid (`field_at`). `vlasov_poisson_callback`
+    only records the field energy ½∫E²dx of the accepted states. Buffers, FFT plans and the energy
+    history live in a
+    `VlasovPoissonCache` that is created once per run and shared by the RHS, the source term and
+    the callback, so nothing is allocated inside the time loop.
 """
 
 """
     VlasovPoissonCache(mesh::TreeMesh{1}, solver::DGSEM)
 
-    Preallocated workspace shared by `VlasovPoissonSource` and `vlasov_poisson_callback`.
-    Requires a `LobattoLegendreBasis` of `polydeg` 1 or 2, see `check_uniform_vertex_grid`.
+    Preallocated workspace shared by `rhs_vlasov_poisson!`, `VlasovPoissonSource` and
+    `vlasov_poisson_callback`. Requires a `LobattoLegendreBasis` of `polydeg` 1 or 2, see
+    `check_uniform_vertex_grid`.
 
     # Fields:
     - `x::Vector{Float64}`: Coordinates of all `n+1` mesh vertices, `x[end] = x[1] + Lx`
+    - `x₁::Float64`, `h::Float64`, `n::Int`: First vertex, vertex spacing and number of periodic
+      vertices, used by the field lookup `field_at`
     - `ρ::Vector{Float64}`: Density at the `n` periodic vertices (vertex 1 holds the periodic average)
     - `ρk::Vector{ComplexF64}`: Real-FFT spectrum of `ρ`, `n÷2+1` modes
     - `kx::Vector{Float64}`: Wavenumbers `2π/Lx * (0:n÷2)` matching `ρk`
     - `E_period::Vector{Float64}`: Inverse-FFT output, `n` samples
     - `E::Vector{Float64}`: Electric field at all `n+1` vertices, `E[end] = E[1]`
-    - `E_itp`: Linear interpolant of `E` over `x`, re-wrapped once per step
     - `plan`, `iplan`: Precomputed forward and inverse real-FFT plans
-    - `E_L2::Vector{Float64}`: L2 norm of the electric field at every step
-    - `times::Vector{Float64}`: Times at which `E_L2` was recorded
+    - `E_energy::Vector{Float64}`: Field energy ½∫E²dx at t = 0 and after every accepted step
+    - `times::Vector{Float64}`: Times at which `E_energy` was recorded
 """
-mutable struct VlasovPoissonCache{Itp, P, IP}
+struct VlasovPoissonCache{P, IP}
     x::Vector{Float64}
+    x₁::Float64
+    h::Float64
+    n::Int
     ρ::Vector{Float64}
     ρk::Vector{ComplexF64}
     kx::Vector{Float64}
     E_period::Vector{Float64}
     E::Vector{Float64}
-    E_itp::Itp
     plan::P
     iplan::IP
-    E_L2::Vector{Float64}
+    E_energy::Vector{Float64}
     times::Vector{Float64}
 end
 
@@ -72,17 +79,23 @@ function VlasovPoissonCache(mesh::TreeMesh{1}, solver::DGSEM)
     kx = collect((2π / Lx) .* (0:n÷2))
     E_period = zeros(n)
     E = zeros(n + 1)
-    return VlasovPoissonCache(x, ρ, ρk, kx, E_period, E, field_interpolant(x, E), plan_rfft(ρ), plan_irfft(ρk, n), Float64[], Float64[])
+    return VlasovPoissonCache(x, x[1], Lx / n, n, ρ, ρk, kx, E_period, E, plan_rfft(ρ), plan_irfft(ρk, n), Float64[], Float64[])
 end
 
 """
-    field_interpolant(x, E)
+    field_at(c::VlasovPoissonCache, x)
 
-    Linear interpolant of the electric field. `Interpolations` copies `E`, so this is rebuilt once
-    per step in `solve_poisson!` (about 3 KB). Every DG node lies inside `x`; the extrapolation
-    only guards against round-off at the domain ends.
+    Electric field at the coordinate `x` by linear lookup on the equispaced vertex grid. Same value
+    as a linear interpolant of `c.E` over `c.x` with linear extrapolation, without the copy of `E`
+    that `Interpolations.jl` makes on every call. Every DG node coincides with a vertex, so the
+    lookup is exact there; at `c.x[end]` it returns `E[1]`; outside the grid (round-off at the
+    domain ends only) it extrapolates along the end segments. Allocation-free.
 """
-field_interpolant(x, E) = linear_interpolation(x, E, extrapolation_bc = Interpolations.Line())
+@inline function field_at(c::VlasovPoissonCache, x)
+    σ = (x - c.x₁) / c.h
+    i = clamp(floor(Int, σ), 0, c.n - 1)                 # segment [x[i+1], x[i+2]]
+    @inbounds return c.E[i + 1] + (σ - i) * (c.E[i + 2] - c.E[i + 1])
+end
 
 """
     vertex_coordinates(mesh::TreeMesh{1}, solver::DGSEM)
@@ -129,7 +142,7 @@ end
     solve_poisson!(c::VlasovPoissonCache)
 
     Solve ∂E/∂x = ρ - ⟨ρ⟩ with periodic boundary conditions in Fourier space, in place.
-    Afterwards `c.E` holds the field at all vertices and `c.E_itp` interpolates it.
+    Afterwards `c.E` holds the field at all vertices.
 """
 function solve_poisson!(c::VlasovPoissonCache)
     c.ρ .-= mean(c.ρ)                       # neutralizing background
@@ -141,7 +154,6 @@ function solve_poisson!(c::VlasovPoissonCache)
     mul!(c.E_period, c.iplan, c.ρk)         # back to physical space
     c.E[1:end-1] .= c.E_period
     c.E[end] = c.E[1]                       # periodic image of the first vertex
-    c.E_itp = field_interpolant(c.x, c.E)
     return c
 end
 
@@ -157,36 +169,91 @@ struct VlasovPoissonSource{C <: VlasovPoissonCache}
 end
 
 function (s::VlasovPoissonSource)(u, x, t, equations::GramianMomentEquations1D{Mp1}) where {Mp1}
-    E_local = s.cache.E_itp(x[1])
+    E_local = field_at(s.cache, x[1])
     # positive sign: the term sits on the left-hand side with a minus
     return SVector{Mp1}(ntuple(k -> k == 1 ? 0.0 : (k - 1) * E_local * u[k - 1], Val(Mp1)))
 end
 
 """
-    update_electric_field!(c::VlasovPoissonCache, integrator)
+    update_electric_field!(c::VlasovPoissonCache, u_ode, semi)
 
-    Recompute the electric field from the current density and record `‖E‖_L2`.
+    Gather the density of `u_ode` and solve for the electric field into `c`. No history, no
+    allocation. Called once per RHS evaluation and once per accepted step by the callback.
 """
-function update_electric_field!(c::VlasovPoissonCache, integrator)
-    gather_density!(c.ρ, integrator.u, integrator.p)
-    solve_poisson!(c)
-    push!(c.E_L2, sqrt(trapz(c.x, c.E .^ 2)))   # ‖E(t,⋅)‖_L2 via the trapezoidal rule
+function update_electric_field!(c::VlasovPoissonCache, u_ode, semi)
+    Trixi.@trixi_timeit Trixi.timer() "Poisson solve" begin   # shows up in SummaryCallback
+        gather_density!(c.ρ, u_ode, semi)
+        solve_poisson!(c)
+    end
+    return c
+end
+
+"""
+    rhs_vlasov_poisson!(du_ode, u_ode, semi, t)
+
+    ODE right-hand side: field of *this* state, then the Trixi RHS.
+    Replaces `Trixi.rhs!` as the ODE function so that the field is recomputed for every RK
+    stage, not once per accepted step. `vlasov_poisson_callback` only records the field energy.
+"""
+function rhs_vlasov_poisson!(du_ode, u_ode, semi, t)
+    update_electric_field!(semi.source_terms.cache, u_ode, semi)   # cache lives in the source
+    Trixi.rhs!(du_ode, u_ode, semi, t)
+    return nothing
+end
+
+"""
+    semidiscretize_vlasov_poisson(semi, tspan; kwargs...)
+
+    Drop-in replacement for `semidiscretize` that installs the wrapped RHS.
+"""
+function semidiscretize_vlasov_poisson(semi, tspan; kwargs...)
+    ode = semidiscretize(semi, tspan; kwargs...)
+    # Mirror Trixi: in place and fully specialised. A plain `ODEProblem(f, u0, tspan, p)` is
+    # AutoSpecialize and wraps `f` in a FunctionWrapper. `ode.p` rather than `semi`: with
+    # `storage_type`/`real_type` Trixi replaces the semidiscretization.
+    return ODEProblem{true, OrdinaryDiffEq.SciMLBase.FullSpecialize}(
+        rhs_vlasov_poisson!, ode.u0, ode.tspan, ode.p)
+end
+
+"""
+    record_field!(c::VlasovPoissonCache, integrator)
+
+    Called by the callback after every accepted step: E of the accepted state, then the field
+    energy ½∫E²dx (trapezoidal rule on the vertex grid, exact for the FFT field) and t.
+"""
+function record_field!(c::VlasovPoissonCache, integrator)
+    update_electric_field!(c, integrator.u, integrator.p)
+    push!(c.E_energy, 1/2 * trapz(c.x, c.E .^ 2))   # ½∫E²dx
     push!(c.times, integrator.t)
+    u_modified!(integrator, false)   # u untouched: keep the FSAL stage, no extra RHS call
+    return nothing
+end
+
+"""
+    check_wrapped_rhs(integrator)
+
+    Refuse the lagged coupling: the ODE must have been built by `semidiscretize_vlasov_poisson`.
+"""
+function check_wrapped_rhs(integrator)
+    f = OrdinaryDiffEq.SciMLBase.unwrapped_f(integrator.f.f)   # sees through FunctionWrappers
+    f === rhs_vlasov_poisson! || throw(ArgumentError(
+        "vlasov_poisson_callback needs the ODE from semidiscretize_vlasov_poisson; " *
+        "with plain semidiscretize every RK stage would use the field of the previous step."))
     return nothing
 end
 
 """
     vlasov_poisson_callback(cache::VlasovPoissonCache)
 
-    `DiscreteCallback` that recomputes the electric field after every step and once before the
-    first one. The field history is available afterwards in `cache.E_L2` and `cache.times`.
+    DiscreteCallback that recomputes the electric field and records its energy ½∫E²dx after every
+    accepted step. The callback is installed in `solve` after `semidiscretize_vlasov_poisson`.
 """
 function vlasov_poisson_callback(cache::VlasovPoissonCache)
-    update_field!(integrator) = update_electric_field!(cache, integrator)
+    affect!(integrator) = record_field!(cache, integrator)
     return DiscreteCallback(
-        (u, t, integrator) -> true,                 # fire after every step
-        update_field!;
-        save_positions = (false, false),            # u is not modified, nothing extra to save
-        initialize = (c, u, t, integrator) -> update_field!(integrator),
+        (u, t, integrator) -> true,                 # fire after every accepted step
+        affect!;
+        save_positions = (false, false),
+        initialize = (c, u, t, integrator) -> (check_wrapped_rhs(integrator); affect!(integrator)),
     )
 end

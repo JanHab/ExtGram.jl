@@ -5,12 +5,12 @@ if !endswith(Base.active_project(), "../Project.toml")
 end # Runs in environment setup
 using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
 
-M = 4 #!parse(Int, ARGS[1])
-closure = "Grad" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
-Kn = 1.0 #!parse(Float64, ARGS[3])
-source_string = "relaxation_source" #!ARGS[4]
+M = parse(Int, ARGS[1])
+closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
+Kn = parse(Float64, ARGS[3])
+source_string = ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source 
-angle_name = "Bad" #! ARGS[5] # "Max", "Arc", "Det", "Bad"
+angle_name = ARGS[5] # "Max", "Arc", "Det", "Bad"
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
@@ -21,8 +21,7 @@ cfl = 0.45
 time_interval = 10 # ? Increase later? 10
 slab_geometry = true # ? false
 
-# !rho_L_vec = [7.0, 30.0]
-rho_L_vec = [7.0]
+rho_L_vec = [7.0, 30.0]
 if closure == "Grad" # Only run reduced case here
     rho_L_vec = [7.0]
 end
@@ -52,7 +51,8 @@ for rho_L in rho_L_vec
     # shock capturing
     indicator_sc = IndicatorHennemannGassner(
         equations, basis,
-        variable = (u, eqns)->u[1]*u[5] # * Placeholder for the moment
+        #! variable = (u, eqns)->u[1]*u[5] # * Placeholder for the moment
+        variable = (u, eqns) -> u[2]^2/u[1],
     )
 
     volume_integral = VolumeIntegralShockCapturingHG(

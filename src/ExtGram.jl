@@ -35,7 +35,7 @@ export U_t_index, U_x_index, fibonacci_hemisphere_angles, GramianMomentEquations
 # needed dependencies: StaticArrays, Interpolations
 using FFTW, Trapz
 include("vlasov_poisson.jl")
-export VlasovPoissonCache, VlasovPoissonSource, vlasov_poisson_callback, InitialConditionsLandauDamping, InitialConditionsTwoStream
+export VlasovPoissonCache, VlasovPoissonSource, vlasov_poisson_callback, InitialConditionsLandauDamping, InitialConditionsTwoStream, semidiscretize_vlasov_poisson
 
 # TrixiTree2Triangulation
 # This module implements an OrdinaryDiffEq callback for the triangulation of a 2D TreeMesh with subsequent
