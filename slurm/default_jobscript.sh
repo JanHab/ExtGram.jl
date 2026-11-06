@@ -8,7 +8,7 @@
 #SBATCH --nodes=numno
 #SBATCH --time=aot
 #SBATCH --mem=mem_req
-#SBATCH --account=naiss2025-22-1599-cpu
+#SBATCH --account=naiss2026-4-1591-cpu
 #
 
 if [ -r /usr/local_host/etc/bashrc ]; then
