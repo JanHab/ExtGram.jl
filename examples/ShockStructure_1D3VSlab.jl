@@ -5,17 +5,17 @@ if !endswith(Base.active_project(), "../Project.toml")
 end # Runs in environment setup
 using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
 
-M = parse(Int, ARGS[1])
-closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
-Kn = parse(Float64, ARGS[3])
-source_string = ARGS[4]
+M = 6 #!parse(Int, ARGS[1])
+closure = "ExtGram" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
+Kn = 1.0 #!parse(Float64, ARGS[3])
+source_string = "relaxation_source" #!ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source 
-angle_name = ARGS[5] # "Max", "Arc", "Det", "Bad"
+angle_name = "Max" #!ARGS[5] # "Max", "Arc", "Det", "Bad"
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
 domain = (-30.0, 30.0)
-base_tree_level = 10
+base_tree_level = 8 #!10
 T_end = 50.0
 cfl = 0.45
 time_interval = 10 # ? Increase later? 10
@@ -107,7 +107,7 @@ end
 
 equations = GramianMomentEquations1D3V(M, Kn, closure, slab_geometry=slab_geometry, theta=theta, phi=phi)
 
-Ma = parse(Float64, ARGS[6]) # 3.8 and 6.5 in Cai paper
+Ma = 6.5 #!parse(Float64, ARGS[6]) # 3.8 and 6.5 in Cai paper
 rho_L = 1.0
 rho_R = (4*Ma^2) / (Ma^2 + 3)
 v1_L, v2_L, v3_L = sqrt(5/3) * Ma, 0, 0
@@ -129,7 +129,7 @@ basis = LobattoLegendreBasis(polydeg)
 # shock capturing
 indicator_sc = IndicatorHennemannGassner(
     equations, basis,
-    variable = (u, eqns)->u[1]*u[5] # * Placeholder for the moment
+    variable = (u, eqns)->u[2]^2/u[1] # * Placeholder for the moment
 )
 
 volume_integral = VolumeIntegralShockCapturingHG(
