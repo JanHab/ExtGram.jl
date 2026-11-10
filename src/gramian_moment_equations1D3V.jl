@@ -287,7 +287,7 @@ struct GramianMomentEquations1D3V{Mp1, N, MC, NC, NS, RealT <: Real, C} <: Grami
             @warn "The closure direction set is badly conditioned (cond = $κ); the recovered order-$(M+1) moments will be inaccurate. Antipodal directions are degenerate for odd M+1 -- keep all directions on one hemisphere." M κ
         end
         # Only the α ≥ 1 prefix of the solution is ever used, so keep only those rows.
-        println(T_shell)
+        # println(T_shell)
         _T_closure = Matrix{RealT}(inv(T_shell)[1:N_closure, :])
 
         # Fast (α,β,γ) -> position lookup, and the powers as tuples
