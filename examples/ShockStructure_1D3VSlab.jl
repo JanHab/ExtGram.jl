@@ -5,22 +5,23 @@ if !endswith(Base.active_project(), "../Project.toml")
 end # Runs in environment setup
 using ExtGram, Trixi, OrdinaryDiffEq, Plots, LinearAlgebra, StaticArrays
 
-M = 6 #!parse(Int, ARGS[1])
-closure = "ExtGram" #!ARGS[2] # String # "Gram", "ExtGram" or "Grad"
-Kn = 1.0 #!parse(Float64, ARGS[3])
-source_string = "relaxation_source" #!ARGS[4]
+M = parse(Int, ARGS[1])
+closure = ARGS[2] # String # "Gram", "ExtGram" or "Grad"
+Kn = parse(Float64, ARGS[3])
+source_string = ARGS[4]
 source = source_string == "relaxation_source" ? relaxation_source : zero_source 
-angle_name = "Max" #!ARGS[5] # "Max", "Arc", "Det", "Bad"
+angle_name = ARGS[5] # "Max", "Arc", "Det", "Bad"
 polydeg = 1
 volume_flux = flux_central
 surface_flux = flux_lax_friedrichs
-domain = (-30.0, 30.0)
-base_tree_level = 8 #!10
+domain = (-30.0, 80.0) #!(-30.0, 30.0)
+base_tree_level = 12
 T_end = 50.0
 cfl = 0.45
 time_interval = 10 # ? Increase later? 10
 slab_geometry = true # ? false
-
+steady_abstol = 1.0e-6 #! 1.0e-8
+steady_reltol = 1.0e-6 #! 1.0e-6 # ToDo: Adapt the numbers
 
 theta_Max = [
     [3.14159, 0.616578, 1.10715, 2.18628, ], # M=4
@@ -107,7 +108,7 @@ end
 
 equations = GramianMomentEquations1D3V(M, Kn, closure, slab_geometry=slab_geometry, theta=theta, phi=phi)
 
-Ma = 6.5 #!parse(Float64, ARGS[6]) # 3.8 and 6.5 in Cai paper
+Ma = parse(Float64, ARGS[6]) # 3.8 and 6.5 in Cai paper
 rho_L = 1.0
 rho_R = (4*Ma^2) / (Ma^2 + 3)
 v1_L, v2_L, v3_L = sqrt(5/3) * Ma, 0, 0
@@ -158,6 +159,9 @@ ode = semidiscretize(semi, tspan)
 alive_callback = AliveCallback(analysis_interval=100)
 summary_callback = SummaryCallback()
 stepsize_callback = StepsizeCallback(cfl=cfl)
+# * The steady state callback needs a residual, use the density
+Trixi.residual_steady_state(du, ::GramianMomentEquations1D3V) = abs(du[1])
+steady_state_callback = SteadyStateCallback(abstol=steady_abstol, reltol=steady_reltol)
 
 name = "1D3V/1D3V_ShockStructure/gram_solution_M$(M)_closure$(closure)_Kn$(Kn)_source$(source_string)_anglepair$(angle_name)_MaL$(Ma)"
 save_solution_cons = SaveTriangulationCallback(
@@ -181,7 +185,7 @@ save_solution_prim = SaveTriangulationCallback(
     info="basis = $(Base.typename(typeof(basis)).wrapper)"
 )
 callbacks = CallbackSet(
-    alive_callback, summary_callback, stepsize_callback,
+    alive_callback, summary_callback, stepsize_callback, steady_state_callback,
     save_solution_cons, save_solution_prim
 )
 
@@ -224,7 +228,7 @@ plt = plot(
     plot(xs, θ[perm], ylabel="θ", title="temperature"),
     layout=(2,2), size=(900,600), xlabel="x", lw=2, legend=false,
     plot_title="1D-3V  M=$M  Kn=$Kn  t=$(round(sol.t[end], digits=3))",
-    xlims=(-10, 10)
+    # xlims=(-10, 10)
 )
 display(plt)
 # savefig("Final_State.png")
