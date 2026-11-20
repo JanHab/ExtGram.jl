@@ -22,14 +22,14 @@ This is an implementation of the extended Gramian closure, a recently invented m
 For comparison reasons, it also has implementations of the Morin-McDonald closure, and Grad's closure.
 The extended Gramian closure has attractive structure-preserving properties and overcomes shortcomings of classical closures, such as the lack of global hyperbolicity in Grad's closure and the computational effort required by the maximum entropy closure.
 While the closure is constructed in one dimension, a projection method for applying it to a three-dimensional velocity phase, based on matrix rotations, is implemented.
-This allows t go from a 1D-1V setting to 1D-3V.
+This allows to go from a 1D-1V setting to 1D-3V.
 
 ## Main Features
 
 - Solving the 1D(space) - 1V(velocity) moment equations 
-  - Shock tube problem
-  - Shock structure problem
-  - Two beam problem was tested, but not yet included
+  - Shock tube
+  - Shock structure
+  - Two beam
 - Discrete velocity method (DVM) as reference solution for 1D(space) - 1V(velocity)
   - Shock tube
   - Shock structure
@@ -45,15 +45,26 @@ This allows t go from a 1D-1V setting to 1D-3V.
 Clone the git repository and install the `ExtGram.jl` package locally with:
 
 ``` bash
-git clone git@git.rwth-aachen.de:JanHab/ExtGram.jl.git
+git clone git@github.com:JanHab/ExtGram.jl.git
 cd ExtGram.jl
 julia --project -e 'import Pkg; Pkg.instantiate()'
 ```
 
+The code was developed with Julia version 1.12.6.
 The solutions are stored in the `out` folder (in .gitignore).
 Before executing the example files, make sure that you create all necessary subfolders, where the solutions are stored.
+The dependency KitBase.jl (used only for the kinetic reference solutions) builds a small Python environment during installation and requires `pip3` version 23 or newer on the `PATH`; if its build of `FiniteMesh` fails, the package still works and the error can be ignored.
+
+```bash
+mkdir -p out/Shock/{Moments,DVM,GaugeInvestigation} out/Reference out/CompareClosure \
+  out/GridConvergencePeriodic out/VlasovPoisson/{LandauDamping,TwoStreamInstability} \
+  out/1D3V/{1D3V_ShockTube,1D3V_TwoBeam,1D3Vfull_ShockTube} \
+  out/Figures/{1D3V/slab,1D3V/full,CompareClosure,EigenvaluesEquilibrium,GaugeInvestigation,LandauDamping,ShockStructure,ShockTube,TwoStreamInstability}
+```
 Further, Python (with Jupyter notebooks) is used for visualizations.
-Install the requirements from the `requirements.txt` file with (tested for Python version 3.12.2):
+Install the requirements from the `requirements.txt` file with (tested for Python version 3.12.2) `pip install -r requirements.txt`.
+The visualization notebooks use the `science` plot package, which requires a local LaTeX installation.
+You can always comment the Python import.
 
 ## Testing
 
@@ -72,6 +83,7 @@ julia --project examples/ShockTubeExample.jl
 ## Usage
 
 Find the package source code in [src](https://github.com/JanHab/ExtGram.jl/tree/main/src), which implements the momentum closure and the system of PDEs.
+The DVM reference curves (for 1D-3V) are computed with [KitBase.jl](https://github.com/vavrines/KitBase.jl).
 
 The folder [examples](https://github.com/JanHab/ExtGram.jl/tree/main/examples) contains the main files for physically relevant benchmark problems.
 [slurm](https://github.com/JanHab/ExtGram.jl/tree/main/slurm) gives shell scripts for executing the benchmark problems either on your local laptop or on a HPC cluster with a slurm script. You need to either comment out the `os.system(command)` or the `createsbatch` file, depending on your system.

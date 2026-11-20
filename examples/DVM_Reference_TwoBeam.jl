@@ -1,4 +1,4 @@
-# Execute with "julia -t auto --project=. examples/DVM_Reference.jl <Kn> <rhoL> <nx> <nu>" to parallelize
+
 const t_start = time()      # wall-clock start, taken before package loading
 
 using Revise
