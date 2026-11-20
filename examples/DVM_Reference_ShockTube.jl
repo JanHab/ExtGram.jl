@@ -15,17 +15,19 @@ using Dates
 const t_loaded = time()     # packages loaded
 
 # ---------------- case parameters ----------------
-const Ma = parse(Float64, ARGS[1]) # 3.8 and 6.5 in Cai paper
-const rho_L = 1.0
-const rho_R = (4*Ma^2) / (Ma^2 + 3)
-const v1_L, v2_L, v3_L = sqrt(5/3) * Ma, 0, 0
-const v1_R, v2_R, v3_R = sqrt(5/3) * (Ma^2 + 3) / (4 * Ma), 0, 0
-const theta_L = 1.0
-const theta_R = (5*Ma^2 - 1) * (Ma^2 + 3) / (16 * Ma^2)
-const Kn   = 1.0
-const tend = 50.0
-const x0, x1, nx = -30.0, 80.0, 1024     # double nx once to check grid convergence
-const umax, nu    = 10.0, 400          # double nu once to check velocity-grid convergence
+const ρL   = parse(Float64, ARGS[2])        # 7.0 or 30.0
+const v1_L = 0.0
+const v2_L = 0.0
+const v3_L = 0.0
+const v1_R = 0.0
+const v2_R = 0.0
+const v3_R = 0.0
+const ρR   = 1.0
+const θ0   = 1.0        # temperature on both sides, θ = T
+const Kn   = parse(Float64, ARGS[1])        # 0.2 or 1.0
+const tend = 15.0
+const x0, x1, nx = -2.0, 2.0, parse(Int, ARGS[3])     # double nx once to check grid convergence
+const umax, nu    = 10.0, parse(Int, ARGS[4])         # double nu once to check velocity-grid convergence
 
 # ---- setup: one distribution function, 3D velocity space ----
 set = Setup(matter = "gas", case = "shocktube",
@@ -44,8 +46,8 @@ nv, nw = 32, 32 # 64, 64
 vs = VSpace3D(-umax, umax, nu, -6.0, 6.0, nv, -6.0, 6.0, nw)
 
 # ---- initial condition: prim = [ρ, v1, v2, v3, λ] ----
-primL = [rho_L, v1_L, v2_L, v3_L, 1 / (2theta_L)]
-primR = [rho_R, v1_R, v2_R, v3_R, 1 / (2theta_R)]
+primL = [ρL, v1_L, v2_L, v3_L, 1 / (2θ0)]
+primR = [ρR, v1_R, v2_R, v3_R, 1 / (2θ0)]
 p = (wL = prim_conserve(primL, gas.γ), wR = prim_conserve(primR, gas.γ),
      primL = primL, primR = primR, γ = gas.γ, u = vs.u, v = vs.v, w = vs.w)
 
@@ -69,8 +71,6 @@ function run!(ks)
         evolve!(ks, ctr, face, dt)
         update!(ks, ctr, face, dt, res)
         t += dt
-        # print progress
-        print("\r t = $(round(t, digits=2)) / $(ks.set.maxTime), dt = $(round(dt, digits=4)), res = $(round.(res, digits=4))")
     end
     return ctr
 end
@@ -98,8 +98,7 @@ for i in 1:ks.ps.nx
     out[i, :] = [ks.ps.x[i], ρ, v1, θ, ρ * θ, qx,
                  mom(5,0,0,f), mom(3,2,0,f), mom(1,4,0,f), mom(1,2,2,f)]
 end
-# ToDo: Generic for ShockTube and TwoBeamwritedlm("out/Reference/bgk_3V_rhoL$(ρL)_Kn$(Kn)_nx$(nx)_nu$(nu).csv", out, ',')
-writedlm("out/Reference/bgk_3V_ShockStructure_Kn$(Kn)_Ma$(Ma)_nx$(nx)_nu$(nu).csv", out, ',')
+writedlm("out/Reference/bgk_3V_rhoL$(ρL)_Kn$(Kn)_nx$(nx)_nu$(nu).csv", out, ',')
 
 # ---------------- run-time log ----------------
 # One row per run is appended to a shared CSV, so a parameter sweep (slurm/reference.py) ends up in one table.

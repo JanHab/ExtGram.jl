@@ -4,8 +4,8 @@ import os
 # Solver and simulation parameters
 Moments = [4, 6, 8]
 closure = "ExtGram"
-Knudsen = [0.2]#!, 1.0]
-sources = ["relaxation_source"]#!, "relaxation_source"]
+Knudsen = [0.2, 1.0]
+sources = ["relaxation_source", "relaxation_source"]
 
 angle_name = "MinCond"
 

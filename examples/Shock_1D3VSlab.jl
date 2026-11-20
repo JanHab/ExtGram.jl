@@ -18,8 +18,8 @@ domain = (-2.0, 2.0)
 base_tree_level = 10
 T_end = 0.3 
 cfl = 0.45
-time_interval = 10 # ? Increase later? 10
-slab_geometry = true # ? false
+time_interval = 10
+slab_geometry = true
 
 rho_L_vec = [7.0, 30.0]
 if closure == "Grad" # Only run reduced case here
@@ -51,7 +51,6 @@ for rho_L in rho_L_vec
     # shock capturing
     indicator_sc = IndicatorHennemannGassner(
         equations, basis,
-        #! variable = (u, eqns)->u[1]*u[5] # * Placeholder for the moment
         variable = (u, eqns) -> u[2]^2/u[1],
     )
 

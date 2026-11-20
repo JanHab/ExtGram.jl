@@ -30,10 +30,10 @@ memory_request = '32G'
 for M in M_vector:
     for base_tree_level in base_tree_level_vec:
         command = f"julia examples/GridConvergence.jl {M} {closure} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_0} {v_0} {theta_0} {epsilon} {k} {x_lower} {x_upper}"
-        # os.system(command)
-        createsbatch(
-            command, 
-            nproc=threads, nnodes=nnodes, 
-            time=time, mem=memory_request, 
-            output_file=f"out/GridConvergencePeriodic/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_0{rho_0}_v_0{v_0}_theta_0{theta_0}_epsilon{epsilon}_k{k}.out"
-        )
+        os.system(command)
+        # createsbatch(
+        #     command, 
+        #     nproc=threads, nnodes=nnodes, 
+        #     time=time, mem=memory_request, 
+        #     output_file=f"out/GridConvergencePeriodic/slurm_output_M{M}_closure{closure}_Kn{Kn}_source{source}_T{T_end}_level{base_tree_level}_p{polydeg}_rho_0{rho_0}_v_0{v_0}_theta_0{theta_0}_epsilon{epsilon}_k{k}.out"
+        # )
