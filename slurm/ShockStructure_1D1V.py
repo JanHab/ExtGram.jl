@@ -49,7 +49,7 @@ for Ma in Mach_numbers:
             )
 
     # DVM
-    command = f"julia examples/Shock_DVM.jl {N} {c_l} {c_u} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
+    command = f"julia examples/Shock_DVM_1D1V.jl {N} {c_l} {c_u} {Kn} {source} {T_end} {base_tree_level} {polydeg} {rho_L} {v_L} {theta_L} {rho_R} {v_R} {theta_R} {x_left} {x_right}"
     # os.system(command)
     createsbatch(
         command, 

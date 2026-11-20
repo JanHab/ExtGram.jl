@@ -28,3 +28,7 @@ end
 @testset "1D3V - Reduction to Slab-geometry" begin
     include("1D3V/1D3V_slab.jl")
 end
+
+@testset "Vlasov-Poisson - cache and Poisson solve" begin
+    include("vlasov_poisson/VlasovPoissonCache.jl")
+end

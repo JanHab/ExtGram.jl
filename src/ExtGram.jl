@@ -56,9 +56,6 @@ export plot_ρ_v_p, plot_λ_max, conservation, readsol, readfile
 include("DVM_equation.jl")
 export setupDVM1DShockTube, InitialConditionsDVM, ρ_v_θ_p_DVM, setupDVM1DShockTube, plot_ρ_v_p_DVM
 
-include("vlasov_maxwell.jl")
-export vlasov_maxwell_callback, vlasov_maxwell_source, rhs_vlasov_maxwell!, InitialConditionsVlasovMaxwellLandauDamping
-
 include("angles.jl")
 export SlabAngles, FullAngles
 
